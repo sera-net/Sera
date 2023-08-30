@@ -1,15 +1,30 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <Nullable>enable</Nullable>
-        <LangVersion>11.0</LangVersion>
-        <IncludeBuildOutput>false</IncludeBuildOutput>
-        <TargetFramework>net7.0</TargetFramework>
-    </PropertyGroup>
+	<PropertyGroup>
+		<Version>0.0.1</Version>
+		<Nullable>enable</Nullable>
+		<LangVersion>11.0</LangVersion>
+	    <IncludeBuildOutput>false</IncludeBuildOutput>
+		<TargetFramework>net7.0</TargetFramework>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+		<Description>Format-agnostic (de)serialization abstraction layer</Description>
+	</PropertyGroup>
 
-    <ItemGroup>
-      <ProjectReference Include="..\Sera.Core\Sera.Core.csproj" />
-      <ProjectReference Include="..\Sera.Runtime\Sera.Runtime.csproj" />
-    </ItemGroup>
+	<ItemGroup>
+		<None Include="..\README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+		<None Include="..\LICENSE.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Sera.Core\Sera.Core.csproj" />
+		<ProjectReference Include="..\Sera.Runtime\Sera.Runtime.csproj" />
+	</ItemGroup>
 
 </Project>
