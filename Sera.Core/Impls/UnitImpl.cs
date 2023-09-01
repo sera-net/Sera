@@ -4,16 +4,17 @@ using Sera.Core.Ser;
 
 namespace Sera.Core.Impls;
 
-public record UnitImpl<T> : ISerialize<T>, IDeserialize<T>
+public record UnitImpl<T> : ISerialize<T>, IAsyncSerialize<T>, IDeserialize<T>, IAsyncDeserialize<T>
 {
     public static UnitImpl<T> Instance { get; } = new();
-    public void Write<S>(S serializer, in T value, SeraOptions options) where S : ISerializer
+
+    public void Write<S>(S serializer, T value, SeraOptions options) where S : ISerializer
         => serializer.WriteUnit();
 
-    public void Read<D>(D deserializer, out T value, SeraOptions options) where D : IDeserializer
+    public T Read<D>(D deserializer, SeraOptions options) where D : IDeserializer
     {
         deserializer.ReadUnit();
-        value = default!;
+        return default!;
     }
 
     public ValueTask WriteAsync<S>(S serializer, T value, SeraOptions options) where S : IAsyncSerializer

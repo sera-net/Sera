@@ -5,25 +5,25 @@ using Sera.Core.Ser;
 
 namespace Sera.Core.Impls;
 
-public record DBNullImpl : ISerialize<DBNull>, IDeserialize<DBNull>
+public record DBNullImpl : ISerialize<DBNull>, IAsyncSerialize<DBNull>, IDeserialize<DBNull>, IAsyncDeserialize<DBNull>
 {
     public static DBNullImpl Instance { get; } = new();
 
-    public void Write<S>(S serializer, in DBNull value, SeraOptions options) where S : ISerializer
-        => serializer.WriteNull();
+    public void Write<S>(S serializer, DBNull value, SeraOptions options) where S : ISerializer
+        => serializer.WriteUnit();
 
     public ValueTask WriteAsync<S>(S serializer, DBNull value, SeraOptions options) where S : IAsyncSerializer
-        => serializer.WriteNullAsync();
+        => serializer.WriteUnitAsync();
 
-    public void Read<D>(D deserializer, out DBNull value, SeraOptions options) where D : IDeserializer
+    public DBNull Read<D>(D deserializer, SeraOptions options) where D : IDeserializer
     {
-        deserializer.ReadNull();
-        value = DBNull.Value;
+        deserializer.ReadUnit();
+        return DBNull.Value;
     }
 
     public async ValueTask<DBNull> ReadAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer
     {
-        await deserializer.ReadNullAsync();
+        await deserializer.ReadUnitAsync();
         return DBNull.Value;
     }
 }

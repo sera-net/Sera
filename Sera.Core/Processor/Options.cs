@@ -37,4 +37,8 @@ public abstract class SeraOptions
     /// Runtime provider
     /// </summary>
     public virtual IRuntimeProvider RuntimeProvider => StaticRuntimeProvider.Instance;
+    /// <summary>
+    /// Async Runtime provider
+    /// </summary>
+    public virtual IAsyncRuntimeProvider AsyncRuntimeProvider => StaticRuntimeProvider.Instance;
 }

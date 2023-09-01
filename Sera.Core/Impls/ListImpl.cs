@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Sera.Core.De;
 using Sera.Core.Ser;
@@ -8,27 +7,35 @@ namespace Sera.Core.Impls;
 
 #region Serialize
 
-public record ListSerializeImpl<L, T, ST>(ST Serialize) : ISerialize<L>
+public record ListSerializeImpl<L, T, ST>(ST Serialize) : ISerialize<L>, ISeqSerializerReceiver<L>
     where L : List<T> where ST : ISerialize<T>
 {
-    public void Write<S>(S serializer, in L value, SeraOptions options) where S : ISerializer
+    public void Write<S>(S serializer, L value, SeraOptions options) where S : ISerializer
     {
-        serializer.WriteSeqStart<T>((nuint)value.Count);
-        foreach (ref readonly var item in CollectionsMarshal.AsSpan(value))
-        {
-            serializer.WriteSeqElement(in item, Serialize);
-        }
-        serializer.WriteSeqEnd();
+        serializer.StartSeq<T, L, ListSerializeImpl<L, T, ST>>((nuint)value.Count, value, this);
     }
 
-    public async ValueTask WriteAsync<S>(S serializer, L value, SeraOptions options) where S : IAsyncSerializer
+    public void Receive<S>(L value, S serializer) where S : ISeqSerializer
     {
-        await serializer.WriteSeqStartAsync<T>((nuint)value.Count);
         foreach (var item in value)
         {
-            await serializer.WriteSeqElementAsync(item, Serialize);
+            serializer.WriteElement(item, Serialize);
         }
-        await serializer.WriteSeqEndAsync();
+    }
+}
+
+public record AsyncListSerializeImpl<L, T, ST>(ST Serialize) : IAsyncSerialize<L>, IAsyncSeqSerializerReceiver<L>
+    where L : List<T> where ST : IAsyncSerialize<T>
+{
+    public ValueTask WriteAsync<S>(S serializer, L value, SeraOptions options) where S : IAsyncSerializer
+        => serializer.StartSeqAsync<T, L, AsyncListSerializeImpl<L, T, ST>>((nuint)value.Count, value, this);
+
+    public async ValueTask ReceiveAsync<S>(L value, S serializer) where S : IAsyncSeqSerializer
+    {
+        foreach (var item in value)
+        {
+            await serializer.WriteElementAsync(item, Serialize);
+        }
     }
 }
 
@@ -36,112 +43,128 @@ public record ListSerializeImpl<L, T, ST>(ST Serialize) : ISerialize<L>
 
 #region Deserialize
 
-public record ListDeserializeImpl<T, DT>(DT Deserialize) : IDeserialize<List<T>>
+public record ListDeserializeImpl<T, DT>(DT Deserialize) : IDeserialize<List<T>>, ISeqDeserializerVisitor<List<T>>
     where DT : IDeserialize<T>
 {
-    public void Read<D>(D deserializer, out List<T> value, SeraOptions options) where D : IDeserializer
-    {
-        var cap = deserializer.ReadSeqStart<T>(null);
-        if (cap.HasValue)
-        {
-            var len = (int)cap.Value;
-            value = new(len);
-            for (var i = 0; i < len; i++)
-            {
-                deserializer.ReadSeqElement(out T item, Deserialize);
-                value.Add(item);
-            }
-        }
-        else
-        {
-            value = new();
-            while (deserializer.PeekSeqHasNext())
-            {
-                deserializer.ReadSeqElement(out T item, Deserialize);
-                value.Add(item);
-            }
-        }
-        deserializer.ReadSeqEnd();
-    }
+    public List<T> Read<D>(D deserializer, SeraOptions options) where D : IDeserializer
+        => deserializer.ReadSeq<List<T>, ListDeserializeImpl<T, DT>>(null, this);
 
-    public async ValueTask<List<T>> ReadAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer
+    public List<T> VisitSeq<A>(A access) where A : ISeqAccess
     {
-        var cap = await deserializer.ReadSeqStartAsync<T>(null);
-        List<T> value;
+        List<T> list;
+        var cap = access.GetLength();
         if (cap.HasValue)
         {
-            var len = (int)cap.Value;
-            value = new(len);
-            for (var i = 0; i < len; i++)
+            list = new((int)cap.Value);
+            for (nuint i = 0; i < cap.Value; i++)
             {
-                var item = await deserializer.ReadSeqElementAsync<T, DT>(Deserialize);
-                value.Add(item);
+                access.ReadElement(out T item, Deserialize);
+                list.Add(item);
             }
         }
         else
         {
-            value = new();
-            while (await deserializer.PeekSeqHasNextAsync())
+            list = new();
+            while (access.HasNext())
             {
-                var item = await deserializer.ReadSeqElementAsync<T, DT>(Deserialize);
-                value.Add(item);
+                access.ReadElement(out T item, Deserialize);
+                list.Add(item);
             }
         }
-        await deserializer.ReadSeqEndAsync();
-        return value;
+        return list;
     }
 }
 
-public record ListDeserializeImpl<L, T, DT>(DT Deserialize) : IDeserialize<L>
+public record AsyncListDeserializeImpl<T, DT>(DT Deserialize) : IAsyncDeserialize<List<T>>,
+    IAsyncSeqDeserializerVisitor<List<T>>
+    where DT : IAsyncDeserialize<T>
+{
+    public ValueTask<List<T>> ReadAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer
+        => deserializer.ReadSeqAsync<List<T>, AsyncListDeserializeImpl<T, DT>>(null, this);
+
+    public async ValueTask<List<T>> VisitSeqAsync<A>(A access) where A : IAsyncSeqAccess
+    {
+        List<T> list;
+        var cap = await access.GetLengthAsync();
+        if (cap.HasValue)
+        {
+            list = new((int)cap.Value);
+            for (nuint i = 0; i < cap.Value; i++)
+            {
+                var item = await access.ReadElementAsync<T, DT>(Deserialize);
+                list.Add(item);
+            }
+        }
+        else
+        {
+            list = new();
+            while (await access.HasNextAsync())
+            {
+                var item = await access.ReadElementAsync<T, DT>(Deserialize);
+                list.Add(item);
+            }
+        }
+        return list;
+    }
+}
+
+public record ListDeserializeImpl<L, T, DT>(DT Deserialize) : IDeserialize<L>, ISeqDeserializerVisitor<L>
     where L : List<T>, new() where DT : IDeserialize<T>
 {
-    public void Read<D>(D deserializer, out L value, SeraOptions options) where D : IDeserializer
-    {
-        var cap = deserializer.ReadSeqStart<T>(null);
-        value = new();
-        if (cap.HasValue)
-        {
-            var len = (int)cap.Value;
-            for (var i = 0; i < len; i++)
-            {
-                deserializer.ReadSeqElement(out T item, Deserialize);
-                value.Add(item);
-            }
-        }
-        else
-        {
-            while (deserializer.PeekSeqHasNext())
-            {
-                deserializer.ReadSeqElement(out T item, Deserialize);
-                value.Add(item);
-            }
-        }
-        deserializer.ReadSeqEnd();
-    }
+    public L Read<D>(D deserializer, SeraOptions options) where D : IDeserializer
+        => deserializer.ReadSeq<L, ListDeserializeImpl<L, T, DT>>(null, this);
 
-    public async ValueTask<L> ReadAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer
+    public L VisitSeq<A>(A access) where A : ISeqAccess
     {
-        var cap = await deserializer.ReadSeqStartAsync<T>(null);
-        L value = new();
+        var cap = access.GetLength();
+        L list = new();
         if (cap.HasValue)
         {
-            var len = (int)cap.Value;
-            for (var i = 0; i < len; i++)
+            for (nuint i = 0; i < cap.Value; i++)
             {
-                var item = await deserializer.ReadSeqElementAsync<T, DT>(Deserialize);
-                value.Add(item);
+                access.ReadElement(out T item, Deserialize);
+                list.Add(item);
             }
         }
         else
         {
-            while (deserializer.PeekSeqHasNext())
+            while (access.HasNext())
             {
-                var item = await deserializer.ReadSeqElementAsync<T, DT>(Deserialize);
-                value.Add(item);
+                access.ReadElement(out T item, Deserialize);
+                list.Add(item);
             }
         }
-        await deserializer.ReadSeqEndAsync();
-        return value;
+        return list;
+    }
+}
+
+public record AsyncListDeserializeImpl<L, T, DT>(DT Deserialize) : IAsyncDeserialize<L>, IAsyncSeqDeserializerVisitor<L>
+    where L : List<T>, new() where DT : IAsyncDeserialize<T>
+{
+    public ValueTask<L> ReadAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer
+        => deserializer.ReadSeqAsync<L, AsyncListDeserializeImpl<L, T, DT>>(null, this);
+
+    public async ValueTask<L> VisitSeqAsync<A>(A access) where A : IAsyncSeqAccess
+    {
+        var cap = await access.GetLengthAsync();
+        L list = new();
+        if (cap.HasValue)
+        {
+            for (nuint i = 0; i < cap.Value; i++)
+            {
+                var item = await access.ReadElementAsync<T, DT>(Deserialize);
+                list.Add(item);
+            }
+        }
+        else
+        {
+            while (await access.HasNextAsync())
+            {
+                var item = await access.ReadElementAsync<T, DT>(Deserialize);
+                list.Add(item);
+            }
+        }
+        return list;
     }
 }
 

@@ -9,19 +9,20 @@ using Sera.Core.Ser;
 
 namespace Sera.Core.Impls;
 
-public record PrimitiveImpl<T>(SeraPrimitiveTypes type) : PrimitiveImpl(typeof(T)), ISerialize<T>, IDeserialize<T>
+public record PrimitiveImpl<T>(SeraPrimitiveTypes type) : PrimitiveImpl(typeof(T)),
+    ISerialize<T>, IDeserialize<T>, IAsyncSerialize<T>, IAsyncDeserialize<T>
 {
-    public void Write<S>(S serializer, in T value, SeraOptions options) where S : ISerializer
-        => serializer.WritePrimitive(value, type);
+    public void Write<S>(S serializer, T value, SeraOptions options) where S : ISerializer
+        => serializer.WritePrimitive(value);
 
-    public void Read<D>(D deserializer, out T value, SeraOptions options) where D : IDeserializer
-        => value = deserializer.ReadPrimitive<T>(type);
+    public T Read<D>(D deserializer, SeraOptions options) where D : IDeserializer
+        => deserializer.ReadPrimitive<T>();
 
     public ValueTask WriteAsync<S>(S serializer, T value, SeraOptions options) where S : IAsyncSerializer
-        => serializer.WritePrimitiveAsync(value, type);
+        => serializer.WritePrimitiveAsync(value);
 
     public ValueTask<T> ReadAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer
-        => deserializer.ReadPrimitiveAsync<T>(type);
+        => deserializer.ReadPrimitiveAsync<T>();
 }
 
 public abstract record PrimitiveImpl(Type Type)

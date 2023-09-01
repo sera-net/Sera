@@ -8,26 +8,35 @@ namespace Sera.Core.Impls;
 
 #region Serialize
 
-public record ArraySerializeImpl<T, ST>(ST Serialize) : ISerialize<T[]> where ST : ISerialize<T>
+public record ArraySerializeImpl<T, ST>(ST Serialize) : ISerialize<T[]>, ISeqSerializerReceiver<T[]>
+    where ST : ISerialize<T>
 {
-    public void Write<S>(S serializer, in T[] value, SeraOptions options) where S : ISerializer
+    public void Write<S>(S serializer, T[] value, SeraOptions options) where S : ISerializer
     {
-        serializer.WriteSeqStart<T>((nuint)value.Length);
-        foreach (ref readonly var item in value.AsSpan())
-        {
-            serializer.WriteSeqElement(in item, Serialize);
-        }
-        serializer.WriteSeqEnd();
+        serializer.StartSeq<T, T[], ArraySerializeImpl<T, ST>>((nuint)value.Length, value, this);
     }
 
-    public async ValueTask WriteAsync<S>(S serializer, T[] value, SeraOptions options) where S : IAsyncSerializer
+    public void Receive<S>(T[] value, S serialize) where S : ISeqSerializer
     {
-        await serializer.WriteSeqStartAsync<T>((nuint)value.Length);
+        foreach (ref readonly var item in value.AsSpan())
+        {
+            serialize.WriteElement(item, Serialize);
+        }
+    }
+}
+
+public record AsyncArraySerializeImpl<T, ST>(ST Serialize) : IAsyncSerialize<T[]>, IAsyncSeqSerializerReceiver<T[]>
+    where ST : IAsyncSerialize<T>
+{
+    public ValueTask WriteAsync<S>(S serializer, T[] value, SeraOptions options) where S : IAsyncSerializer
+        => serializer.StartSeqAsync<T, T[], AsyncArraySerializeImpl<T, ST>>((nuint)value.Length, value, this);
+
+    public async ValueTask ReceiveAsync<S>(T[] value, S serialize) where S : IAsyncSeqSerializer
+    {
         foreach (var item in value)
         {
-            await serializer.WriteSeqElementAsync(item, Serialize);
+            await serialize.WriteElementAsync(item, Serialize);
         }
-        await serializer.WriteSeqEndAsync();
     }
 }
 
@@ -35,56 +44,66 @@ public record ArraySerializeImpl<T, ST>(ST Serialize) : ISerialize<T[]> where ST
 
 #region Deserialize
 
-public record ArrayDeserializeImpl<T, DT>(DT Deserialize) : IDeserialize<T[]> where DT : IDeserialize<T>
+public record ArrayDeserializeImpl<T, DT>(DT Deserialize) : IDeserialize<T[]>, ISeqDeserializerVisitor<T[]>
+    where DT : IDeserialize<T>
 {
-    public void Read<D>(D deserializer, out T[] value, SeraOptions options) where D : IDeserializer
-    {
-        var cap = deserializer.ReadSeqStart<T>(null);
-        if (cap.HasValue)
-        {
-            value = new T[cap.Value];
-            for (nuint i = 0; i < cap.Value; i++)
-            {
-                deserializer.ReadSeqElement<T, DT>(out value[i], Deserialize);
-            }
-        }
-        else
-        {
-            var list = new List<T>();
-            while (deserializer.PeekSeqHasNext())
-            {
-                deserializer.ReadSeqElement(out T item, Deserialize);
-                list.Add(item);
-            }
-            value = list.ToArray();
-        }
-        deserializer.ReadSeqEnd();
-    }
+    public T[] Read<D>(D deserializer, SeraOptions options) where D : IDeserializer
+        => deserializer.ReadSeq<T[], ArrayDeserializeImpl<T, DT>>(null, this);
 
-    public async ValueTask<T[]> ReadAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer
+    public T[] VisitSeq<A>(A access) where A : ISeqAccess
     {
-        var cap = await deserializer.ReadSeqStartAsync<T>(null);
-        T[] value;
+        var cap = access.GetLength();
         if (cap.HasValue)
         {
-            value = new T[cap.Value];
+            var arr = new T[cap.Value];
             for (nuint i = 0; i < cap.Value; i++)
             {
-                value[i] = await deserializer.ReadSeqElementAsync<T, DT>(Deserialize);
+                access.ReadElement(out arr[i], Deserialize);
             }
+            return arr;
         }
         else
         {
             var list = new List<T>();
-            while (deserializer.PeekSeqHasNext())
+            while (access.HasNext())
             {
-                var item = await deserializer.ReadSeqElementAsync<T, DT>(Deserialize);
+                access.ReadElement(out T item, Deserialize);
                 list.Add(item);
             }
-            value = list.ToArray();
+            return list.ToArray();
         }
-        await deserializer.ReadSeqEndAsync();
-        return value;
+    }
+}
+
+public record AsyncArrayDeserializeImpl<T, DT>(DT Deserialize) : IAsyncDeserialize<T[]>,
+    IAsyncSeqDeserializerVisitor<T[]>
+    where DT : IAsyncDeserialize<T>
+{
+    public ValueTask<T[]> ReadAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer
+        => deserializer.ReadSeqAsync<T[], AsyncArrayDeserializeImpl<T, DT>>(null, this);
+
+    public async ValueTask<T[]> VisitSeqAsync<A>(A access) where A : IAsyncSeqAccess
+    {
+        var cap = await access.GetLengthAsync();
+        if (cap.HasValue)
+        {
+            var arr = new T[cap.Value];
+            for (nuint i = 0; i < cap.Value; i++)
+            {
+                arr[i] = await access.ReadElementAsync<T, DT>(Deserialize);
+            }
+            return arr;
+        }
+        else
+        {
+            var list = new List<T>();
+            while (await access.HasNextAsync())
+            {
+                var item = await access.ReadElementAsync<T, DT>(Deserialize);
+                list.Add(item);
+            }
+            return list.ToArray();
+        }
     }
 }
 
