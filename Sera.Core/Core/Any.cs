@@ -15,20 +15,21 @@ public enum SeraAnyKind : byte
     String,
     Bytes,
     Unit,
-    Null,
-    NullableNotNull,
-    Enum,
-    Tuple,
+    Option,
     Seq,
     Map,
     Struct,
     Variant,
 }
 
-public readonly struct SeraAny : ISerializable<SeraAny, AnyImpl>, IDeserializable<SeraAny, AnyImpl>, IEquatable<SeraAny>
+public readonly struct SeraAny : IEquatable<SeraAny>,
+    ISerializable<SeraAny, AnyImpl>, IDeserializable<SeraAny, AnyImpl>,
+    IAsyncSerializable<SeraAny, AnyImpl>, IAsyncDeserializable<SeraAny, AnyImpl>
 {
     public static AnyImpl GetSerialize() => AnyImpl.Instance;
     public static AnyImpl GetDeserialize() => AnyImpl.Instance;
+    public static AnyImpl GetAsyncSerialize() => AnyImpl.Instance;
+    public static AnyImpl GetAsyncDeserialize() => AnyImpl.Instance;
 
     private readonly _union_ _union;
     private readonly object? _ref_object;
@@ -124,9 +125,7 @@ public readonly struct SeraAny : ISerializable<SeraAny, AnyImpl>, IDeserializabl
 
     public string String => (string)_ref_object!;
     public byte[] Bytes => (byte[])_ref_object!;
-    public SeraBoxed<SeraAny> NullableNotNull => (SeraBoxed<SeraAny>)_ref_object!;
-    public SeraAnyEnum Enum => (SeraAnyEnum)_ref_object!;
-    public SeraAny[] Tuple => (SeraAny[])_ref_object!;
+    public SeraBoxed<SeraAny>? Option => (SeraBoxed<SeraAny>?)_ref_object!;
     public List<SeraAny> Seq => (List<SeraAny>)_ref_object!;
     public Dictionary<SeraAny, SeraAny> Map => (Dictionary<SeraAny, SeraAny>)_ref_object!;
     public SeraAnyStruct Struct => (SeraAnyStruct)_ref_object!;
@@ -244,17 +243,8 @@ public readonly struct SeraAny : ISerializable<SeraAny, AnyImpl>, IDeserializabl
     public static SeraAny MakeUnit()
         => new(default, null, SeraPrimitiveTypes.Unknown, SeraAnyKind.Unit);
 
-    public static SeraAny MakeNull()
-        => new(default, null, SeraPrimitiveTypes.Unknown, SeraAnyKind.Null);
-
-    public static SeraAny MakeNullableNotNull(SeraBoxed<SeraAny> v)
-        => new(default, v, SeraPrimitiveTypes.Unknown, SeraAnyKind.NullableNotNull);
-
-    public static SeraAny MakeEnum(SeraAnyEnum v)
-        => new(default, v, SeraPrimitiveTypes.Unknown, SeraAnyKind.Enum);
-
-    public static SeraAny MakeTuple(SeraAny[] v)
-        => new(default, v, SeraPrimitiveTypes.Unknown, SeraAnyKind.Tuple);
+    public static SeraAny MakeOption(SeraBoxed<SeraAny>? v)
+        => new(default, v, SeraPrimitiveTypes.Unknown, SeraAnyKind.Option);
 
     public static SeraAny MakeSeq(List<SeraAny> v)
         => new(default, v, SeraPrimitiveTypes.Unknown, SeraAnyKind.Seq);
@@ -312,10 +302,7 @@ public readonly struct SeraAny : ISerializable<SeraAny, AnyImpl>, IDeserializabl
             SeraAnyKind.String => String == other.String,
             SeraAnyKind.Bytes => Bytes.SequenceEqual(other.Bytes),
             SeraAnyKind.Unit => true,
-            SeraAnyKind.Null => true,
-            SeraAnyKind.NullableNotNull => NullableNotNull == other.NullableNotNull,
-            SeraAnyKind.Enum => Enum == other.Enum,
-            SeraAnyKind.Tuple => Tuple.SequenceEqual(other.Tuple),
+            SeraAnyKind.Option => Option == other.Option,
             SeraAnyKind.Seq => Seq.SequenceEqual(other.Seq),
             SeraAnyKind.Map => other.Map.DictEq(other.Map),
             SeraAnyKind.Struct => Struct == other.Struct,
@@ -364,10 +351,7 @@ public readonly struct SeraAny : ISerializable<SeraAny, AnyImpl>, IDeserializabl
         SeraAnyKind.String => HashCode.Combine(Kind, String),
         SeraAnyKind.Bytes => HashCode.Combine(Kind, Bytes),
         SeraAnyKind.Unit => HashCode.Combine(Kind),
-        SeraAnyKind.Null => HashCode.Combine(Kind),
-        SeraAnyKind.NullableNotNull => HashCode.Combine(Kind, NullableNotNull),
-        SeraAnyKind.Enum => HashCode.Combine(Kind, Enum),
-        SeraAnyKind.Tuple => HashCode.Combine(Kind, Tuple.SeqHash()),
+        SeraAnyKind.Option => HashCode.Combine(Kind, Option),
         SeraAnyKind.Seq => HashCode.Combine(Kind, Seq.SeqHash()),
         SeraAnyKind.Map => HashCode.Combine(Kind, Map.DictHash()),
         SeraAnyKind.Struct => HashCode.Combine(Kind, Struct),
@@ -421,10 +405,7 @@ public readonly struct SeraAny : ISerializable<SeraAny, AnyImpl>, IDeserializabl
         SeraAnyKind.String => $"{String}",
         SeraAnyKind.Bytes => $"{Bytes}",
         SeraAnyKind.Unit => "Unit",
-        SeraAnyKind.Null => "null",
-        SeraAnyKind.NullableNotNull => $"{NullableNotNull.Value}",
-        SeraAnyKind.Enum => $"{Enum}",
-        SeraAnyKind.Tuple => $"({string.Join(", ", Tuple)})",
+        SeraAnyKind.Option => Option == null ? "None" : $"Some({Option.Value})",
         SeraAnyKind.Seq => $"[{string.Join(", ", Seq)}]",
         SeraAnyKind.Map => $"{{ {string.Join(", ", Map.Select(static kv => $"{kv.Key}: {kv.Value}"))} }}",
         SeraAnyKind.Struct => $"{Struct}",
@@ -465,18 +446,11 @@ public record SeraAnyStruct(Dictionary<string, SeraAny> Fields)
         $"struct {StructName ?? "_"} {{ {string.Join(", ", Fields.Select(static kv => $"{kv.Key} = {kv.Value}"))} }}";
 }
 
-public record SeraAnyEnum(string? Name, SeraAny Number)
+public record SeraAnyVariant(Variant Variant, SeraAny? Value)
 {
-    public override string ToString() => $"enum {Name ?? "_"} = {Number}";
-}
-
-public record SeraAnyVariant(string? VariantName, nuint VariantTag, SeraAny Value)
-{
-    public string? VariantName { get; set; } = VariantName;
-    public nuint VariantTag { get; set; } = VariantTag;
-    public SeraAny Value = Value;
+    public SeraAny? Value = Value;
     public string? UnionName { get; set; }
 
     public override string ToString() =>
-        $"union {UnionName ?? "_"}.{VariantName ?? "_"}({VariantTag}) = {Value}";
+        $"enum {UnionName ?? "_"}.{Variant}{(Value.HasValue ? $" = {{Value}}" : "")}";
 }

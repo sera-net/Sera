@@ -5,21 +5,20 @@ using Sera.Core.Ser;
 
 namespace Sera.Core.Impls;
 
-public record SkipImpl<T> : ISerialize<T>, IDeserialize<T>
+public record SkipImpl<T> : ISerialize<T>, IDeserialize<T>, IAsyncSerialize<T>, IAsyncDeserialize<T>
 {
-    private static readonly Lazy<SkipImpl<T>> Lazy = new(static () => new());
-    public static SkipImpl<T> Instance => Lazy.Value;
+    public static SkipImpl<T> Instance => new();
 
-    public void Write<S>(S serializer, in T value, SeraOptions options) where S : ISerializer
+    public void Write<S>(S serializer, T value, SeraOptions options) where S : ISerializer
         => serializer.WriteUnit();
 
     public ValueTask WriteAsync<S>(S serializer, T value, SeraOptions options) where S : IAsyncSerializer
         => serializer.WriteUnitAsync();
 
-    public void Read<D>(D deserializer, out T value, SeraOptions options) where D : IDeserializer
+    public T Read<D>(D deserializer, SeraOptions options) where D : IDeserializer
     {
         deserializer.Skip();
-        value = default!;
+        return default!;
     }
 
     public async ValueTask<T> ReadAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer

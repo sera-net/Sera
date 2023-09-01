@@ -7,89 +7,54 @@ namespace Sera.Core.Impls;
 
 #region Serialize
 
-public record IDictionaryImpl<M, K, V, SK, SV>(SK KeySerialize, SV ValueSerialize) : ISerialize<M>
+public record IDictionaryImpl<M, K, V, SK, SV>(SK KeySerialize, SV ValueSerialize) : ISerialize<M>,
+    IMapSerializerReceiver<M>
     where M : IDictionary<K, V> where SK : ISerialize<K> where SV : ISerialize<V>
 {
-    public void Write<S>(S serializer, in M value, SeraOptions options) where S : ISerializer
-    {
-        serializer.WriteMapStart<K, V>((nuint)value.Count);
-        foreach (var (k, v) in value)
-        {
-            serializer.WriteMapEntry(in k, in v, KeySerialize, ValueSerialize);
-        }
-        serializer.WriteMapEnd();
-    }
+    public void Write<S>(S serializer, M value, SeraOptions options) where S : ISerializer
+        => serializer.StartMap<K, V, M, IDictionaryImpl<M, K, V, SK, SV>>((nuint)value.Count, value, this);
 
-    public async ValueTask WriteAsync<S>(S serializer, M value, SeraOptions options) where S : IAsyncSerializer
+    public void Receive<S>(M value, S serializer) where S : IMapSerializer
     {
-        await serializer.WriteMapStartAsync<K, V>((nuint)value.Count);
         foreach (var (k, v) in value)
         {
-            await serializer.WriteMapEntryAsync(k, v, KeySerialize, ValueSerialize);
+            serializer.WriteEntry(k, v, KeySerialize, ValueSerialize);
         }
-        await serializer.WriteMapEndAsync();
     }
 }
 
-public record IDictionaryImpl<M, SK, SV>(SK KeySerialize, SV ValueSerialize) : ISerialize<M>
-    where M : IDictionary where SK : ISerialize<object?> where SV : ISerialize<object?>
+public record AsyncIDictionaryImpl<M, K, V, SK, SV>(SK KeySerialize, SV ValueSerialize) : IAsyncSerialize<M>,
+    IAsyncMapSerializerReceiver<M>
+    where M : IDictionary<K, V> where SK : IAsyncSerialize<K> where SV : IAsyncSerialize<V>
 {
-    public void Write<S>(S serializer, in M value, SeraOptions options) where S : ISerializer
-    {
-        serializer.WriteMapStart((nuint)value.Count);
-        var enumerator = value.GetEnumerator();
-        while (enumerator.MoveNext())
-        {
-            serializer.WriteMapEntry<object?, object?, SK, SV>(
-                enumerator.Key, enumerator.Value, KeySerialize, ValueSerialize
-            );
-        }
-        serializer.WriteMapEnd();
-    }
+    public ValueTask WriteAsync<S>(S serializer, M value, SeraOptions options) where S : IAsyncSerializer
+        => serializer.StartMapAsync<K, V, M, AsyncIDictionaryImpl<M, K, V, SK, SV>>((nuint)value.Count, value, this);
 
-    public async ValueTask WriteAsync<S>(S serializer, M value, SeraOptions options) where S : IAsyncSerializer
+    public async ValueTask ReceiveAsync<S>(M value, S serializer) where S : IAsyncMapSerializer
     {
-        await serializer.WriteMapStartAsync((nuint)value.Count);
-        var enumerator = value.GetEnumerator();
-        while (enumerator.MoveNext())
+        foreach (var (k, v) in value)
         {
-            await serializer.WriteMapEntryAsync<object?, object?, SK, SV>(
-                enumerator.Key, enumerator.Value, KeySerialize, ValueSerialize
-            );
+            await serializer.WriteEntryAsync(k, v, KeySerialize, ValueSerialize);
         }
-        await serializer.WriteMapEndAsync();
     }
 }
 
-public record IDictionaryImpl<M> : ISerialize<M>
-    where M : IDictionary
+public record AsyncIDictionaryImpl<M, SK, SV>(SK KeySerialize, SV ValueSerialize) : IAsyncSerialize<M>,
+    IAsyncMapSerializerReceiver<M>
+    where M : IDictionary where SK : IAsyncSerialize<object?> where SV : IAsyncSerialize<object?>
 {
-    public void Write<S>(S serializer, in M value, SeraOptions options) where S : ISerializer
-    {
-        var dyn_serializer = options.RuntimeProvider.GetRuntimeSerialize();
-        serializer.WriteMapStart((nuint)value.Count);
-        var enumerator = value.GetEnumerator();
-        while (enumerator.MoveNext())
-        {
-            serializer.WriteMapEntry<object?, object?, ISerialize<object?>, ISerialize<object?>>(
-                enumerator.Key, enumerator.Value, dyn_serializer, dyn_serializer
-            );
-        }
-        serializer.WriteMapEnd();
-    }
+    public ValueTask WriteAsync<S>(S serializer, M value, SeraOptions options) where S : IAsyncSerializer
+        => serializer.StartMapAsync((nuint)value.Count, value, this);
 
-    public async ValueTask WriteAsync<S>(S serializer, M value, SeraOptions options) where S : IAsyncSerializer
+    public async ValueTask ReceiveAsync<S>(M value, S serializer) where S : IAsyncMapSerializer
     {
-        var dyn_serializer = options.RuntimeProvider.GetRuntimeSerialize();
-        await serializer.WriteMapStartAsync((nuint)value.Count);
         var enumerator = value.GetEnumerator();
         while (enumerator.MoveNext())
         {
-            await serializer.WriteMapEntryAsync<object?, object?, ISerialize<object?>, ISerialize<object?>>(
-                enumerator.Key, enumerator.Value, dyn_serializer, dyn_serializer
+            await serializer.WriteEntryAsync<object?, object?, SK, SV>(
+                enumerator.Key, enumerator.Value, KeySerialize, ValueSerialize
             );
         }
-        await serializer.WriteMapEndAsync();
     }
 }
 

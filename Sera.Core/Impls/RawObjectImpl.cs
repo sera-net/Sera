@@ -5,94 +5,72 @@ using Sera.Core.Ser;
 
 namespace Sera.Core.Impls;
 
-public record RawObjectImpl : ISerialize<object?>, IDeserialize<object?>
+public class RawObjectImpl :
+    ISerialize<object?>, IAsyncSerialize<object?>,
+    IDeserialize<object?>, IAsyncDeserialize<object?>,
+    IOptionDeserializerVisitor<object?>, IAsyncOptionDeserializerVisitor<object?>
 {
     public static RawObjectImpl Instance { get; } = new();
 
-    public void Write<S>(S serializer, in object? value, SeraOptions options) where S : ISerializer
+    public void Write<S>(S serializer, object? value, SeraOptions options) where S : ISerializer
     {
         if (value == null)
         {
-            serializer.WriteNull();
+            serializer.WriteNone<object>();
         }
         else
         {
-            serializer.WriteStructStart<object>(nameof(Object), 0);
-            serializer.WriteStructEnd();
+            serializer.WriteSome(value, RawObjectNonNullImpl.Instance);
         }
     }
 
-    public async ValueTask WriteAsync<S>(S serializer, object? value, SeraOptions options) where S : IAsyncSerializer
-    {
-        if (value == null)
-        {
-            await serializer.WriteNullAsync();
-        }
-        else
-        {
-            await serializer.WriteStructStartAsync<object>(nameof(Object), 0);
-            await serializer.WriteStructEndAsync();
-        }
-    }
+    public ValueTask WriteAsync<S>(S serializer, object? value, SeraOptions options) where S : IAsyncSerializer
+        => value == null
+            ? serializer.WriteNoneAsync<object>()
+            : serializer.WriteSomeAsync(value, RawObjectNonNullImpl.Instance);
 
-    public void Read<D>(D deserializer, out object? value, SeraOptions options) where D : IDeserializer
-    {
-        if (deserializer.PeekIsNull())
-        {
-            deserializer.ReadNull();
-            value = null;
-        }
-        else
-        {
-            deserializer.ReadStructStart<object>(nameof(Object), 0);
-            deserializer.ReadStructEnd();
-            value = new();
-        }
-    }
+    public object? Read<D>(D deserializer, SeraOptions options) where D : IDeserializer
+        => deserializer.ReadOption<object?, RawObjectImpl>(this);
 
-    public async ValueTask<object?> ReadAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer
-    {
-        if (await deserializer.PeekIsNullAsync())
-        {
-            await deserializer.ReadNullAsync();
-            return null;
-        }
-        else
-        {
-            await deserializer.ReadStructStartAsync<object>(nameof(Object), 0);
-            await deserializer.ReadStructEndAsync();
-            return new();
-        }
-    }
+    public ValueTask<object?> ReadAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer
+        => deserializer.ReadOptionAsync<object?, RawObjectImpl>(this);
+
+    public object? VisitNone() => null;
+
+    public object? VisitSome<D>(D deserializer, SeraOptions options) where D : IDeserializer
+        => RawObjectNonNullImpl.Instance.Read(deserializer, options);
+
+    public ValueTask<object?> VisitNoneAsync()
+        => ValueTask.FromResult<object?>(null);
+
+    public ValueTask<object?> VisitSomeAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer
+        => RawObjectNonNullImpl.Instance.ReadAsync(deserializer, options)!;
 }
 
-public record RawObjectNonNullImpl : ISerialize<object>, IDeserialize<object>
+public class RawObjectNonNullImpl :
+    ISerialize<object>, IAsyncSerialize<object>,
+    IDeserialize<object>, IAsyncDeserialize<object>,
+    IStructSerializerReceiver<object>, IAsyncStructSerializerReceiver<object>
 {
     public static RawObjectNonNullImpl Instance { get; } = new();
 
-    public void Write<S>(S serializer, in object value, SeraOptions options) where S : ISerializer
-    {
-        serializer.WriteStructStart<object>(nameof(Object), 0);
-        serializer.WriteStructEnd();
-    }
+    public void Write<S>(S serializer, object value, SeraOptions options) where S : ISerializer
+        => serializer.StartStruct<object, object, RawObjectNonNullImpl>(nameof(Object), 0, value, this);
 
-    public async ValueTask WriteAsync<S>(S serializer, object value, SeraOptions options) where S : IAsyncSerializer
-    {
-        await serializer.WriteStructStartAsync<object>(nameof(Object), 0);
-        await serializer.WriteStructEndAsync();
-    }
+    public void Receive<S>(object value, S serialize) where S : IStructSerializer { }
 
-    public void Read<D>(D deserializer, out object value, SeraOptions options) where D : IDeserializer
-    {
-        deserializer.ReadStructStart<object>(nameof(Object), 0);
-        deserializer.ReadStructEnd();
-        value = new();
-    }
+    public ValueTask WriteAsync<S>(S serializer, object value, SeraOptions options) where S : IAsyncSerializer
+        => serializer.StartStructAsync<object, object, RawObjectNonNullImpl>(nameof(Object), 0, value, this);
 
-    public async ValueTask<object> ReadAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer
-    {
-        await deserializer.ReadStructStartAsync<object>(nameof(Object), 0);
-        await deserializer.ReadStructEndAsync();
-        return new();
-    }
+    public ValueTask ReceiveAsync<S>(object value, S serialize) where S : IAsyncStructSerializer
+        => ValueTask.CompletedTask;
+
+    public object Read<D>(D deserializer, SeraOptions options) where D : IDeserializer
+        => deserializer.ReadStruct<object, EmptyStructVisitor<object>>(nameof(Object), 0, Array.Empty<string>(),
+            new(new()));
+
+    public ValueTask<object> ReadAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer
+        => deserializer.ReadStructAsync<object, EmptyStructVisitor<object>>(
+            nameof(Object), 0, Array.Empty<string>(), new(new())
+        );
 }

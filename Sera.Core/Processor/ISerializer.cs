@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Sera.Core.Ser;
@@ -7,7 +8,7 @@ namespace Sera.Core.Ser;
 
 public partial interface ISerializer { }
 
-public partial interface IAsyncSerializer : ISerializer { }
+public partial interface IAsyncSerializer { }
 
 #endregion
 
@@ -15,16 +16,12 @@ public partial interface IAsyncSerializer : ISerializer { }
 
 public partial interface ISerializer
 {
-    public void WritePrimitive<T>(T value, SeraPrimitiveTypes type) => throw new NotSupportedException();
+    public void WritePrimitive<T>(T value);
 }
 
 public partial interface IAsyncSerializer
 {
-    public ValueTask WritePrimitiveAsync<T>(T value, SeraPrimitiveTypes type)
-    {
-        WritePrimitive(value, type);
-        return ValueTask.CompletedTask;
-    }
+    public ValueTask WritePrimitiveAsync<T>(T value);
 }
 
 #endregion
@@ -35,22 +32,21 @@ public partial interface ISerializer
 {
     public void WriteString(string value) => WriteString(value.AsSpan());
     public void WriteString(ReadOnlyMemory<char> value) => WriteString(value.Span);
-    public void WriteString(ReadOnlySpan<char> value) => throw new NotSupportedException();
+    public void WriteString(ReadOnlySpan<char> value);
+
+    public void WriteStringEncoded(ReadOnlyMemory<byte> value, Encoding encoding) =>
+        WriteStringEncoded(value.Span, encoding);
+
+    public void WriteStringEncoded(ReadOnlySpan<byte> value, Encoding encoding);
 }
 
 public partial interface IAsyncSerializer
 {
-    public ValueTask WriteStringAsync(string value)
-    {
-        WriteString(value);
-        return ValueTask.CompletedTask;
-    }
+    public ValueTask WriteStringAsync(string value) => WriteStringAsync(value.AsMemory());
 
-    public ValueTask WriteStringAsync(ReadOnlyMemory<char> value)
-    {
-        WriteString(value);
-        return ValueTask.CompletedTask;
-    }
+    public ValueTask WriteStringAsync(ReadOnlyMemory<char> value);
+
+    public ValueTask WriteStringEncodedAsync(ReadOnlyMemory<byte> value, Encoding encoding);
 }
 
 #endregion
@@ -59,24 +55,13 @@ public partial interface IAsyncSerializer
 
 public partial interface ISerializer
 {
-    public void WriteBytes(byte[] value) => WriteBytes(value.AsSpan());
     public void WriteBytes(ReadOnlyMemory<byte> value) => WriteBytes(value.Span);
-    public void WriteBytes(ReadOnlySpan<byte> value) => throw new NotSupportedException();
+    public void WriteBytes(ReadOnlySpan<byte> value);
 }
 
 public partial interface IAsyncSerializer
 {
-    public ValueTask WriteBytesAsync(byte[] value)
-    {
-        WriteBytes(value);
-        return ValueTask.CompletedTask;
-    }
-
-    public ValueTask WriteBytesAsync(ReadOnlyMemory<byte> value)
-    {
-        WriteBytes(value);
-        return ValueTask.CompletedTask;
-    }
+    public ValueTask WriteBytesAsync(ReadOnlyMemory<byte> value);
 }
 
 #endregion
@@ -85,139 +70,34 @@ public partial interface IAsyncSerializer
 
 public partial interface ISerializer
 {
-    public void WriteUnit() => throw new NotSupportedException();
+    public void WriteUnit();
 }
 
 public partial interface IAsyncSerializer
 {
-    public ValueTask WriteUnitAsync()
-    {
-        WriteUnit();
-        return ValueTask.CompletedTask;
-    }
+    public ValueTask WriteUnitAsync();
 }
 
 #endregion
 
-#region Null
+#region Option
 
 public partial interface ISerializer
 {
-    public void WriteNull() => throw new NotSupportedException();
+    public void WriteNone();
+
+    public void WriteNone<T>() => WriteNone();
+
+    public void WriteSome<T, S>(T value, S serialize) where S : ISerialize<T>;
 }
 
 public partial interface IAsyncSerializer
 {
-    public ValueTask WriteNullAsync()
-    {
-        WriteNull();
-        return ValueTask.CompletedTask;
-    }
-}
+    public ValueTask WriteNoneAsync();
 
-#endregion
+    public ValueTask WriteNoneAsync<T>() => WriteNoneAsync();
 
-#region NullableNotNull
-
-public partial interface ISerializer
-{
-    public void WriteNullableNotNull<T, S>(in T value, S serialize) where S : ISerialize<T>
-        => throw new NotSupportedException();
-}
-
-public partial interface IAsyncSerializer
-{
-    public ValueTask WriteNullableNotNullAsync<T, S>(T value, S serialize) where S : ISerialize<T>
-    {
-        WriteNullableNotNull(value, serialize);
-        return ValueTask.CompletedTask;
-    }
-}
-
-#endregion
-
-#region Enum
-
-public partial interface ISerializer
-{
-    public void WriteEnum<E>(E e) where E : Enum => throw new NotSupportedException();
-
-    public void WriteEnum<E, N, NS>(E e, N number, NS number_serialize)
-        where E : Enum where NS : ISerialize<N>
-        => WriteEnum(e, null, number, number_serialize);
-
-    public void WriteEnum<E, N, NS>(E e, string? name, N number, NS number_serialize)
-        where E : Enum where NS : ISerialize<N>
-        => WriteEnum(e);
-
-    public void WriteEnum<N, NS>(string? name, N number, NS number_serialize)
-        where NS : ISerialize<N>
-        => throw new NotSupportedException();
-}
-
-public partial interface IAsyncSerializer
-{
-    public ValueTask WriteEnumAsync<E>(E e) where E : Enum
-    {
-        WriteEnum(e);
-        return ValueTask.CompletedTask;
-    }
-
-    public ValueTask WriteEnumAsync<E, N, NS>(E e, N number, NS number_serialize)
-        where E : Enum where NS : ISerialize<N>
-    {
-        WriteEnum(e, number, number_serialize);
-        return ValueTask.CompletedTask;
-    }
-
-    public ValueTask WriteEnumAsync<E, N, NS>(E e, string? name, N number, NS number_serialize)
-        where E : Enum where NS : ISerialize<N>
-    {
-        WriteEnum(e, name, number, number_serialize);
-        return ValueTask.CompletedTask;
-    }
-
-    public ValueTask WriteEnumAsync<N, NS>(string? name, N number, NS number_serialize)
-        where NS : ISerialize<N>
-    {
-        WriteEnum(name, number, number_serialize);
-        return ValueTask.CompletedTask;
-    }
-}
-
-#endregion
-
-#region Tuple
-
-public partial interface ISerializer
-{
-    public void WriteTupleStart(nuint len) => throw new NotSupportedException();
-
-    public void WriteTupleElement<T, S>(in T value, S serialize) where S : ISerialize<T> =>
-        throw new NotSupportedException();
-
-    public void WriteTupleEnd() => throw new NotSupportedException();
-}
-
-public partial interface IAsyncSerializer
-{
-    public ValueTask WriteTupleStartAsync(nuint len)
-    {
-        WriteTupleStart(len);
-        return ValueTask.CompletedTask;
-    }
-
-    public ValueTask WriteTupleElementAsync<T, S>(T value, S serialize) where S : ISerialize<T>
-    {
-        WriteTupleElement(value, serialize);
-        return ValueTask.CompletedTask;
-    }
-
-    public ValueTask WriteTupleEndAsync()
-    {
-        WriteTupleEnd();
-        return ValueTask.CompletedTask;
-    }
+    public ValueTask WriteSomeAsync<T, S>(T value, S serialize) where S : IAsyncSerialize<T>;
 }
 
 #endregion
@@ -226,40 +106,38 @@ public partial interface IAsyncSerializer
 
 public partial interface ISerializer
 {
-    public void WriteSeqStart(nuint? len) => throw new NotSupportedException();
-    public void WriteSeqStart<T>(nuint? len) => WriteSeqStart(len);
+    public void StartSeq<T, R>(nuint? len, T value, R receiver) where R : ISeqSerializerReceiver<T>;
 
-    public void WriteSeqElement<T, S>(in T value, S serialize) where S : ISerialize<T> =>
-        throw new NotSupportedException();
+    public void StartSeq<I, T, R>(nuint? len, T value, R receiver) where R : ISeqSerializerReceiver<T>
+        => StartSeq(len, value, receiver);
+}
 
-    public void WriteSeqEnd() => throw new NotSupportedException();
+public interface ISeqSerializerReceiver<T>
+{
+    public void Receive<S>(T value, S serializer) where S : ISeqSerializer;
+}
+
+public interface ISeqSerializer
+{
+    public void WriteElement<T, S>(T value, S serializer) where S : ISerialize<T>;
 }
 
 public partial interface IAsyncSerializer
 {
-    public ValueTask WriteSeqStartAsync(nuint? len)
-    {
-        WriteSeqStart(len);
-        return ValueTask.CompletedTask;
-    }
+    public ValueTask StartSeqAsync<T, R>(nuint? len, T value, R receiver) where R : IAsyncSeqSerializerReceiver<T>;
 
-    public ValueTask WriteSeqStartAsync<T>(nuint? len)
-    {
-        WriteSeqStart<T>(len);
-        return ValueTask.CompletedTask;
-    }
+    public ValueTask StartSeqAsync<I, T, R>(nuint? len, T value, R receiver) where R : IAsyncSeqSerializerReceiver<T>
+        => StartSeqAsync(len, value, receiver);
+}
 
-    public ValueTask WriteSeqElementAsync<T, S>(T value, S serialize) where S : ISerialize<T>
-    {
-        WriteSeqElement(value, serialize);
-        return ValueTask.CompletedTask;
-    }
+public interface IAsyncSeqSerializerReceiver<T>
+{
+    public ValueTask ReceiveAsync<S>(T value, S serializer) where S : IAsyncSeqSerializer;
+}
 
-    public ValueTask WriteSeqEndAsync()
-    {
-        WriteSeqEnd();
-        return ValueTask.CompletedTask;
-    }
+public interface IAsyncSeqSerializer
+{
+    public ValueTask WriteElementAsync<T, S>(T value, S serializer) where S : IAsyncSerialize<T>;
 }
 
 #endregion
@@ -268,63 +146,55 @@ public partial interface IAsyncSerializer
 
 public partial interface ISerializer
 {
-    public void WriteMapStart(nuint? len) => throw new NotSupportedException();
-    public void WriteMapStart<K, V>(nuint? len) => WriteSeqStart(len);
+    public void StartMap<T, R>(nuint? len, T value, R receiver) where R : IMapSerializerReceiver<T>;
 
-    public void WriteMapKey<T, S>(in T key, S serialize) where S : ISerialize<T> => throw new NotSupportedException();
+    public void StartMap<K, V, T, R>(nuint? len, T value, R receiver) where R : IMapSerializerReceiver<T>
+        => StartMap(len, value, receiver);
+}
 
-    public void WriteMapValue<T, S>(in T value, S serialize) where S : ISerialize<T> =>
-        throw new NotSupportedException();
+public interface IMapSerializerReceiver<in T>
+{
+    public void Receive<S>(T value, S serializer) where S : IMapSerializer;
+}
 
-    public void WriteMapEntry<K, V, SK, SV>(in K key, in V value, SK key_serialize, SV value_serialize)
-        where SK : ISerialize<K>
-        where SV : ISerialize<V>
+public interface IMapSerializer
+{
+    public void WriteKey<K, SK>(K key, SK key_serializer) where SK : ISerialize<K>;
+    public void WriteValue<V, SV>(V value, SV value_serializer) where SV : ISerialize<V>;
+
+
+    public void WriteEntry<K, V, SK, SV>(K key, V value, SK key_serializer, SV value_serializer)
+        where SK : ISerialize<K> where SV : ISerialize<V>
     {
-        WriteMapKey(key, key_serialize);
-        WriteMapValue(value, value_serialize);
+        WriteKey(key, key_serializer);
+        WriteValue(value, value_serializer);
     }
-
-    public void WriteMapEnd() => throw new NotSupportedException();
 }
 
 public partial interface IAsyncSerializer
 {
-    public ValueTask WriteMapStartAsync(nuint? len)
-    {
-        WriteMapStart(len);
-        return ValueTask.CompletedTask;
-    }
+    public ValueTask StartMapAsync<T, R>(nuint? len, T value, R receiver) where R : IAsyncMapSerializerReceiver<T>;
 
-    public ValueTask WriteMapStartAsync<K, V>(nuint? len)
-    {
-        WriteMapStart<K, V>(len);
-        return ValueTask.CompletedTask;
-    }
+    public ValueTask StartMapAsync<K, V, T, R>(nuint? len, T value, R receiver) where R : IAsyncMapSerializerReceiver<T>
+        => StartMapAsync(len, value, receiver);
+}
 
-    public ValueTask WriteMapKeyAsync<T, S>(T key, S serialize) where S : ISerialize<T>
-    {
-        WriteMapKey(key, serialize);
-        return ValueTask.CompletedTask;
-    }
+public interface IAsyncMapSerializerReceiver<in T>
+{
+    public ValueTask ReceiveAsync<S>(T value, S serializer) where S : IAsyncMapSerializer;
+}
 
-    public ValueTask WriteMapValueAsync<T, S>(T value, S serialize) where S : ISerialize<T>
-    {
-        WriteMapValue(value, serialize);
-        return ValueTask.CompletedTask;
-    }
+public interface IAsyncMapSerializer
+{
+    public ValueTask WriteKeyAsync<K, SK>(K key, SK key_serializer) where SK : IAsyncSerialize<K>;
+    public ValueTask WriteValueAsync<V, SV>(V value, SV value_serializer) where SV : IAsyncSerialize<V>;
 
-    public ValueTask WriteMapEntryAsync<K, V, SK, SV>(K key, V value, SK key_serialize, SV value_serialize)
-        where SK : ISerialize<K>
-        where SV : ISerialize<V>
-    {
-        WriteMapEntry(key, value, key_serialize, value_serialize);
-        return ValueTask.CompletedTask;
-    }
 
-    public ValueTask WriteMapEndAsync()
+    public async ValueTask WriteEntryAsync<K, V, SK, SV>(K key, V value, SK key_serializer, SV value_serializer)
+        where SK : IAsyncSerialize<K> where SV : IAsyncSerialize<V>
     {
-        WriteMapEnd();
-        return ValueTask.CompletedTask;
+        await WriteKeyAsync(key, key_serializer);
+        await WriteValueAsync(value, value_serializer);
     }
 }
 
@@ -334,42 +204,42 @@ public partial interface IAsyncSerializer
 
 public partial interface ISerializer
 {
-    public void WriteStructStart(string? name, nuint? len) => throw new NotSupportedException();
-    public void WriteStructStart<T>(string? name, nuint? len) => WriteSeqStart(len);
+    public void StartStruct<T, R>(string? name, nuint len, T value, R receiver)
+        where R : IStructSerializerReceiver<T>;
 
-    public void WriteStructField<T, S>(string key, in T value, S serialize) where S : ISerialize<T> =>
-        throw new NotSupportedException();
+    public void StartStruct<S, T, R>(string? name, nuint len, T value, R receiver)
+        where R : IStructSerializerReceiver<T>
+        => StartStruct(name, len, value, receiver);
+}
 
-    public void WriteStructSkipField(string key) { }
+public interface IStructSerializerReceiver<T>
+{
+    public void Receive<S>(T value, S serialize) where S : IStructSerializer;
+}
 
-    public void WriteStructEnd() => throw new NotSupportedException();
+public interface IStructSerializer
+{
+    public void WriteField<T, S>(string key, T value, S serializer) where S : ISerialize<T>;
 }
 
 public partial interface IAsyncSerializer
 {
-    public ValueTask WriteStructStartAsync(string? name, nuint? len)
-    {
-        WriteStructStart(name, len);
-        return ValueTask.CompletedTask;
-    }
+    public ValueTask StartStructAsync<T, R>(string? name, nuint len, T value, R receiver)
+        where R : IAsyncStructSerializerReceiver<T>;
 
-    public ValueTask WriteStructStartAsync<T>(string? name, nuint? len)
-    {
-        WriteStructStart<T>(name, len);
-        return ValueTask.CompletedTask;
-    }
+    public ValueTask StartStructAsync<S, T, R>(string? name, nuint len, T value, R receiver)
+        where R : IAsyncStructSerializerReceiver<T>
+        => StartStructAsync(name, len, value, receiver);
+}
 
-    public ValueTask WriteStructFieldAsync<T, S>(string key, in T value, S serialize) where S : ISerialize<T>
-    {
-        WriteStructField(key, value, serialize);
-        return ValueTask.CompletedTask;
-    }
+public interface IAsyncStructSerializerReceiver<in T>
+{
+    public ValueTask ReceiveAsync<S>(T value, S serialize) where S : IAsyncStructSerializer;
+}
 
-    public ValueTask WriteStructEndAsync()
-    {
-        WriteStructEnd();
-        return ValueTask.CompletedTask;
-    }
+public interface IAsyncStructSerializer
+{
+    public ValueTask WriteFieldAsync<T, S>(string key, T value, S serializer) where S : ISerialize<T>;
 }
 
 #endregion
@@ -378,66 +248,32 @@ public partial interface IAsyncSerializer
 
 public partial interface ISerializer
 {
-    public void WriteVariantStart(string? union_name, string? variant_name, nuint variant_tag)
-        => throw new NotSupportedException();
+    public void WriteVariantUnit(string? union_name, Variant variant);
 
-    public void WriteVariantStart<U>(string? union_name, string? variant_name, nuint variant_tag)
-        => WriteVariantStart(union_name, variant_name, variant_tag);
+    public void WriteVariant<T, S>(string? union_name, Variant variant, T value, S serializer)
+        where S : ISerialize<T>;
 
-    public void WriteVariantStart<U, V>(string? union_name, string? variant_name, nuint variant_tag)
-        => WriteVariantStart<U>(union_name, variant_name, variant_tag);
+    public void WriteVariantUnit<U>(string? union_name, Variant variant)
+        => WriteVariantUnit(union_name, variant);
 
-    /// <summary>Each Variant can only write one Value</summary>
-    public void WriteVariantValueUnit() =>
-        throw new NotSupportedException();
-
-    /// <summary>Each Variant can only write one Value</summary>
-    public void WriteVariantValue<T, S>(in T value, S serialize) where S : ISerialize<T> =>
-        throw new NotSupportedException();
-
-    public void WriteVariantEnd() => throw new NotSupportedException();
+    public void WriteVariant<U, T, S>(string? union_name, Variant variant, T value, S serializer)
+        where S : ISerialize<T>
+        => WriteVariant(union_name, variant, value, serializer);
 }
 
 public partial interface IAsyncSerializer
 {
-    public ValueTask WriteVariantStartAsync(string? union_name, string? variant_name, nuint variant_tag)
-    {
-        WriteVariantStart(union_name, variant_name, variant_tag);
-        return ValueTask.CompletedTask;
-    }
+    public ValueTask WriteVariantUnitAsync(string? union_name, Variant variant);
 
-    public ValueTask WriteVariantStartAsync<U>(string? union_name, string? variant_name, nuint variant_tag)
-    {
-        WriteVariantStart<U>(union_name, variant_name, variant_tag);
-        return ValueTask.CompletedTask;
-    }
+    public ValueTask WriteVariantAsync<T, S>(string? union_name, Variant variant, T value, S serializer)
+        where S : ISerialize<T>;
 
-    public ValueTask WriteVariantStartAsync<U, V>(string? union_name, string? variant_name, nuint variant_tag)
-    {
-        WriteVariantStart<U, V>(union_name, variant_name, variant_tag);
-        return ValueTask.CompletedTask;
-    }
+    public ValueTask WriteVariantUnitAsync<U>(string? union_name, Variant variant)
+        => WriteVariantUnitAsync(union_name, variant);
 
-    /// <summary>Each Variant can only write one Value</summary>
-    public ValueTask WriteVariantValueUnitAsync()
-    {
-        WriteVariantValueUnit();
-        return ValueTask.CompletedTask;
-    }
-
-    /// <summary>Each Variant can only write one Value</summary>
-    public ValueTask WriteVariantValueAsync<T, S>(T value, S serialize)
+    public ValueTask WriteVariantAsync<U, T, S>(string? union_name, Variant variant, T value, S serializer)
         where S : ISerialize<T>
-    {
-        WriteVariantValue(value, serialize);
-        return ValueTask.CompletedTask;
-    }
-
-    public ValueTask WriteVariantEndAsync()
-    {
-        WriteVariantEnd();
-        return ValueTask.CompletedTask;
-    }
+        => WriteVariantAsync(union_name, variant, value, serializer);
 }
 
 #endregion

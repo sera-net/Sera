@@ -7,27 +7,36 @@ namespace Sera.Core.Impls;
 
 #region Serialize
 
-public record DictionarySerializeImpl<M, K, V, SK, SV>(SK KeySerialize, SV ValueSerialize) : ISerialize<M>
+public record DictionarySerializeImpl<M, K, V, SK, SV>(SK KeySerialize, SV ValueSerialize) : ISerialize<M>,
+    IMapSerializerReceiver<M>
     where M : Dictionary<K, V> where SK : ISerialize<K> where SV : ISerialize<V> where K : notnull
 {
-    public void Write<S>(S serializer, in M value, SeraOptions options) where S : ISerializer
-    {
-        serializer.WriteMapStart<K, V>((nuint)value.Count);
-        foreach (var (k, v) in value)
-        {
-            serializer.WriteMapEntry(in k, in v, KeySerialize, ValueSerialize);
-        }
-        serializer.WriteMapEnd();
-    }
+    public void Write<S>(S serializer, M value, SeraOptions options) where S : ISerializer
+        => serializer.StartMap<K, V, M, DictionarySerializeImpl<M, K, V, SK, SV>>((nuint)value.Count, value, this);
 
-    public async ValueTask WriteAsync<S>(S serializer, M value, SeraOptions options) where S : IAsyncSerializer
+    public void Receive<S>(M value, S serializer) where S : IMapSerializer
     {
-        await serializer.WriteMapStartAsync<K, V>((nuint)value.Count);
         foreach (var (k, v) in value)
         {
-            await serializer.WriteMapEntryAsync(k, v, KeySerialize, ValueSerialize);
+            serializer.WriteEntry(k, v, KeySerialize, ValueSerialize);
         }
-        await serializer.WriteMapEndAsync();
+    }
+}
+
+public record AsyncDictionarySerializeImpl<M, K, V, SK, SV>(SK KeySerialize, SV ValueSerialize) : IAsyncSerialize<M>,
+    IAsyncMapSerializerReceiver<M>
+    where M : Dictionary<K, V> where SK : IAsyncSerialize<K> where SV : IAsyncSerialize<V> where K : notnull
+{
+    public ValueTask WriteAsync<S>(S serializer, M value, SeraOptions options) where S : IAsyncSerializer
+        => serializer.StartMapAsync<K, V, M, AsyncDictionarySerializeImpl<M, K, V, SK, SV>>((nuint)value.Count, value,
+            this);
+
+    public async ValueTask ReceiveAsync<S>(M value, S serializer) where S : IAsyncMapSerializer
+    {
+        foreach (var (k, v) in value)
+        {
+            await serializer.WriteEntryAsync(k, v, KeySerialize, ValueSerialize);
+        }
     }
 }
 
@@ -36,111 +45,134 @@ public record DictionarySerializeImpl<M, K, V, SK, SV>(SK KeySerialize, SV Value
 #region Deserialize
 
 public record DictionaryDeserializeImpl<K, V, DK, DV>
-    (DK KeyDeserialize, DV ValueDeserialize) : IDeserialize<Dictionary<K, V>>
+    (DK KeyDeserialize, DV ValueDeserialize) : IDeserialize<Dictionary<K, V>>,
+        IMapDeserializerVisitor<Dictionary<K, V>>
     where DK : IDeserialize<K> where DV : IDeserialize<V> where K : notnull
 {
-    public void Read<D>(D deserializer, out Dictionary<K, V> value, SeraOptions options) where D : IDeserializer
-    {
-        var cap = deserializer.ReadMapStart<K, V>(null);
-        if (cap.HasValue)
-        {
-            var len = (int)cap.Value;
-            value = new(len);
-            for (var i = 0; i < len; i++)
-            {
-                deserializer.ReadMapEntry(out K k, out V v, KeyDeserialize, ValueDeserialize);
-                value[k] = v;
-            }
-        }
-        else
-        {
-            value = new();
-            while (deserializer.PeekMapHasNext())
-            {
-                deserializer.ReadMapEntry(out K k, out V v, KeyDeserialize, ValueDeserialize);
-                value[k] = v;
-            }
-        }
-        deserializer.ReadMapEnd();
-    }
+    public Dictionary<K, V> Read<D>(D deserializer, SeraOptions options) where D : IDeserializer
+        => deserializer.ReadMap<Dictionary<K, V>, DictionaryDeserializeImpl<K, V, DK, DV>>(null, this);
 
-    public async ValueTask<Dictionary<K, V>> ReadAsync<D>(D deserializer, SeraOptions options)
-        where D : IAsyncDeserializer
+    public Dictionary<K, V> VisitMap<A>(A access) where A : IMapAccess
     {
-        var cap = await deserializer.ReadMapStartAsync<K, V>(null);
-        Dictionary<K, V> value;
+        var cap = access.GetLength();
+        Dictionary<K, V> map;
         if (cap.HasValue)
         {
             var len = (int)cap.Value;
-            value = new(len);
+            map = new(len);
             for (var i = 0; i < len; i++)
             {
-                var (k, v) = await deserializer.ReadMapEntryAsync<K, V, DK, DV>(KeyDeserialize, ValueDeserialize);
-                value[k] = v;
+                access.ReadEntry(out K k, out V v, KeyDeserialize, ValueDeserialize);
+                map[k] = v;
             }
         }
         else
         {
-            value = new();
-            while (await deserializer.PeekMapHasNextAsync())
+            map = new();
+            while (access.HasNext())
             {
-                var (k, v) = await deserializer.ReadMapEntryAsync<K, V, DK, DV>(KeyDeserialize, ValueDeserialize);
-                value[k] = v;
+                access.ReadEntry(out K k, out V v, KeyDeserialize, ValueDeserialize);
+                map[k] = v;
             }
         }
-        await deserializer.ReadMapEndAsync();
-        return value;
+        return map;
     }
 }
 
-public record DictionaryDeserializeImpl<M, K, V, DK, DV>(DK KeyDeserialize, DV ValueDeserialize) : IDeserialize<M>
+public record AsyncDictionaryDeserializeImpl<K, V, DK, DV>
+    (DK KeyDeserialize, DV ValueDeserialize) : IAsyncDeserialize<Dictionary<K, V>>,
+        IAsyncMapDeserializerVisitor<Dictionary<K, V>>
+    where DK : IAsyncDeserialize<K> where DV : IAsyncDeserialize<V> where K : notnull
+{
+    public ValueTask<Dictionary<K, V>> ReadAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer
+        => deserializer.ReadMapAsync<Dictionary<K, V>, AsyncDictionaryDeserializeImpl<K, V, DK, DV>>(null, this);
+
+    public async ValueTask<Dictionary<K, V>> VisitMapAsync<A>(A access) where A : IAsyncMapAccess
+    {
+        var cap = await access.GetLengthAsync();
+        Dictionary<K, V> map;
+        if (cap.HasValue)
+        {
+            var len = (int)cap.Value;
+            map = new(len);
+            for (var i = 0; i < len; i++)
+            {
+                var (k, v) = await access.ReadEntryAsync<K, V, DK, DV>(KeyDeserialize, ValueDeserialize);
+                map[k] = v;
+            }
+        }
+        else
+        {
+            map = new();
+            while (await access.HasNextAsync())
+            {
+                var (k, v) = await access.ReadEntryAsync<K, V, DK, DV>(KeyDeserialize, ValueDeserialize);
+                map[k] = v;
+            }
+        }
+        return map;
+    }
+}
+
+public record DictionaryDeserializeImpl<M, K, V, DK, DV>(DK KeyDeserialize, DV ValueDeserialize) :
+    IDeserialize<M>, IMapDeserializerVisitor<M>
     where M : Dictionary<K, V>, new() where DK : IDeserialize<K> where DV : IDeserialize<V> where K : notnull
 {
-    public void Read<D>(D deserializer, out M value, SeraOptions options) where D : IDeserializer
-    {
-        var cap = deserializer.ReadMapStart<K, V>(null);
-        value = new();
-        if (cap.HasValue)
-        {
-            for (nuint i = 0; i < cap.Value; i++)
-            {
-                deserializer.ReadMapEntry(out K k, out V v, KeyDeserialize, ValueDeserialize);
-                value[k] = v;
-            }
-        }
-        else
-        {
-            while (deserializer.PeekMapHasNext())
-            {
-                deserializer.ReadMapEntry(out K k, out V v, KeyDeserialize, ValueDeserialize);
-                value[k] = v;
-            }
-        }
-        deserializer.ReadMapEnd();
-    }
+    public M Read<D>(D deserializer, SeraOptions options) where D : IDeserializer
+        => deserializer.ReadMap<M, DictionaryDeserializeImpl<M, K, V, DK, DV>>(null, this);
 
-    public async ValueTask<M> ReadAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer
+    public M VisitMap<A>(A access) where A : IMapAccess
     {
-        var cap = await deserializer.ReadMapStartAsync<K, V>(null);
-        var value = new M();
+        var cap = access.GetLength();
+        var map = new M();
         if (cap.HasValue)
         {
             for (nuint i = 0; i < cap.Value; i++)
             {
-                var (k, v) = await deserializer.ReadMapEntryAsync<K, V, DK, DV>(KeyDeserialize, ValueDeserialize);
-                value[k] = v;
+                access.ReadEntry(out K k, out V v, KeyDeserialize, ValueDeserialize);
+                map[k] = v;
             }
         }
         else
         {
-            while (await deserializer.PeekMapHasNextAsync())
+            while (access.HasNext())
             {
-                var (k, v) = await deserializer.ReadMapEntryAsync<K, V, DK, DV>(KeyDeserialize, ValueDeserialize);
-                value[k] = v;
+                access.ReadEntry(out K k, out V v, KeyDeserialize, ValueDeserialize);
+                map[k] = v;
             }
         }
-        await deserializer.ReadMapEndAsync();
-        return value;
+        return map;
+    }
+}
+
+public record AsyncDictionaryDeserializeImpl<M, K, V, DK, DV>(DK KeyDeserialize, DV ValueDeserialize) :
+    IAsyncDeserialize<M>, IAsyncMapDeserializerVisitor<M>
+    where M : Dictionary<K, V>, new() where DK : IAsyncDeserialize<K> where DV : IAsyncDeserialize<V> where K : notnull
+{
+    public ValueTask<M> ReadAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer
+        => deserializer.ReadMapAsync<M, AsyncDictionaryDeserializeImpl<M, K, V, DK, DV>>(null, this);
+
+    public async ValueTask<M> VisitMapAsync<A>(A access) where A : IAsyncMapAccess
+    {
+        var cap = await access.GetLengthAsync();
+        var map = new M();
+        if (cap.HasValue)
+        {
+            for (nuint i = 0; i < cap.Value; i++)
+            {
+                var (k, v) = await access.ReadEntryAsync<K, V, DK, DV>(KeyDeserialize, ValueDeserialize);
+                map[k] = v;
+            }
+        }
+        else
+        {
+            while (await access.HasNextAsync())
+            {
+                var (k, v) = await access.ReadEntryAsync<K, V, DK, DV>(KeyDeserialize, ValueDeserialize);
+                map[k] = v;
+            }
+        }
+        return map;
     }
 }
 

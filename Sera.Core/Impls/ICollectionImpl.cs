@@ -7,76 +7,63 @@ namespace Sera.Core.Impls;
 
 #region Serialize
 
-public record ICollectionSerializeImpl<C, T, ST>(ST Serialize) : ISerialize<C>
+public record ICollectionSerializeImpl<C, T, ST>(ST Serialize) : ISerialize<C>, ISeqSerializerReceiver<C>
     where C : ICollection<T> where ST : ISerialize<T>
 {
-    public void Write<S>(S serializer, in C value, SeraOptions options) where S : ISerializer
-    {
-        serializer.WriteSeqStart<T>((nuint)value.Count);
-        foreach (var item in value)
-        {
-            serializer.WriteSeqElement(in item, Serialize);
-        }
-        serializer.WriteSeqEnd();
-    }
+    public void Write<S>(S serializer, C value, SeraOptions options) where S : ISerializer
+        => serializer.StartSeq<T, C, ICollectionSerializeImpl<C, T, ST>>((nuint)value.Count, value, this);
 
-    public async ValueTask WriteAsync<S>(S serializer, C value, SeraOptions options) where S : IAsyncSerializer
+    public void Receive<S>(C value, S serializer) where S : ISeqSerializer
     {
-        await serializer.WriteSeqStartAsync<T>((nuint)value.Count);
         foreach (var item in value)
         {
-            await serializer.WriteSeqElementAsync(item, Serialize);
+            serializer.WriteElement(item, Serialize);
         }
-        await serializer.WriteSeqEndAsync();
     }
 }
 
-public record ICollectionSerializeImpl<C, ST>(ST Serialize) : ISerialize<C>
+public record AsyncICollectionSerializeImpl<C, T, ST>(ST Serialize) : IAsyncSerialize<C>, IAsyncSeqSerializerReceiver<C>
+    where C : ICollection<T> where ST : IAsyncSerialize<T>
+{
+    public ValueTask WriteAsync<S>(S serializer, C value, SeraOptions options) where S : IAsyncSerializer
+        => serializer.StartSeqAsync<T, C, AsyncICollectionSerializeImpl<C, T, ST>>((nuint)value.Count, value, this);
+
+    public async ValueTask ReceiveAsync<S>(C value, S serializer) where S : IAsyncSeqSerializer
+    {
+        foreach (var item in value)
+        {
+            await serializer.WriteElementAsync(item, Serialize);
+        }
+    }
+}
+
+public record ICollectionSerializeImpl<C, ST>(ST Serialize) : ISerialize<C>, ISeqSerializerReceiver<C>
     where C : ICollection where ST : ISerialize<object?>
 {
-    public void Write<S>(S serializer, in C value, SeraOptions options) where S : ISerializer
-    {
-        serializer.WriteSeqStart((nuint)value.Count);
-        foreach (var item in value)
-        {
-            serializer.WriteSeqElement<object?, ST>(in item, Serialize);
-        }
-        serializer.WriteSeqEnd();
-    }
+    public void Write<S>(S serializer, C value, SeraOptions options) where S : ISerializer
+        => serializer.StartSeq((nuint)value.Count, value, this);
 
-    public async ValueTask WriteAsync<S>(S serializer, C value, SeraOptions options) where S : IAsyncSerializer
+    public void Receive<S>(C value, S serializer) where S : ISeqSerializer
     {
-        await serializer.WriteSeqStartAsync((nuint)value.Count);
         foreach (var item in value)
         {
-            await serializer.WriteSeqElementAsync<object?, ST>(item, Serialize);
+            serializer.WriteElement(item, Serialize);
         }
-        await serializer.WriteSeqEndAsync();
     }
 }
 
-public record ICollectionSerializeCastImpl<C> : ISerialize<C> where C : ICollection
+public record AsyncICollectionSerializeImpl<C, ST>(ST Serialize) : IAsyncSerialize<C>, IAsyncSeqSerializerReceiver<C>
+    where C : ICollection where ST : IAsyncSerialize<object?>
 {
-    public void Write<S>(S serializer, in C value, SeraOptions options) where S : ISerializer
-    {
-        var dyn_serializer = options.RuntimeProvider.GetRuntimeSerialize();
-        serializer.WriteSeqStart((nuint)value.Count);
-        foreach (var item in value)
-        {
-            serializer.WriteSeqElement<object?, ISerialize<object?>>(in item, dyn_serializer);
-        }
-        serializer.WriteSeqEnd();
-    }
+    public ValueTask WriteAsync<S>(S serializer, C value, SeraOptions options) where S : IAsyncSerializer
+        => serializer.StartSeqAsync((nuint)value.Count, value, this);
 
-    public async ValueTask WriteAsync<S>(S serializer, C value, SeraOptions options) where S : IAsyncSerializer
+    public async ValueTask ReceiveAsync<S>(C value, S serializer) where S : IAsyncSeqSerializer
     {
-        var dyn_serializer = options.RuntimeProvider.GetRuntimeSerialize();
-        await serializer.WriteSeqStartAsync((nuint)value.Count);
         foreach (var item in value)
         {
-            await serializer.WriteSeqElementAsync<object?, ISerialize<object?>>(item, dyn_serializer);
+            await serializer.WriteElementAsync(item, Serialize);
         }
-        await serializer.WriteSeqEndAsync();
     }
 }
 

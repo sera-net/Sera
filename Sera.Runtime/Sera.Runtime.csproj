@@ -25,4 +25,5 @@
       <ProjectReference Include="..\Sera.Core\Sera.Core.csproj" />
     </ItemGroup>
 
+
 </Project>
