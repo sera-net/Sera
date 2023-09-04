@@ -11,7 +11,7 @@ public record IDictionaryImpl<M, K, V, SK, SV>(SK KeySerialize, SV ValueSerializ
     IMapSerializerReceiver<M>
     where M : IDictionary<K, V> where SK : ISerialize<K> where SV : ISerialize<V>
 {
-    public void Write<S>(S serializer, M value, SeraOptions options) where S : ISerializer
+    public void Write<S>(S serializer, M value, ISeraOptions options) where S : ISerializer
         => serializer.StartMap<K, V, M, IDictionaryImpl<M, K, V, SK, SV>>((nuint)value.Count, value, this);
 
     public void Receive<S>(M value, S serializer) where S : IMapSerializer
@@ -27,7 +27,7 @@ public record AsyncIDictionaryImpl<M, K, V, SK, SV>(SK KeySerialize, SV ValueSer
     IAsyncMapSerializerReceiver<M>
     where M : IDictionary<K, V> where SK : IAsyncSerialize<K> where SV : IAsyncSerialize<V>
 {
-    public ValueTask WriteAsync<S>(S serializer, M value, SeraOptions options) where S : IAsyncSerializer
+    public ValueTask WriteAsync<S>(S serializer, M value, ISeraOptions options) where S : IAsyncSerializer
         => serializer.StartMapAsync<K, V, M, AsyncIDictionaryImpl<M, K, V, SK, SV>>((nuint)value.Count, value, this);
 
     public async ValueTask ReceiveAsync<S>(M value, S serializer) where S : IAsyncMapSerializer
@@ -43,7 +43,7 @@ public record AsyncIDictionaryImpl<M, SK, SV>(SK KeySerialize, SV ValueSerialize
     IAsyncMapSerializerReceiver<M>
     where M : IDictionary where SK : IAsyncSerialize<object?> where SV : IAsyncSerialize<object?>
 {
-    public ValueTask WriteAsync<S>(S serializer, M value, SeraOptions options) where S : IAsyncSerializer
+    public ValueTask WriteAsync<S>(S serializer, M value, ISeraOptions options) where S : IAsyncSerializer
         => serializer.StartMapAsync((nuint)value.Count, value, this);
 
     public async ValueTask ReceiveAsync<S>(M value, S serializer) where S : IAsyncMapSerializer

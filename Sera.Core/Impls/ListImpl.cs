@@ -10,7 +10,7 @@ namespace Sera.Core.Impls;
 public record ListSerializeImpl<L, T, ST>(ST Serialize) : ISerialize<L>, ISeqSerializerReceiver<L>
     where L : List<T> where ST : ISerialize<T>
 {
-    public void Write<S>(S serializer, L value, SeraOptions options) where S : ISerializer
+    public void Write<S>(S serializer, L value, ISeraOptions options) where S : ISerializer
     {
         serializer.StartSeq<T, L, ListSerializeImpl<L, T, ST>>((nuint)value.Count, value, this);
     }
@@ -27,7 +27,7 @@ public record ListSerializeImpl<L, T, ST>(ST Serialize) : ISerialize<L>, ISeqSer
 public record AsyncListSerializeImpl<L, T, ST>(ST Serialize) : IAsyncSerialize<L>, IAsyncSeqSerializerReceiver<L>
     where L : List<T> where ST : IAsyncSerialize<T>
 {
-    public ValueTask WriteAsync<S>(S serializer, L value, SeraOptions options) where S : IAsyncSerializer
+    public ValueTask WriteAsync<S>(S serializer, L value, ISeraOptions options) where S : IAsyncSerializer
         => serializer.StartSeqAsync<T, L, AsyncListSerializeImpl<L, T, ST>>((nuint)value.Count, value, this);
 
     public async ValueTask ReceiveAsync<S>(L value, S serializer) where S : IAsyncSeqSerializer
@@ -46,7 +46,7 @@ public record AsyncListSerializeImpl<L, T, ST>(ST Serialize) : IAsyncSerialize<L
 public record ListDeserializeImpl<T, DT>(DT Deserialize) : IDeserialize<List<T>>, ISeqDeserializerVisitor<List<T>>
     where DT : IDeserialize<T>
 {
-    public List<T> Read<D>(D deserializer, SeraOptions options) where D : IDeserializer
+    public List<T> Read<D>(D deserializer, ISeraOptions options) where D : IDeserializer
         => deserializer.ReadSeq<List<T>, ListDeserializeImpl<T, DT>>(null, this);
 
     public List<T> VisitSeq<A>(A access) where A : ISeqAccess
@@ -79,7 +79,7 @@ public record AsyncListDeserializeImpl<T, DT>(DT Deserialize) : IAsyncDeserializ
     IAsyncSeqDeserializerVisitor<List<T>>
     where DT : IAsyncDeserialize<T>
 {
-    public ValueTask<List<T>> ReadAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer
+    public ValueTask<List<T>> ReadAsync<D>(D deserializer, ISeraOptions options) where D : IAsyncDeserializer
         => deserializer.ReadSeqAsync<List<T>, AsyncListDeserializeImpl<T, DT>>(null, this);
 
     public async ValueTask<List<T>> VisitSeqAsync<A>(A access) where A : IAsyncSeqAccess
@@ -111,7 +111,7 @@ public record AsyncListDeserializeImpl<T, DT>(DT Deserialize) : IAsyncDeserializ
 public record ListDeserializeImpl<L, T, DT>(DT Deserialize) : IDeserialize<L>, ISeqDeserializerVisitor<L>
     where L : List<T>, new() where DT : IDeserialize<T>
 {
-    public L Read<D>(D deserializer, SeraOptions options) where D : IDeserializer
+    public L Read<D>(D deserializer, ISeraOptions options) where D : IDeserializer
         => deserializer.ReadSeq<L, ListDeserializeImpl<L, T, DT>>(null, this);
 
     public L VisitSeq<A>(A access) where A : ISeqAccess
@@ -141,7 +141,7 @@ public record ListDeserializeImpl<L, T, DT>(DT Deserialize) : IDeserialize<L>, I
 public record AsyncListDeserializeImpl<L, T, DT>(DT Deserialize) : IAsyncDeserialize<L>, IAsyncSeqDeserializerVisitor<L>
     where L : List<T>, new() where DT : IAsyncDeserialize<T>
 {
-    public ValueTask<L> ReadAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer
+    public ValueTask<L> ReadAsync<D>(D deserializer, ISeraOptions options) where D : IAsyncDeserializer
         => deserializer.ReadSeqAsync<L, AsyncListDeserializeImpl<L, T, DT>>(null, this);
 
     public async ValueTask<L> VisitSeqAsync<A>(A access) where A : IAsyncSeqAccess

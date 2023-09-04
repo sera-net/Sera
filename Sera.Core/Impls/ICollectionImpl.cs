@@ -10,7 +10,7 @@ namespace Sera.Core.Impls;
 public record ICollectionSerializeImpl<C, T, ST>(ST Serialize) : ISerialize<C>, ISeqSerializerReceiver<C>
     where C : ICollection<T> where ST : ISerialize<T>
 {
-    public void Write<S>(S serializer, C value, SeraOptions options) where S : ISerializer
+    public void Write<S>(S serializer, C value, ISeraOptions options) where S : ISerializer
         => serializer.StartSeq<T, C, ICollectionSerializeImpl<C, T, ST>>((nuint)value.Count, value, this);
 
     public void Receive<S>(C value, S serializer) where S : ISeqSerializer
@@ -25,7 +25,7 @@ public record ICollectionSerializeImpl<C, T, ST>(ST Serialize) : ISerialize<C>, 
 public record AsyncICollectionSerializeImpl<C, T, ST>(ST Serialize) : IAsyncSerialize<C>, IAsyncSeqSerializerReceiver<C>
     where C : ICollection<T> where ST : IAsyncSerialize<T>
 {
-    public ValueTask WriteAsync<S>(S serializer, C value, SeraOptions options) where S : IAsyncSerializer
+    public ValueTask WriteAsync<S>(S serializer, C value, ISeraOptions options) where S : IAsyncSerializer
         => serializer.StartSeqAsync<T, C, AsyncICollectionSerializeImpl<C, T, ST>>((nuint)value.Count, value, this);
 
     public async ValueTask ReceiveAsync<S>(C value, S serializer) where S : IAsyncSeqSerializer
@@ -40,7 +40,7 @@ public record AsyncICollectionSerializeImpl<C, T, ST>(ST Serialize) : IAsyncSeri
 public record ICollectionSerializeImpl<C, ST>(ST Serialize) : ISerialize<C>, ISeqSerializerReceiver<C>
     where C : ICollection where ST : ISerialize<object?>
 {
-    public void Write<S>(S serializer, C value, SeraOptions options) where S : ISerializer
+    public void Write<S>(S serializer, C value, ISeraOptions options) where S : ISerializer
         => serializer.StartSeq((nuint)value.Count, value, this);
 
     public void Receive<S>(C value, S serializer) where S : ISeqSerializer
@@ -55,7 +55,7 @@ public record ICollectionSerializeImpl<C, ST>(ST Serialize) : ISerialize<C>, ISe
 public record AsyncICollectionSerializeImpl<C, ST>(ST Serialize) : IAsyncSerialize<C>, IAsyncSeqSerializerReceiver<C>
     where C : ICollection where ST : IAsyncSerialize<object?>
 {
-    public ValueTask WriteAsync<S>(S serializer, C value, SeraOptions options) where S : IAsyncSerializer
+    public ValueTask WriteAsync<S>(S serializer, C value, ISeraOptions options) where S : IAsyncSerializer
         => serializer.StartSeqAsync((nuint)value.Count, value, this);
 
     public async ValueTask ReceiveAsync<S>(C value, S serializer) where S : IAsyncSeqSerializer

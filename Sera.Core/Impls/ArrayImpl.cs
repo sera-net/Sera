@@ -11,7 +11,7 @@ namespace Sera.Core.Impls;
 public record ArraySerializeImpl<T, ST>(ST Serialize) : ISerialize<T[]>, ISeqSerializerReceiver<T[]>
     where ST : ISerialize<T>
 {
-    public void Write<S>(S serializer, T[] value, SeraOptions options) where S : ISerializer
+    public void Write<S>(S serializer, T[] value, ISeraOptions options) where S : ISerializer
     {
         serializer.StartSeq<T, T[], ArraySerializeImpl<T, ST>>((nuint)value.Length, value, this);
     }
@@ -28,7 +28,7 @@ public record ArraySerializeImpl<T, ST>(ST Serialize) : ISerialize<T[]>, ISeqSer
 public record AsyncArraySerializeImpl<T, ST>(ST Serialize) : IAsyncSerialize<T[]>, IAsyncSeqSerializerReceiver<T[]>
     where ST : IAsyncSerialize<T>
 {
-    public ValueTask WriteAsync<S>(S serializer, T[] value, SeraOptions options) where S : IAsyncSerializer
+    public ValueTask WriteAsync<S>(S serializer, T[] value, ISeraOptions options) where S : IAsyncSerializer
         => serializer.StartSeqAsync<T, T[], AsyncArraySerializeImpl<T, ST>>((nuint)value.Length, value, this);
 
     public async ValueTask ReceiveAsync<S>(T[] value, S serialize) where S : IAsyncSeqSerializer
@@ -47,7 +47,7 @@ public record AsyncArraySerializeImpl<T, ST>(ST Serialize) : IAsyncSerialize<T[]
 public record ArrayDeserializeImpl<T, DT>(DT Deserialize) : IDeserialize<T[]>, ISeqDeserializerVisitor<T[]>
     where DT : IDeserialize<T>
 {
-    public T[] Read<D>(D deserializer, SeraOptions options) where D : IDeserializer
+    public T[] Read<D>(D deserializer, ISeraOptions options) where D : IDeserializer
         => deserializer.ReadSeq<T[], ArrayDeserializeImpl<T, DT>>(null, this);
 
     public T[] VisitSeq<A>(A access) where A : ISeqAccess
@@ -79,7 +79,7 @@ public record AsyncArrayDeserializeImpl<T, DT>(DT Deserialize) : IAsyncDeseriali
     IAsyncSeqDeserializerVisitor<T[]>
     where DT : IAsyncDeserialize<T>
 {
-    public ValueTask<T[]> ReadAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer
+    public ValueTask<T[]> ReadAsync<D>(D deserializer, ISeraOptions options) where D : IAsyncDeserializer
         => deserializer.ReadSeqAsync<T[], AsyncArrayDeserializeImpl<T, DT>>(null, this);
 
     public async ValueTask<T[]> VisitSeqAsync<A>(A access) where A : IAsyncSeqAccess

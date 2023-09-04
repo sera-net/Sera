@@ -1,27 +1,118 @@
 ﻿using System;
 using System.Text;
 using System.Threading.Tasks;
+using Sera.Core.Processor;
 
 namespace Sera.Core.Ser;
 
 #region Basic
 
-public partial interface ISerializer { }
+public partial interface ISerializer : ISeraAbility { }
 
-public partial interface IAsyncSerializer { }
+public partial interface IAsyncSerializer : ISeraAbility { }
 
 #endregion
 
 #region Primitive
 
+/// <summary>
+/// Hint what format is expected to be serialize, but the serializer does not have to be fully implemented
+/// </summary>
+[Flags]
+public enum SerializerPrimitiveHint : ulong
+{
+    Unknown = 0,
+
+    /// <summary>
+    /// Format numbers in decimal, Use "N"
+    /// <code>1234</code>
+    /// </summary>
+    NumberFormatDecimal = 1 << 0,
+    /// <summary>
+    /// Format numbers in hexadecimal, Use "X"
+    /// <code>FF</code>
+    /// </summary>
+    NumberFormatHex = 1 << 1,
+    /// <summary>
+    /// Format numbers in binary, Use "B"
+    /// <code>101010</code>
+    /// </summary>
+    NumberFormatBinary = 1 << 2,
+
+
+    /// <summary>
+    /// Format <see cref="bool"/> as number
+    /// </summary>
+    BooleanAsNumber = 1 << 10,
+
+    /// <summary>
+    /// Format in uppercase if possible
+    /// </summary>
+    ToUpper = 1 << 8,
+    /// <summary>
+    /// Format in lowercase if possible
+    /// </summary>
+    ToLower = 1 << 9,
+
+    /// <summary>
+    /// Format date/time as number
+    /// </summary>
+    DateAsNumber = 1 << 16,
+    /// <summary>
+    /// Convert <see cref="DateOnly"/> to <see cref="DateTime"/> before formatting
+    /// </summary>
+    DateOnlyToDateTime = 1 << 17,
+    /// <summary>
+    /// Convert <see cref="DateOnly"/> to <see cref="DateTimeOffset"/> before formatting
+    /// </summary>
+    DateOnlyToDateTimeOffset = 1 << 18,
+    /// <summary>
+    /// Convert <see cref="DateTime"/> to <see cref="DateTimeOffset"/> before formatting
+    /// </summary>
+    DateTimeToDateTimeOffset = 1 << 19,
+    /// <summary>
+    /// Convert <see cref="DateTimeOffset"/>'s timezone using <see cref="ISeraOptions.TimeZone"/>
+    /// </summary>
+    DateTimeOffsetUseTimeZone = 1 << 20,
+
+    /// <summary>
+    /// Use "N" to format <see cref="Guid"/>
+    /// <code>00000000000000000000000000000000</code>
+    /// </summary>
+    GuidFormatShort = 1UL << 32,
+    /// <summary>
+    /// Use "D" to format <see cref="Guid"/>
+    /// <code>00000000-0000-0000-0000-000000000000</code>
+    /// </summary>
+    GuidFormatGuid = 1UL << 33,
+    /// <summary>
+    /// Use "B" to format <see cref="Guid"/>
+    /// <code>(00000000-0000-0000-0000-000000000000)</code>
+    /// </summary>
+    GuidFormatGuidBraces = 1UL << 34,
+    /// <summary>
+    /// Use "X" to format <see cref="Guid"/>
+    /// <code>{0x00000000，0x0000，0x0000，{0x00，0x00，0x00，0x00，0x00，0x00，0x00，0x00}}</code>
+    /// </summary>
+    GuidFormatHex = 1UL << 35,
+    /// <summary>
+    /// When serializing <see cref="Guid"/> in binary serialization, use the Uuid standard
+    /// </summary>
+    GuidBinaryUuid = 1UL << 36,
+    /// <summary>
+    /// When serializing <see cref="Guid"/> in binary serialization, use the Guid standard
+    /// </summary>
+    GuidBinaryGuid = 1UL << 37,
+}
+
 public partial interface ISerializer
 {
-    public void WritePrimitive<T>(T value);
+    public void WritePrimitive<T>(T value, SerializerPrimitiveHint? hint);
 }
 
 public partial interface IAsyncSerializer
 {
-    public ValueTask WritePrimitiveAsync<T>(T value);
+    public ValueTask WritePrimitiveAsync<T>(T value, SerializerPrimitiveHint? hint);
 }
 
 #endregion
@@ -119,7 +210,7 @@ public interface ISeqSerializerReceiver<T>
 
 public interface ISeqSerializer
 {
-    public void WriteElement<T, S>(T value, S serializer) where S : ISerialize<T>;
+    public void WriteElement<T, S>(T value, S serialize) where S : ISerialize<T>;
 }
 
 public partial interface IAsyncSerializer
@@ -137,7 +228,7 @@ public interface IAsyncSeqSerializerReceiver<T>
 
 public interface IAsyncSeqSerializer
 {
-    public ValueTask WriteElementAsync<T, S>(T value, S serializer) where S : IAsyncSerialize<T>;
+    public ValueTask WriteElementAsync<T, S>(T value, S serialize) where S : IAsyncSerialize<T>;
 }
 
 #endregion
@@ -159,15 +250,15 @@ public interface IMapSerializerReceiver<in T>
 
 public interface IMapSerializer
 {
-    public void WriteKey<K, SK>(K key, SK key_serializer) where SK : ISerialize<K>;
-    public void WriteValue<V, SV>(V value, SV value_serializer) where SV : ISerialize<V>;
+    public void WriteKey<K, SK>(K key, SK key_serialize) where SK : ISerialize<K>;
+    public void WriteValue<V, SV>(V value, SV value_serialize) where SV : ISerialize<V>;
 
 
-    public void WriteEntry<K, V, SK, SV>(K key, V value, SK key_serializer, SV value_serializer)
+    public void WriteEntry<K, V, SK, SV>(K key, V value, SK key_serialize, SV value_serialize)
         where SK : ISerialize<K> where SV : ISerialize<V>
     {
-        WriteKey(key, key_serializer);
-        WriteValue(value, value_serializer);
+        WriteKey(key, key_serialize);
+        WriteValue(value, value_serialize);
     }
 }
 
@@ -212,14 +303,21 @@ public partial interface ISerializer
         => StartStruct(name, len, value, receiver);
 }
 
-public interface IStructSerializerReceiver<T>
+public interface IStructSerializerReceiver<in T>
 {
     public void Receive<S>(T value, S serialize) where S : IStructSerializer;
 }
 
 public interface IStructSerializer
 {
-    public void WriteField<T, S>(string key, T value, S serializer) where S : ISerialize<T>;
+    public void WriteField<T, S>(string key, T value, S serializer) where S : ISerialize<T>
+        => WriteField(key.AsMemory(), value, serializer);
+
+    public void WriteField<T, S>(ReadOnlyMemory<char> key, T value, S serializer) where S : ISerialize<T>
+        => WriteField(key.Span, value, serializer);
+
+    public void WriteField<T, S>(ReadOnlySpan<char> key, T value, S serializer) where S : ISerialize<T>;
+    public void WriteField<T, S>(nuint key, T value, S serializer, SerializerPrimitiveHint? key_hint) where S : ISerialize<T>;
 }
 
 public partial interface IAsyncSerializer
@@ -239,41 +337,53 @@ public interface IAsyncStructSerializerReceiver<in T>
 
 public interface IAsyncStructSerializer
 {
-    public ValueTask WriteFieldAsync<T, S>(string key, T value, S serializer) where S : ISerialize<T>;
+    public ValueTask WriteFieldAsync<T, S>(string key, T value, S serializer) where S : ISerialize<T>
+        => WriteFieldAsync(key.AsMemory(), value, serializer);
+    public ValueTask WriteFieldAsync<T, S>(ReadOnlyMemory<char> key, T value, S serializer) where S : ISerialize<T>;
+    public ValueTask WriteFieldAsync<T, S>(nuint key, T value, S serializer, SerializerPrimitiveHint? key_hint) where S : ISerialize<T>;
 }
 
 #endregion
 
 #region Variant
 
+public enum SerializerVariantHint : uint
+{
+    Unknown = 0,
+    
+    UseNumberTag = 1 << 0,
+    UseStringTag = 1 << 1,
+}
+
+
 public partial interface ISerializer
 {
-    public void WriteVariantUnit(string? union_name, Variant variant);
+    public void WriteVariantUnit(string? union_name, Variant variant, SerializerVariantHint? hint);
 
-    public void WriteVariant<T, S>(string? union_name, Variant variant, T value, S serializer)
+    public void WriteVariant<T, S>(string? union_name, Variant variant, T value, S serializer, SerializerVariantHint? hint)
         where S : ISerialize<T>;
 
-    public void WriteVariantUnit<U>(string? union_name, Variant variant)
-        => WriteVariantUnit(union_name, variant);
+    public void WriteVariantUnit<U>(string? union_name, Variant variant, SerializerVariantHint? hint)
+        => WriteVariantUnit(union_name, variant, hint);
 
-    public void WriteVariant<U, T, S>(string? union_name, Variant variant, T value, S serializer)
+    public void WriteVariant<U, T, S>(string? union_name, Variant variant, T value, S serializer, SerializerVariantHint? hint)
         where S : ISerialize<T>
-        => WriteVariant(union_name, variant, value, serializer);
+        => WriteVariant(union_name, variant, value, serializer, hint);
 }
 
 public partial interface IAsyncSerializer
 {
-    public ValueTask WriteVariantUnitAsync(string? union_name, Variant variant);
+    public ValueTask WriteVariantUnitAsync(string? union_name, Variant variant, SerializerVariantHint? hint);
 
-    public ValueTask WriteVariantAsync<T, S>(string? union_name, Variant variant, T value, S serializer)
+    public ValueTask WriteVariantAsync<T, S>(string? union_name, Variant variant, T value, S serializer, SerializerVariantHint? hint)
         where S : ISerialize<T>;
 
-    public ValueTask WriteVariantUnitAsync<U>(string? union_name, Variant variant)
-        => WriteVariantUnitAsync(union_name, variant);
+    public ValueTask WriteVariantUnitAsync<U>(string? union_name, Variant variant, SerializerVariantHint? hint)
+        => WriteVariantUnitAsync(union_name, variant, hint);
 
-    public ValueTask WriteVariantAsync<U, T, S>(string? union_name, Variant variant, T value, S serializer)
+    public ValueTask WriteVariantAsync<U, T, S>(string? union_name, Variant variant, T value, S serializer, SerializerVariantHint? hint)
         where S : ISerialize<T>
-        => WriteVariantAsync(union_name, variant, value, serializer);
+        => WriteVariantAsync(union_name, variant, value, serializer, hint);
 }
 
 #endregion

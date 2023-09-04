@@ -8,15 +8,15 @@ public record StringImpl : ISerialize<string>, IDeserialize<string>, IAsyncSeria
 {
     public static StringImpl Instance { get; } = new();
 
-    public void Write<S>(S serializer, string value, SeraOptions options) where S : ISerializer
+    public void Write<S>(S serializer, string value, ISeraOptions options) where S : ISerializer
         => serializer.WriteString(value);
 
-    public string Read<D>(D deserializer, SeraOptions options) where D : IDeserializer
+    public string Read<D>(D deserializer, ISeraOptions options) where D : IDeserializer
         => deserializer.ReadString();
 
-    public ValueTask WriteAsync<S>(S serializer, string value, SeraOptions options) where S : IAsyncSerializer
+    public ValueTask WriteAsync<S>(S serializer, string value, ISeraOptions options) where S : IAsyncSerializer
         => serializer.WriteStringAsync(value);
 
-    public ValueTask<string> ReadAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer
+    public ValueTask<string> ReadAsync<D>(D deserializer, ISeraOptions options) where D : IAsyncDeserializer
         => deserializer.ReadStringAsync();
 }

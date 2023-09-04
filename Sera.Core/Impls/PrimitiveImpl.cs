@@ -12,16 +12,16 @@ namespace Sera.Core.Impls;
 public record PrimitiveImpl<T>(SeraPrimitiveTypes type) : PrimitiveImpl(typeof(T)),
     ISerialize<T>, IDeserialize<T>, IAsyncSerialize<T>, IAsyncDeserialize<T>
 {
-    public void Write<S>(S serializer, T value, SeraOptions options) where S : ISerializer
-        => serializer.WritePrimitive(value);
+    public void Write<S>(S serializer, T value, ISeraOptions options) where S : ISerializer
+        => serializer.WritePrimitive(value, null);
 
-    public T Read<D>(D deserializer, SeraOptions options) where D : IDeserializer
+    public T Read<D>(D deserializer, ISeraOptions options) where D : IDeserializer
         => deserializer.ReadPrimitive<T>();
 
-    public ValueTask WriteAsync<S>(S serializer, T value, SeraOptions options) where S : IAsyncSerializer
-        => serializer.WritePrimitiveAsync(value);
+    public ValueTask WriteAsync<S>(S serializer, T value, ISeraOptions options) where S : IAsyncSerializer
+        => serializer.WritePrimitiveAsync(value, null);
 
-    public ValueTask<T> ReadAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer
+    public ValueTask<T> ReadAsync<D>(D deserializer, ISeraOptions options) where D : IAsyncDeserializer
         => deserializer.ReadPrimitiveAsync<T>();
 }
 
@@ -46,7 +46,9 @@ public abstract record PrimitiveImpl(Type Type)
     public static PrimitiveImpl<decimal> Decimal { get; } = new(SeraPrimitiveTypes.Decimal);
     public static PrimitiveImpl<BigInteger> BigInteger { get; } = new(SeraPrimitiveTypes.BigInteger);
     public static PrimitiveImpl<Complex> Complex { get; } = new(SeraPrimitiveTypes.Complex);
+    public static PrimitiveImpl<TimeSpan> TimeSpan { get; } = new(SeraPrimitiveTypes.TimeSpan);
     public static PrimitiveImpl<DateOnly> DateOnly { get; } = new(SeraPrimitiveTypes.DateOnly);
+    public static PrimitiveImpl<TimeOnly> TimeOnly { get; } = new(SeraPrimitiveTypes.TimeOnly);
     public static PrimitiveImpl<DateTime> DateTime { get; } = new(SeraPrimitiveTypes.DateTime);
     public static PrimitiveImpl<DateTimeOffset> DateTimeOffset { get; } = new(SeraPrimitiveTypes.DateTimeOffset);
     public static PrimitiveImpl<Guid> Guid { get; } = new(SeraPrimitiveTypes.Guid);
@@ -77,7 +79,9 @@ public abstract record PrimitiveImpl(Type Type)
             { SeraPrimitiveTypes.Decimal, Decimal },
             { SeraPrimitiveTypes.BigInteger, BigInteger },
             { SeraPrimitiveTypes.Complex, Complex },
+            { SeraPrimitiveTypes.TimeSpan, TimeSpan },
             { SeraPrimitiveTypes.DateOnly, DateOnly },
+            { SeraPrimitiveTypes.TimeOnly, TimeOnly },
             { SeraPrimitiveTypes.DateTime, DateTime },
             { SeraPrimitiveTypes.DateTimeOffset, DateTimeOffset },
             { SeraPrimitiveTypes.Guid, Guid },

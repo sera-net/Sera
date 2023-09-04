@@ -1,9 +1,10 @@
-﻿using System.Text;
+﻿using System;
+using System.Text;
 using System.Threading;
 
 namespace Sera.Core;
 
-public abstract class SeraOptions
+public interface ISeraOptions
 {
     /// <summary>
     /// Cancel operation
@@ -13,6 +14,10 @@ public abstract class SeraOptions
     /// Indicates the encoding to use when processing strings.
     /// </summary>
     public virtual Encoding Encoding => Encoding.UTF8;
+    /// <summary>
+    /// The time zone to use when (de)serializing a DateTime
+    /// </summary>
+    public virtual TimeZoneInfo TimeZone => TimeZoneInfo.Local;
     /// <summary>
     /// Indicates whether read-only fields are ignored during serialization. A field is read-only if it is marked with the readonly keyword.
     /// </summary>
@@ -26,10 +31,6 @@ public abstract class SeraOptions
     /// </summary>
     public virtual bool IncludeFields => false;
     /// <summary>
-    /// Determine whether (De)Serialize implementations should (de)serialize in human-readable form.
-    /// </summary>
-    public virtual bool IsHumanReadable => false;
-    /// <summary>
     /// Indicates whether a property's name uses a case-insensitive comparison during deserialization.
     /// </summary>
     public virtual bool PropertyNameCaseInsensitive => false;
@@ -41,4 +42,22 @@ public abstract class SeraOptions
     /// Async Runtime provider
     /// </summary>
     public virtual IAsyncRuntimeProvider AsyncRuntimeProvider => StaticRuntimeProvider.Instance;
+}
+
+public sealed class DefaultSeraOptions : ISeraOptions
+{
+    public static ISeraOptions Default { get; } = new DefaultSeraOptions();
+}
+
+public abstract record ASeraOptions : ISeraOptions
+{
+    public CancellationToken CancellationToken { get; set; } = DefaultSeraOptions.Default.CancellationToken;
+    public Encoding Encoding { get; set; } = DefaultSeraOptions.Default.Encoding;
+    public TimeZoneInfo TimeZone { get; set; } = DefaultSeraOptions.Default.TimeZone;
+    public bool IgnoreReadOnlyFields { get; set; } = DefaultSeraOptions.Default.IgnoreReadOnlyFields;
+    public bool IgnoreReadOnlyProperties { get; set; } = DefaultSeraOptions.Default.IgnoreReadOnlyProperties;
+    public bool IncludeFields { get; set; } = DefaultSeraOptions.Default.IncludeFields;
+    public bool PropertyNameCaseInsensitive { get; set; } = DefaultSeraOptions.Default.PropertyNameCaseInsensitive;
+    public IRuntimeProvider RuntimeProvider { get; set; } = DefaultSeraOptions.Default.RuntimeProvider;
+    public IAsyncRuntimeProvider AsyncRuntimeProvider { get; set; } = DefaultSeraOptions.Default.AsyncRuntimeProvider;
 }

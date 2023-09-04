@@ -11,7 +11,7 @@ public record DictionarySerializeImpl<M, K, V, SK, SV>(SK KeySerialize, SV Value
     IMapSerializerReceiver<M>
     where M : Dictionary<K, V> where SK : ISerialize<K> where SV : ISerialize<V> where K : notnull
 {
-    public void Write<S>(S serializer, M value, SeraOptions options) where S : ISerializer
+    public void Write<S>(S serializer, M value, ISeraOptions options) where S : ISerializer
         => serializer.StartMap<K, V, M, DictionarySerializeImpl<M, K, V, SK, SV>>((nuint)value.Count, value, this);
 
     public void Receive<S>(M value, S serializer) where S : IMapSerializer
@@ -27,7 +27,7 @@ public record AsyncDictionarySerializeImpl<M, K, V, SK, SV>(SK KeySerialize, SV 
     IAsyncMapSerializerReceiver<M>
     where M : Dictionary<K, V> where SK : IAsyncSerialize<K> where SV : IAsyncSerialize<V> where K : notnull
 {
-    public ValueTask WriteAsync<S>(S serializer, M value, SeraOptions options) where S : IAsyncSerializer
+    public ValueTask WriteAsync<S>(S serializer, M value, ISeraOptions options) where S : IAsyncSerializer
         => serializer.StartMapAsync<K, V, M, AsyncDictionarySerializeImpl<M, K, V, SK, SV>>((nuint)value.Count, value,
             this);
 
@@ -49,7 +49,7 @@ public record DictionaryDeserializeImpl<K, V, DK, DV>
         IMapDeserializerVisitor<Dictionary<K, V>>
     where DK : IDeserialize<K> where DV : IDeserialize<V> where K : notnull
 {
-    public Dictionary<K, V> Read<D>(D deserializer, SeraOptions options) where D : IDeserializer
+    public Dictionary<K, V> Read<D>(D deserializer, ISeraOptions options) where D : IDeserializer
         => deserializer.ReadMap<Dictionary<K, V>, DictionaryDeserializeImpl<K, V, DK, DV>>(null, this);
 
     public Dictionary<K, V> VisitMap<A>(A access) where A : IMapAccess
@@ -84,7 +84,7 @@ public record AsyncDictionaryDeserializeImpl<K, V, DK, DV>
         IAsyncMapDeserializerVisitor<Dictionary<K, V>>
     where DK : IAsyncDeserialize<K> where DV : IAsyncDeserialize<V> where K : notnull
 {
-    public ValueTask<Dictionary<K, V>> ReadAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer
+    public ValueTask<Dictionary<K, V>> ReadAsync<D>(D deserializer, ISeraOptions options) where D : IAsyncDeserializer
         => deserializer.ReadMapAsync<Dictionary<K, V>, AsyncDictionaryDeserializeImpl<K, V, DK, DV>>(null, this);
 
     public async ValueTask<Dictionary<K, V>> VisitMapAsync<A>(A access) where A : IAsyncMapAccess
@@ -118,7 +118,7 @@ public record DictionaryDeserializeImpl<M, K, V, DK, DV>(DK KeyDeserialize, DV V
     IDeserialize<M>, IMapDeserializerVisitor<M>
     where M : Dictionary<K, V>, new() where DK : IDeserialize<K> where DV : IDeserialize<V> where K : notnull
 {
-    public M Read<D>(D deserializer, SeraOptions options) where D : IDeserializer
+    public M Read<D>(D deserializer, ISeraOptions options) where D : IDeserializer
         => deserializer.ReadMap<M, DictionaryDeserializeImpl<M, K, V, DK, DV>>(null, this);
 
     public M VisitMap<A>(A access) where A : IMapAccess
@@ -149,7 +149,7 @@ public record AsyncDictionaryDeserializeImpl<M, K, V, DK, DV>(DK KeyDeserialize,
     IAsyncDeserialize<M>, IAsyncMapDeserializerVisitor<M>
     where M : Dictionary<K, V>, new() where DK : IAsyncDeserialize<K> where DV : IAsyncDeserialize<V> where K : notnull
 {
-    public ValueTask<M> ReadAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer
+    public ValueTask<M> ReadAsync<D>(D deserializer, ISeraOptions options) where D : IAsyncDeserializer
         => deserializer.ReadMapAsync<M, AsyncDictionaryDeserializeImpl<M, K, V, DK, DV>>(null, this);
 
     public async ValueTask<M> VisitMapAsync<A>(A access) where A : IAsyncMapAccess

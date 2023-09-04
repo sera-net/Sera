@@ -9,19 +9,19 @@ public record DBNullImpl : ISerialize<DBNull>, IAsyncSerialize<DBNull>, IDeseria
 {
     public static DBNullImpl Instance { get; } = new();
 
-    public void Write<S>(S serializer, DBNull value, SeraOptions options) where S : ISerializer
+    public void Write<S>(S serializer, DBNull value, ISeraOptions options) where S : ISerializer
         => serializer.WriteUnit();
 
-    public ValueTask WriteAsync<S>(S serializer, DBNull value, SeraOptions options) where S : IAsyncSerializer
+    public ValueTask WriteAsync<S>(S serializer, DBNull value, ISeraOptions options) where S : IAsyncSerializer
         => serializer.WriteUnitAsync();
 
-    public DBNull Read<D>(D deserializer, SeraOptions options) where D : IDeserializer
+    public DBNull Read<D>(D deserializer, ISeraOptions options) where D : IDeserializer
     {
         deserializer.ReadUnit();
         return DBNull.Value;
     }
 
-    public async ValueTask<DBNull> ReadAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer
+    public async ValueTask<DBNull> ReadAsync<D>(D deserializer, ISeraOptions options) where D : IAsyncDeserializer
     {
         await deserializer.ReadUnitAsync();
         return DBNull.Value;

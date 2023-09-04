@@ -20,6 +20,20 @@ public sealed class DeserializableAttribute : Attribute
     public bool NoAsync { get; set; } = false;
 }
 
+/// <summary>Prompts when generating implementation</summary>
+[AttributeUsage(AttributeTargets.All)]
+public sealed class SeraAttribute : Attribute
+{
+    /// <summary>
+    /// Specify the field name
+    /// </summary>
+    public string? Name { get; set; }
+    /// <summary>
+    /// Specify the field int id
+    /// </summary>
+    public nuint? IntKey { get; set; }
+}
+
 #endregion
 
 #region Sync

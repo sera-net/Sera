@@ -8,7 +8,7 @@ public readonly record struct NullableOptionVisitor<R, DR>(DR deserialize) : IOp
 {
     public R? VisitNone() => null;
 
-    public R? VisitSome<D>(D deserializer, SeraOptions options) where D : IDeserializer 
+    public R? VisitSome<D>(D deserializer, ISeraOptions options) where D : IDeserializer 
         => deserialize.Read(deserializer,  options);
 }
 
@@ -17,6 +17,6 @@ public readonly record struct AsyncNullableOptionVisitor<R, DR>(DR deserialize) 
 {
     public ValueTask<R?> VisitNoneAsync() => ValueTask.FromResult<R?>(null);
 
-    public async ValueTask<R?> VisitSomeAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer
+    public async ValueTask<R?> VisitSomeAsync<D>(D deserializer, ISeraOptions options) where D : IAsyncDeserializer
         => await deserialize.ReadAsync(deserializer, options);
 }

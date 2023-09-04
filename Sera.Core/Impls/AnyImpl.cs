@@ -23,7 +23,7 @@ public record AnyImpl :
 
     #region ISerialize
 
-    public void Write<S>(S serializer, SeraAny value, SeraOptions options) where S : ISerializer
+    public void Write<S>(S serializer, SeraAny value, ISeraOptions options) where S : ISerializer
     {
         switch (value.Kind)
         {
@@ -31,85 +31,91 @@ public record AnyImpl :
                 switch (value.PrimitiveType)
                 {
                     case SeraPrimitiveTypes.Boolean:
-                        serializer.WritePrimitive(value.PrimitiveBoolean);
+                        serializer.WritePrimitive(value.PrimitiveBoolean, null);
                         break;
                     case SeraPrimitiveTypes.SByte:
-                        serializer.WritePrimitive(value.PrimitiveSByte);
+                        serializer.WritePrimitive(value.PrimitiveSByte, null);
                         break;
                     case SeraPrimitiveTypes.Int16:
-                        serializer.WritePrimitive(value.PrimitiveInt16);
+                        serializer.WritePrimitive(value.PrimitiveInt16, null);
                         break;
                     case SeraPrimitiveTypes.Int32:
-                        serializer.WritePrimitive(value.PrimitiveInt32);
+                        serializer.WritePrimitive(value.PrimitiveInt32, null);
                         break;
                     case SeraPrimitiveTypes.Int64:
-                        serializer.WritePrimitive(value.PrimitiveInt64);
+                        serializer.WritePrimitive(value.PrimitiveInt64, null);
                         break;
                     case SeraPrimitiveTypes.Int128:
-                        serializer.WritePrimitive(value.PrimitiveInt128);
+                        serializer.WritePrimitive(value.PrimitiveInt128, null);
                         break;
                     case SeraPrimitiveTypes.Byte:
-                        serializer.WritePrimitive(value.PrimitiveByte);
+                        serializer.WritePrimitive(value.PrimitiveByte, null);
                         break;
                     case SeraPrimitiveTypes.UInt16:
-                        serializer.WritePrimitive(value.PrimitiveUInt16);
+                        serializer.WritePrimitive(value.PrimitiveUInt16, null);
                         break;
                     case SeraPrimitiveTypes.UInt32:
-                        serializer.WritePrimitive(value.PrimitiveUInt32);
+                        serializer.WritePrimitive(value.PrimitiveUInt32, null);
                         break;
                     case SeraPrimitiveTypes.UInt64:
-                        serializer.WritePrimitive(value.PrimitiveUInt64);
+                        serializer.WritePrimitive(value.PrimitiveUInt64, null);
                         break;
                     case SeraPrimitiveTypes.UInt128:
-                        serializer.WritePrimitive(value.PrimitiveUInt128);
+                        serializer.WritePrimitive(value.PrimitiveUInt128, null);
                         break;
                     case SeraPrimitiveTypes.IntPtr:
-                        serializer.WritePrimitive(value.PrimitiveIntPtr);
+                        serializer.WritePrimitive(value.PrimitiveIntPtr, null);
                         break;
                     case SeraPrimitiveTypes.UIntPtr:
-                        serializer.WritePrimitive(value.PrimitiveUIntPtr);
+                        serializer.WritePrimitive(value.PrimitiveUIntPtr, null);
                         break;
                     case SeraPrimitiveTypes.Half:
-                        serializer.WritePrimitive(value.PrimitiveHalf);
+                        serializer.WritePrimitive(value.PrimitiveHalf, null);
                         break;
                     case SeraPrimitiveTypes.Single:
-                        serializer.WritePrimitive(value.PrimitiveSingle);
+                        serializer.WritePrimitive(value.PrimitiveSingle, null);
                         break;
                     case SeraPrimitiveTypes.Double:
-                        serializer.WritePrimitive(value.PrimitiveDouble);
+                        serializer.WritePrimitive(value.PrimitiveDouble, null);
                         break;
                     case SeraPrimitiveTypes.Decimal:
-                        serializer.WritePrimitive(value.PrimitiveDecimal);
+                        serializer.WritePrimitive(value.PrimitiveDecimal, null);
                         break;
                     case SeraPrimitiveTypes.BigInteger:
-                        serializer.WritePrimitive(value.PrimitiveBigInteger);
+                        serializer.WritePrimitive(value.PrimitiveBigInteger, null);
                         break;
                     case SeraPrimitiveTypes.Complex:
-                        serializer.WritePrimitive(value.PrimitiveComplex);
+                        serializer.WritePrimitive(value.PrimitiveComplex, null);
+                        break;
+                    case SeraPrimitiveTypes.TimeSpan:
+                        serializer.WritePrimitive(value.PrimitiveTimeSpan, null);
                         break;
                     case SeraPrimitiveTypes.DateOnly:
-                        serializer.WritePrimitive(value.PrimitiveDateOnly);
+                        serializer.WritePrimitive(value.PrimitiveDateOnly, null);
+                        break;
+                    case SeraPrimitiveTypes.TimeOnly:
+                        serializer.WritePrimitive(value.PrimitiveTimeOnly, null);
                         break;
                     case SeraPrimitiveTypes.DateTime:
-                        serializer.WritePrimitive(value.PrimitiveDateTime);
+                        serializer.WritePrimitive(value.PrimitiveDateTime, null);
                         break;
                     case SeraPrimitiveTypes.DateTimeOffset:
-                        serializer.WritePrimitive(value.PrimitiveDateTimeOffset);
+                        serializer.WritePrimitive(value.PrimitiveDateTimeOffset, null);
                         break;
                     case SeraPrimitiveTypes.Guid:
-                        serializer.WritePrimitive(value.PrimitiveGuid);
+                        serializer.WritePrimitive(value.PrimitiveGuid, null);
                         break;
                     case SeraPrimitiveTypes.Range:
-                        serializer.WritePrimitive(value.PrimitiveRange);
+                        serializer.WritePrimitive(value.PrimitiveRange, null);
                         break;
                     case SeraPrimitiveTypes.Index:
-                        serializer.WritePrimitive(value.PrimitiveIndex);
+                        serializer.WritePrimitive(value.PrimitiveIndex, null);
                         break;
                     case SeraPrimitiveTypes.Char:
-                        serializer.WritePrimitive(value.PrimitiveChar);
+                        serializer.WritePrimitive(value.PrimitiveChar, null);
                         break;
                     case SeraPrimitiveTypes.Rune:
-                        serializer.WritePrimitive(value.PrimitiveRune);
+                        serializer.WritePrimitive(value.PrimitiveRune, null);
                         break;
                     default:
                         serializer.WriteUnit();
@@ -147,14 +153,24 @@ public record AnyImpl :
             case SeraAnyKind.Struct:
             {
                 var s = value.Struct;
-                serializer.StartStruct(s.StructName, (nuint)s.Fields.Count, s, this);
+                switch (s.Kind)
+                {
+                    case SeraAnyStructKind.String:
+                        serializer.StartStruct(s.StructName, (nuint)s.StringKeyFields.Count, s, this);
+                        break;
+                    case SeraAnyStructKind.Int:
+                        serializer.StartStruct(s.StructName, (nuint)s.IntKeyFields.Count, s, this);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
                 break;
             }
             case SeraAnyKind.Variant:
             {
                 var v = value.Variant;
-                if (v.Value.HasValue) serializer.WriteVariant(v.UnionName, v.Variant, v.Value.Value, this);
-                else serializer.WriteVariantUnit(v.UnionName, v.Variant);
+                if (v.Value.HasValue) serializer.WriteVariant(v.UnionName, v.Variant, v.Value.Value, this, default);
+                else serializer.WriteVariantUnit(v.UnionName, v.Variant, default);
                 break;
             }
             default:
@@ -181,9 +197,22 @@ public record AnyImpl :
 
     public void Receive<S>(SeraAnyStruct value, S serialize) where S : IStructSerializer
     {
-        foreach (var (k, v) in value.Fields)
+        switch (value.Kind)
         {
-            serialize.WriteField(k, v, this);
+            case SeraAnyStructKind.String:
+                foreach (var (k, v) in value.StringKeyFields)
+                {
+                    serialize.WriteField(k, v, this);
+                }
+                break;
+            case SeraAnyStructKind.Int:
+                foreach (var (k, v) in value.IntKeyFields)
+                {
+                    serialize.WriteField(k, v, this, null);
+                }
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
         }
     }
 
@@ -191,38 +220,41 @@ public record AnyImpl :
 
     #region IAsyncSerialize
 
-    public ValueTask WriteAsync<S>(S serializer, SeraAny value, SeraOptions options) where S : IAsyncSerializer
+    public ValueTask WriteAsync<S>(S serializer, SeraAny value, ISeraOptions options) where S : IAsyncSerializer
         => value.Kind switch
         {
             SeraAnyKind.Primitive => value.PrimitiveType switch
             {
-                SeraPrimitiveTypes.Boolean => serializer.WritePrimitiveAsync(value.PrimitiveBoolean),
-                SeraPrimitiveTypes.SByte => serializer.WritePrimitiveAsync(value.PrimitiveSByte),
-                SeraPrimitiveTypes.Int16 => serializer.WritePrimitiveAsync(value.PrimitiveInt16),
-                SeraPrimitiveTypes.Int32 => serializer.WritePrimitiveAsync(value.PrimitiveInt32),
-                SeraPrimitiveTypes.Int64 => serializer.WritePrimitiveAsync(value.PrimitiveInt64),
-                SeraPrimitiveTypes.Int128 => serializer.WritePrimitiveAsync(value.PrimitiveInt128),
-                SeraPrimitiveTypes.Byte => serializer.WritePrimitiveAsync(value.PrimitiveByte),
-                SeraPrimitiveTypes.UInt16 => serializer.WritePrimitiveAsync(value.PrimitiveUInt16),
-                SeraPrimitiveTypes.UInt32 => serializer.WritePrimitiveAsync(value.PrimitiveUInt32),
-                SeraPrimitiveTypes.UInt64 => serializer.WritePrimitiveAsync(value.PrimitiveUInt64),
-                SeraPrimitiveTypes.UInt128 => serializer.WritePrimitiveAsync(value.PrimitiveUInt128),
-                SeraPrimitiveTypes.IntPtr => serializer.WritePrimitiveAsync(value.PrimitiveIntPtr),
-                SeraPrimitiveTypes.UIntPtr => serializer.WritePrimitiveAsync(value.PrimitiveUIntPtr),
-                SeraPrimitiveTypes.Half => serializer.WritePrimitiveAsync(value.PrimitiveHalf),
-                SeraPrimitiveTypes.Single => serializer.WritePrimitiveAsync(value.PrimitiveSingle),
-                SeraPrimitiveTypes.Double => serializer.WritePrimitiveAsync(value.PrimitiveDouble),
-                SeraPrimitiveTypes.Decimal => serializer.WritePrimitiveAsync(value.PrimitiveDecimal),
-                SeraPrimitiveTypes.BigInteger => serializer.WritePrimitiveAsync(value.PrimitiveBigInteger),
-                SeraPrimitiveTypes.Complex => serializer.WritePrimitiveAsync(value.PrimitiveComplex),
-                SeraPrimitiveTypes.DateOnly => serializer.WritePrimitiveAsync(value.PrimitiveDateOnly),
-                SeraPrimitiveTypes.DateTime => serializer.WritePrimitiveAsync(value.PrimitiveDateTime),
-                SeraPrimitiveTypes.DateTimeOffset => serializer.WritePrimitiveAsync(value.PrimitiveDateTimeOffset),
-                SeraPrimitiveTypes.Guid => serializer.WritePrimitiveAsync(value.PrimitiveGuid),
-                SeraPrimitiveTypes.Range => serializer.WritePrimitiveAsync(value.PrimitiveRange),
-                SeraPrimitiveTypes.Index => serializer.WritePrimitiveAsync(value.PrimitiveIndex),
-                SeraPrimitiveTypes.Char => serializer.WritePrimitiveAsync(value.PrimitiveChar),
-                SeraPrimitiveTypes.Rune => serializer.WritePrimitiveAsync(value.PrimitiveRune),
+                SeraPrimitiveTypes.Boolean => serializer.WritePrimitiveAsync(value.PrimitiveBoolean, null),
+                SeraPrimitiveTypes.SByte => serializer.WritePrimitiveAsync(value.PrimitiveSByte, null),
+                SeraPrimitiveTypes.Int16 => serializer.WritePrimitiveAsync(value.PrimitiveInt16, null),
+                SeraPrimitiveTypes.Int32 => serializer.WritePrimitiveAsync(value.PrimitiveInt32, null),
+                SeraPrimitiveTypes.Int64 => serializer.WritePrimitiveAsync(value.PrimitiveInt64, null),
+                SeraPrimitiveTypes.Int128 => serializer.WritePrimitiveAsync(value.PrimitiveInt128, null),
+                SeraPrimitiveTypes.Byte => serializer.WritePrimitiveAsync(value.PrimitiveByte, null),
+                SeraPrimitiveTypes.UInt16 => serializer.WritePrimitiveAsync(value.PrimitiveUInt16, null),
+                SeraPrimitiveTypes.UInt32 => serializer.WritePrimitiveAsync(value.PrimitiveUInt32, null),
+                SeraPrimitiveTypes.UInt64 => serializer.WritePrimitiveAsync(value.PrimitiveUInt64, null),
+                SeraPrimitiveTypes.UInt128 => serializer.WritePrimitiveAsync(value.PrimitiveUInt128, null),
+                SeraPrimitiveTypes.IntPtr => serializer.WritePrimitiveAsync(value.PrimitiveIntPtr, null),
+                SeraPrimitiveTypes.UIntPtr => serializer.WritePrimitiveAsync(value.PrimitiveUIntPtr, null),
+                SeraPrimitiveTypes.Half => serializer.WritePrimitiveAsync(value.PrimitiveHalf, null),
+                SeraPrimitiveTypes.Single => serializer.WritePrimitiveAsync(value.PrimitiveSingle, null),
+                SeraPrimitiveTypes.Double => serializer.WritePrimitiveAsync(value.PrimitiveDouble, null),
+                SeraPrimitiveTypes.Decimal => serializer.WritePrimitiveAsync(value.PrimitiveDecimal, null),
+                SeraPrimitiveTypes.BigInteger => serializer.WritePrimitiveAsync(value.PrimitiveBigInteger, null),
+                SeraPrimitiveTypes.Complex => serializer.WritePrimitiveAsync(value.PrimitiveComplex, null),
+                SeraPrimitiveTypes.TimeSpan => serializer.WritePrimitiveAsync(value.PrimitiveTimeSpan, null),
+                SeraPrimitiveTypes.DateOnly => serializer.WritePrimitiveAsync(value.PrimitiveDateOnly, null),
+                SeraPrimitiveTypes.TimeOnly => serializer.WritePrimitiveAsync(value.PrimitiveTimeOnly, null),
+                SeraPrimitiveTypes.DateTime => serializer.WritePrimitiveAsync(value.PrimitiveDateTime, null),
+                SeraPrimitiveTypes.DateTimeOffset =>
+                    serializer.WritePrimitiveAsync(value.PrimitiveDateTimeOffset, null),
+                SeraPrimitiveTypes.Guid => serializer.WritePrimitiveAsync(value.PrimitiveGuid, null),
+                SeraPrimitiveTypes.Range => serializer.WritePrimitiveAsync(value.PrimitiveRange, null),
+                SeraPrimitiveTypes.Index => serializer.WritePrimitiveAsync(value.PrimitiveIndex, null),
+                SeraPrimitiveTypes.Char => serializer.WritePrimitiveAsync(value.PrimitiveChar, null),
+                SeraPrimitiveTypes.Rune => serializer.WritePrimitiveAsync(value.PrimitiveRune, null),
                 _ => serializer.WriteUnitAsync()
             },
             SeraAnyKind.String => serializer.WriteStringAsync(value.String),
@@ -233,11 +265,16 @@ public record AnyImpl :
                 : serializer.WriteNoneAsync(),
             SeraAnyKind.Seq => serializer.StartSeqAsync((nuint)value.Seq.Count, value.Seq, this),
             SeraAnyKind.Map => serializer.StartMapAsync((nuint)value.Map.Count, value.Map, this),
-            SeraAnyKind.Struct => serializer.StartStructAsync(value.Struct.StructName, (nuint)value.Struct.Fields.Count,
+            SeraAnyKind.Struct => serializer.StartStructAsync(value.Struct.StructName, (nuint)(value.Struct.Kind switch
+                {
+                    SeraAnyStructKind.String => value.Struct.StringKeyFields.Count,
+                    SeraAnyStructKind.Int => value.Struct.IntKeyFields.Count,
+                    _ => throw new ArgumentOutOfRangeException()
+                }),
                 value.Struct, this),
             SeraAnyKind.Variant => value.Variant is { Value: not null and var v }
-                ? serializer.WriteVariantAsync(value.Variant.UnionName, value.Variant.Variant, v.Value, this)
-                : serializer.WriteVariantUnitAsync(value.Variant.UnionName, value.Variant.Variant),
+                ? serializer.WriteVariantAsync(value.Variant.UnionName, value.Variant.Variant, v.Value, this, default)
+                : serializer.WriteVariantUnitAsync(value.Variant.UnionName, value.Variant.Variant, default),
             _ => serializer.WriteUnitAsync()
         };
 
@@ -260,9 +297,22 @@ public record AnyImpl :
 
     public async ValueTask ReceiveAsync<S>(SeraAnyStruct value, S serialize) where S : IAsyncStructSerializer
     {
-        foreach (var (k, v) in value.Fields)
+        switch (value.Kind)
         {
-            await serialize.WriteFieldAsync(k, v, this);
+            case SeraAnyStructKind.String:
+                foreach (var (k, v) in value.StringKeyFields)
+                {
+                    await serialize.WriteFieldAsync(k, v, this);
+                }
+                break;
+            case SeraAnyStructKind.Int:
+                foreach (var (k, v) in value.IntKeyFields)
+                {
+                    await serialize.WriteFieldAsync(k, v, this, null);
+                }
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
         }
     }
 
@@ -270,7 +320,7 @@ public record AnyImpl :
 
     #region IDeserialize
 
-    public SeraAny Read<D>(D deserializer, SeraOptions options) where D : IDeserializer
+    public SeraAny Read<D>(D deserializer, ISeraOptions options) where D : IDeserializer
         => deserializer.ReadAny<SeraAny, AnyImpl>(null, null, this);
 
     public SeraAny Visit(bool value)
@@ -330,7 +380,13 @@ public record AnyImpl :
     public SeraAny Visit(Complex value)
         => SeraAny.MakePrimitive(value);
 
+    public SeraAny Visit(TimeSpan value)
+        => SeraAny.MakePrimitive(value);
+
     public SeraAny Visit(DateOnly value)
+        => SeraAny.MakePrimitive(value);
+
+    public SeraAny Visit(TimeOnly value)
         => SeraAny.MakePrimitive(value);
 
     public SeraAny Visit(DateTime value)
@@ -366,7 +422,7 @@ public record AnyImpl :
     public SeraAny VisitNone()
         => SeraAny.MakeOption(null);
 
-    public SeraAny VisitSome<D>(D deserializer, SeraOptions options) where D : IDeserializer
+    public SeraAny VisitSome<D>(D deserializer, ISeraOptions options) where D : IDeserializer
         => SeraAny.MakeOption(new SeraBoxed<SeraAny>(Read(deserializer, options)));
 
     public SeraAny VisitSeq<A>(A access) where A : ISeqAccess
@@ -449,26 +505,53 @@ public record AnyImpl :
     {
         var name = access.ViewStructName();
         var cap = access.GetLength();
-        Dictionary<string, SeraAny> fields;
-        if (cap.HasValue)
+        var kind = access.KeyKind();
+        if ((kind & SeraStructKeyKind.Int) == 0)
         {
-            fields = new((int)cap.Value);
-            for (nuint i = 0; i < cap.Value; i++)
+            Dictionary<string, SeraAny> fields;
+            if (cap.HasValue)
             {
-                access.ReadField(out var k, out SeraAny v, this);
-                fields[k] = v;
+                fields = new((int)cap.Value);
+                for (nuint i = 0; i < cap.Value; i++)
+                {
+                    access.ReadField(out var k, out SeraAny v, this);
+                    fields[k] = v;
+                }
             }
+            else
+            {
+                fields = new();
+                while (access.HasNext())
+                {
+                    access.ReadField(out var k, out SeraAny v, this);
+                    fields[k] = v;
+                }
+            }
+            return SeraAny.MakeStruct(new SeraAnyStruct(fields) { StructName = name });
         }
         else
         {
-            fields = new();
-            while (access.HasNext())
+            Dictionary<nuint, SeraAny> fields;
+            if (cap.HasValue)
             {
-                access.ReadField(out var k, out SeraAny v, this);
-                fields[k] = v;
+                fields = new((int)cap.Value);
+                for (nuint i = 0; i < cap.Value; i++)
+                {
+                    access.ReadFieldIntKey(out var k, out SeraAny v, this);
+                    fields[k] = v;
+                }
             }
+            else
+            {
+                fields = new();
+                while (access.HasNext())
+                {
+                    access.ReadFieldIntKey(out var k, out SeraAny v, this);
+                    fields[k] = v;
+                }
+            }
+            return SeraAny.MakeStruct(new SeraAnyStruct(fields) { StructName = name });
         }
-        return SeraAny.MakeStruct(new SeraAnyStruct(fields) { StructName = name });
     }
 
     public SeraAny VisitVariantUnit<A>(Variant variant, A access) where A : IVariantAccess
@@ -477,7 +560,7 @@ public record AnyImpl :
         return SeraAny.MakeVariant(new SeraAnyVariant(variant, null) { UnionName = name });
     }
 
-    public SeraAny VisitVariant<A, D>(Variant variant, A access, D deserializer, SeraOptions options)
+    public SeraAny VisitVariant<A, D>(Variant variant, A access, D deserializer, ISeraOptions options)
         where A : IVariantAccess where D : IDeserializer
     {
         var name = access.ViewUnionName();
@@ -488,9 +571,9 @@ public record AnyImpl :
 
     #region IAsyncDeserialize
 
-    public ValueTask<SeraAny> ReadAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer
+    public ValueTask<SeraAny> ReadAsync<D>(D deserializer, ISeraOptions options) where D : IAsyncDeserializer
         => deserializer.ReadAnyAsync<SeraAny, AnyImpl>(null, null, this);
-    
+
     public ValueTask<SeraAny> VisitAsync(bool value)
         => ValueTask.FromResult(SeraAny.MakePrimitive(value));
 
@@ -548,7 +631,13 @@ public record AnyImpl :
     public ValueTask<SeraAny> VisitAsync(Complex value)
         => ValueTask.FromResult(SeraAny.MakePrimitive(value));
 
+    public ValueTask<SeraAny> VisitAsync(TimeSpan value)
+        => ValueTask.FromResult(SeraAny.MakePrimitive(value));
+
     public ValueTask<SeraAny> VisitAsync(DateOnly value)
+        => ValueTask.FromResult(SeraAny.MakePrimitive(value));
+
+    public ValueTask<SeraAny> VisitAsync(TimeOnly value)
         => ValueTask.FromResult(SeraAny.MakePrimitive(value));
 
     public ValueTask<SeraAny> VisitAsync(DateTime value)
@@ -584,7 +673,7 @@ public record AnyImpl :
     public ValueTask<SeraAny> VisitNoneAsync()
         => ValueTask.FromResult(SeraAny.MakeOption(null));
 
-    public async ValueTask<SeraAny> VisitSomeAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer
+    public async ValueTask<SeraAny> VisitSomeAsync<D>(D deserializer, ISeraOptions options) where D : IAsyncDeserializer
         => SeraAny.MakeOption(new SeraBoxed<SeraAny>(await ReadAsync(deserializer, options)));
 
     public async ValueTask<SeraAny> VisitSeqAsync<A>(A access) where A : IAsyncSeqAccess
@@ -667,26 +756,53 @@ public record AnyImpl :
     {
         var name = await access.ViewStructNameAsync();
         var cap = await access.GetLengthAsync();
-        Dictionary<string, SeraAny> fields;
-        if (cap.HasValue)
+        var kind = await access.KeyKindAsync();
+        if ((kind & SeraStructKeyKind.Int) == 0)
         {
-            fields = new((int)cap.Value);
-            for (nuint i = 0; i < cap.Value; i++)
+            Dictionary<string, SeraAny> fields;
+            if (cap.HasValue)
             {
-                var (k, v) = await access.ReadFieldAsync<SeraAny, AnyImpl>(this);
-                fields[k] = v;
+                fields = new((int)cap.Value);
+                for (nuint i = 0; i < cap.Value; i++)
+                {
+                    var (k, v) = await access.ReadFieldAsync<SeraAny, AnyImpl>(this);
+                    fields[k] = v;
+                }
             }
+            else
+            {
+                fields = new();
+                while (await access.HasNextAsync())
+                {
+                    var (k, v) = await access.ReadFieldAsync<SeraAny, AnyImpl>(this);
+                    fields[k] = v;
+                }
+            }
+            return SeraAny.MakeStruct(new SeraAnyStruct(fields) { StructName = name });
         }
         else
         {
-            fields = new();
-            while (await access.HasNextAsync())
+            Dictionary<nuint, SeraAny> fields;
+            if (cap.HasValue)
             {
-                var (k, v) = await access.ReadFieldAsync<SeraAny, AnyImpl>(this);
-                fields[k] = v;
+                fields = new((int)cap.Value);
+                for (nuint i = 0; i < cap.Value; i++)
+                {
+                    var (k, v) = await access.ReadFieldIntKeyAsync<SeraAny, AnyImpl>(this);
+                    fields[k] = v;
+                }
             }
+            else
+            {
+                fields = new();
+                while (await access.HasNextAsync())
+                {
+                    var (k, v) = await access.ReadFieldIntKeyAsync<SeraAny, AnyImpl>(this);
+                    fields[k] = v;
+                }
+            }
+            return SeraAny.MakeStruct(new SeraAnyStruct(fields) { StructName = name });
         }
-        return SeraAny.MakeStruct(new SeraAnyStruct(fields) { StructName = name });
     }
 
     public async ValueTask<SeraAny> VisitVariantUnitAsync<A>(Variant variant, A access) where A : IAsyncVariantAccess
@@ -696,7 +812,7 @@ public record AnyImpl :
     }
 
     public async ValueTask<SeraAny> VisitVariantAsync<A, D>(Variant variant, A access, D deserializer,
-        SeraOptions options)
+        ISeraOptions options)
         where A : IAsyncVariantAccess where D : IAsyncDeserializer
     {
         var name = await access.ViewUnionNameAsync();

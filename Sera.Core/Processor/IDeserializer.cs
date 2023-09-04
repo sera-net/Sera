@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Sera.Core.Impls;
+using Sera.Core.Processor;
 
 namespace Sera.Core.De;
 
@@ -51,7 +52,9 @@ public static partial class DeserializerEx
         SeraPrimitiveTypes.Decimal => DeserializerPrimitiveHint.Decimal,
         SeraPrimitiveTypes.BigInteger => DeserializerPrimitiveHint.BigInteger,
         SeraPrimitiveTypes.Complex => DeserializerPrimitiveHint.Complex,
+        SeraPrimitiveTypes.TimeSpan => DeserializerPrimitiveHint.TimeSpan,
         SeraPrimitiveTypes.DateOnly => DeserializerPrimitiveHint.DateOnly,
+        SeraPrimitiveTypes.TimeOnly => DeserializerPrimitiveHint.TimeOnly,
         SeraPrimitiveTypes.DateTime => DeserializerPrimitiveHint.DateTime,
         SeraPrimitiveTypes.DateTimeOffset => DeserializerPrimitiveHint.DateTimeOffset,
         SeraPrimitiveTypes.Guid => DeserializerPrimitiveHint.Guid,
@@ -84,7 +87,9 @@ public static partial class DeserializerEx
         if (typeof(T) == typeof(decimal)) return DeserializerPrimitiveHint.Decimal;
         if (typeof(T) == typeof(BigInteger)) return DeserializerPrimitiveHint.BigInteger;
         if (typeof(T) == typeof(Complex)) return DeserializerPrimitiveHint.Complex;
+        if (typeof(T) == typeof(TimeSpan)) return DeserializerPrimitiveHint.TimeSpan;
         if (typeof(T) == typeof(DateOnly)) return DeserializerPrimitiveHint.DateOnly;
+        if (typeof(T) == typeof(TimeOnly)) return DeserializerPrimitiveHint.TimeOnly;
         if (typeof(T) == typeof(DateTime)) return DeserializerPrimitiveHint.DateTime;
         if (typeof(T) == typeof(DateTimeOffset)) return DeserializerPrimitiveHint.DateTimeOffset;
         if (typeof(T) == typeof(Guid)) return DeserializerPrimitiveHint.Guid;
@@ -96,7 +101,7 @@ public static partial class DeserializerEx
     }
 }
 
-public partial interface IDeserializer
+public partial interface IDeserializer : ISeraAbility
 {
     /// <summary>Peek the next hint</summary>
     public DeserializerHint PeekNext(DeserializerHint? need);
@@ -113,7 +118,7 @@ public interface IAnyDeserializerVisitor<out R> :
     IUnitDeserializerVisitor<R>, IOptionDeserializerVisitor<R>, ISeqDeserializerVisitor<R>,
     IMapDeserializerVisitor<R>, IStructDeserializerVisitor<R>, IVariantDeserializerVisitor<R> { }
 
-public partial interface IAsyncDeserializer
+public partial interface IAsyncDeserializer : ISeraAbility
 {
     /// <summary>Peek the next hint</summary>
     public ValueTask<DeserializerHint> PeekNextAsync(DeserializerHint? need);
@@ -136,7 +141,7 @@ public interface IAsyncAnyDeserializerVisitor<R> :
 
 /// <summary>Hints that the primitive might be</summary>
 [Flags]
-public enum DeserializerPrimitiveHint
+public enum DeserializerPrimitiveHint : ulong
 {
     Unknown = 0,
     Any = Boolean | Number | Date | Guid | Range | Index | Char | Rune,
@@ -160,14 +165,16 @@ public enum DeserializerPrimitiveHint
     Decimal = 1 << 16,
     BigInteger = 1 << 17,
     Complex = 1 << 18,
-    DateOnly = 1 << 19,
-    DateTime = 1 << 20,
-    DateTimeOffset = 1 << 21,
-    Guid = 1 << 22,
-    Range = 1 << 23,
-    Index = 1 << 24,
-    Char = 1 << 25,
-    Rune = 1 << 26,
+    TimeSpan = 1 << 19,
+    DateOnly = 1 << 20,
+    TimeOnly = 1 << 21,
+    DateTime = 1 << 22,
+    DateTimeOffset = 1 << 23,
+    Guid = 1 << 24,
+    Range = 1 << 25,
+    Index = 1 << 26,
+    Char = 1 << 27,
+    Rune = 1 << 28,
 
     SInt = SByte | Int16 | Int32 | Int64 | Int128 | IntPtr,
     UInt = Byte | UInt16 | UInt32 | UInt64 | UInt128 | UIntPtr,
@@ -175,7 +182,7 @@ public enum DeserializerPrimitiveHint
     Float = Half | Single | Double,
     BinaryNumber = Int | Float,
     Number = BinaryNumber | Decimal | BigInteger | Complex,
-    Date = DateOnly | DateTime | DateTimeOffset,
+    Date = TimeSpan | DateOnly | TimeOnly | DateTime | DateTimeOffset,
 }
 
 public partial interface IDeserializer
@@ -216,7 +223,9 @@ public interface IPrimitiveDeserializerVisitor<out R>
         decimal v => Visit(v),
         BigInteger v => Visit(v),
         Complex v => Visit(v),
+        TimeSpan v => Visit(v),
         DateOnly v => Visit(v),
+        TimeOnly v => Visit(v),
         DateTime v => Visit(v),
         DateTimeOffset v => Visit(v),
         Guid v => Visit(v),
@@ -246,7 +255,9 @@ public interface IPrimitiveDeserializerVisitor<out R>
     protected R Visit(decimal value) => throw DeserializeInvalidTypeException.Unexpected(value);
     protected R Visit(BigInteger value) => throw DeserializeInvalidTypeException.Unexpected(value);
     protected R Visit(Complex value) => throw DeserializeInvalidTypeException.Unexpected(value);
+    protected R Visit(TimeSpan value) => throw DeserializeInvalidTypeException.Unexpected(value);
     protected R Visit(DateOnly value) => throw DeserializeInvalidTypeException.Unexpected(value);
+    protected R Visit(TimeOnly value) => throw DeserializeInvalidTypeException.Unexpected(value);
     protected R Visit(DateTime value) => throw DeserializeInvalidTypeException.Unexpected(value);
     protected R Visit(DateTimeOffset value) => throw DeserializeInvalidTypeException.Unexpected(value);
     protected R Visit(Guid value) => throw DeserializeInvalidTypeException.Unexpected(value);
@@ -292,7 +303,9 @@ public interface IAsyncPrimitiveDeserializerVisitor<R>
         decimal v => VisitAsync(v),
         BigInteger v => VisitAsync(v),
         Complex v => VisitAsync(v),
+        TimeSpan v => VisitAsync(v),
         DateOnly v => VisitAsync(v),
+        TimeOnly v => VisitAsync(v),
         DateTime v => VisitAsync(v),
         DateTimeOffset v => VisitAsync(v),
         Guid v => VisitAsync(v),
@@ -322,7 +335,9 @@ public interface IAsyncPrimitiveDeserializerVisitor<R>
     protected ValueTask<R> VisitAsync(decimal value) => throw DeserializeInvalidTypeException.Unexpected(value);
     protected ValueTask<R> VisitAsync(BigInteger value) => throw DeserializeInvalidTypeException.Unexpected(value);
     protected ValueTask<R> VisitAsync(Complex value) => throw DeserializeInvalidTypeException.Unexpected(value);
+    protected ValueTask<R> VisitAsync(TimeSpan value) => throw DeserializeInvalidTypeException.Unexpected(value);
     protected ValueTask<R> VisitAsync(DateOnly value) => throw DeserializeInvalidTypeException.Unexpected(value);
+    protected ValueTask<R> VisitAsync(TimeOnly value) => throw DeserializeInvalidTypeException.Unexpected(value);
     protected ValueTask<R> VisitAsync(DateTime value) => throw DeserializeInvalidTypeException.Unexpected(value);
     protected ValueTask<R> VisitAsync(DateTimeOffset value) => throw DeserializeInvalidTypeException.Unexpected(value);
     protected ValueTask<R> VisitAsync(Guid value) => throw DeserializeInvalidTypeException.Unexpected(value);
@@ -582,7 +597,7 @@ public partial interface IDeserializer
 public interface IOptionDeserializerVisitor<out R>
 {
     public R VisitNone();
-    public R VisitSome<D>(D deserializer, SeraOptions options) where D : IDeserializer;
+    public R VisitSome<D>(D deserializer, ISeraOptions options) where D : IDeserializer;
 }
 
 public partial interface IAsyncDeserializer
@@ -596,7 +611,7 @@ public partial interface IAsyncDeserializer
 public interface IAsyncOptionDeserializerVisitor<R>
 {
     public ValueTask<R> VisitNoneAsync();
-    public ValueTask<R> VisitSomeAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer;
+    public ValueTask<R> VisitSomeAsync<D>(D deserializer, ISeraOptions options) where D : IAsyncDeserializer;
 }
 
 public static partial class DeserializerEx
@@ -722,6 +737,15 @@ public static partial class DeserializerEx
 
 #region Struct
 
+[Flags]
+public enum SeraStructKeyKind : byte
+{
+    Unknown = 0,
+    
+    String = 1 << 0,
+    Int = 1 << 1,
+}
+
 public partial interface IDeserializer
 {
     public R ReadStruct<R, V>(string? name, nuint? len, Memory<string>? fields, V visitor)
@@ -751,9 +775,14 @@ public interface IStructSeqAccess : IStructAccess
 
 public interface IStructMapAccess : IStructAccess
 {
+    public SeraStructKeyKind KeyKind();
+
     public bool HasNext();
 
     public void ReadField<T, D>(out string key, out T result, D deserialize)
+        where D : IDeserialize<T>;
+
+    public void ReadFieldIntKey<T, D>(out nuint key, out T result, D deserialize)
         where D : IDeserialize<T>;
 }
 
@@ -786,9 +815,14 @@ public interface IAsyncStructSeqAccess : IAsyncStructAccess
 
 public interface IAsyncStructMapAccess : IAsyncStructAccess
 {
+    public ValueTask<SeraStructKeyKind> KeyKindAsync();
+
     public ValueTask<bool> HasNextAsync();
 
     public ValueTask<(string key, T result)> ReadFieldAsync<T, D>(D deserialize)
+        where D : IAsyncDeserialize<T>;
+
+    public ValueTask<(nuint key, T result)> ReadFieldIntKeyAsync<T, D>(D deserialize)
         where D : IAsyncDeserialize<T>;
 }
 
@@ -817,7 +851,7 @@ public interface IVariantDeserializerVisitor<out R>
 {
     public R VisitVariantUnit<A>(Variant variant, A access) where A : IVariantAccess;
 
-    public R VisitVariant<A, D>(Variant variant, A access, D deserializer, SeraOptions options)
+    public R VisitVariant<A, D>(Variant variant, A access, D deserializer, ISeraOptions options)
         where A : IVariantAccess where D : IDeserializer;
 }
 
@@ -836,7 +870,7 @@ public interface IAsyncVariantDeserializerVisitor<R>
 {
     public ValueTask<R> VisitVariantUnitAsync<A>(Variant variant, A access) where A : IAsyncVariantAccess;
 
-    public ValueTask<R> VisitVariantAsync<A, D>(Variant variant, A access, D deserializer, SeraOptions options)
+    public ValueTask<R> VisitVariantAsync<A, D>(Variant variant, A access, D deserializer, ISeraOptions options)
         where A : IAsyncVariantAccess where D : IAsyncDeserializer;
 }
 
