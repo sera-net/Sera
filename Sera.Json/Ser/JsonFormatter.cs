@@ -2,7 +2,7 @@
 
 namespace Sera.Json.Ser;
 
-public abstract class AJsonFormatter
+public abstract record AJsonFormatter
 {
     public Encoding Encoding { get; set; } = Encoding.UTF8;
     public bool LargeNumberUseString { get; set; } = true;
@@ -11,7 +11,7 @@ public abstract class AJsonFormatter
     public bool EscapeAllNonAsciiChar { get; set; } = false;
 }
 
-public class CompactJsonFormatter : AJsonFormatter
+public record CompactJsonFormatter : AJsonFormatter
 {
     public static readonly CompactJsonFormatter Default = new();
 }

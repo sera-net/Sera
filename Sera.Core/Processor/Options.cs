@@ -11,7 +11,8 @@ public interface ISeraOptions
     /// </summary>
     public virtual CancellationToken CancellationToken => CancellationToken.None;
     /// <summary>
-    /// Indicates the encoding to use when processing strings.
+    /// <para>Indicates the encoding to use when processing strings.</para>
+    /// <para>Ignored when outputting to dotnet <see cref="string"/> type.</para>
     /// </summary>
     public virtual Encoding Encoding => Encoding.UTF8;
     /// <summary>

@@ -28,13 +28,13 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
         switch (value)
         {
             case bool v:
-                if ((hint & SerializerPrimitiveHint.BooleanAsNumber) != 0)
+                if (((hint ?? default) & SerializerPrimitiveHint.BooleanAsNumber) != 0)
                 {
                     WriteNumber(4, v ? 1 : 0, hint ?? default, false);
                 }
                 else
                 {
-                    Writer.WriteShortAscii(v ? "true" : "false");
+                    Writer.Write(v ? "true" : "false");
                 }
                 break;
             case sbyte v:
@@ -276,7 +276,7 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
         {
             format = "N";
         }
-        else if ((hint & SerializerPrimitiveHint.GuidFormatGuidBraces) != 0)
+        else if ((hint & SerializerPrimitiveHint.GuidFormatBraces) != 0)
         {
             format = "B";
         }
@@ -335,7 +335,7 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
                 // ReSharper disable once RedundantAssignment
                 var r = Base64.EncodeToUtf8(value, buf, out _, out var len);
                 Debug.Assert(r == OperationStatus.Done);
-                Writer.WriteStringEncoded(buf, Encoding.UTF8, false);
+                Writer.WriteStringEncoded(buf.AsSpan(0, len), Encoding.UTF8, false);
             }
             finally
             {
@@ -344,13 +344,15 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
         }
         else
         {
-            Writer.WriteShortAscii("[");
+            Writer.Write("[");
+            var first = true;
             foreach (var v in value)
             {
+                if (first) first = false;
+                else Writer.Write(",");
                 WriteNumber(4, v, default, false);
-                Writer.WriteShortAscii(",");
             }
-            Writer.WriteShortAscii("]");
+            Writer.Write("]");
         }
     }
 
@@ -369,7 +371,7 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
 
     public void WriteNone()
     {
-        Writer.WriteShortAscii("null");
+        Writer.Write("null");
     }
 
     public void WriteSome<T, S>(T value, S serialize) where S : ISerialize<T>
@@ -386,7 +388,7 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
     private void CheckWriteElement()
     {
         if (state is JsonSerializerState.None) state = JsonSerializerState.ArrayItem;
-        else if (state is JsonSerializerState.ArrayItem) Writer.WriteShortAscii(",");
+        else if (state is JsonSerializerState.ArrayItem) Writer.Write(",");
         else throw new SerializeException("Serializer status error");
     }
 
@@ -403,15 +405,15 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
     {
         if (len is 0)
         {
-            Writer.WriteShortAscii("[]");
+            Writer.Write("[]");
             return;
         }
         var last_state = state;
         state = JsonSerializerState.None;
-        Writer.WriteShortAscii("[");
+        Writer.Write("[");
         Seq ??= new(this);
         receiver.Receive(value, Seq);
-        Writer.WriteShortAscii("]");
+        Writer.Write("]");
         state = last_state;
     }
 
@@ -426,7 +428,7 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
     private void CheckWriteKey()
     {
         if (state is JsonSerializerState.None) state = JsonSerializerState.ObjectKey;
-        else if (state is JsonSerializerState.ObjectValue) Writer.WriteShortAscii(",");
+        else if (state is JsonSerializerState.ObjectValue) Writer.Write(",");
         else throw new SerializeException("Serializer status error", new SerializeException("Wrong WriteKey order"));
     }
 
@@ -439,7 +441,7 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
     private void CheckWriteEntry()
     {
         if (state is JsonSerializerState.None) state = JsonSerializerState.ObjectValue;
-        else if (state is JsonSerializerState.ObjectValue) Writer.WriteShortAscii(",");
+        else if (state is JsonSerializerState.ObjectValue) Writer.Write(",");
         else throw new SerializeException("Serializer status error");
     }
 
@@ -448,27 +450,27 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
         public void WriteKey<K, SK>(K key, SK key_serialize) where SK : ISerialize<K>
         {
             self.CheckWriteKey();
-            self.Writer.WriteShortAscii("[");
+            self.Writer.Write("[");
             key_serialize.Write(self, key, self.Options);
-            self.Writer.WriteShortAscii(",");
+            self.Writer.Write(",");
         }
 
         public void WriteValue<V, SV>(V value, SV value_serialize) where SV : ISerialize<V>
         {
             self.CheckWriteValue();
             value_serialize.Write(self, value, self.Options);
-            self.Writer.WriteShortAscii("]");
+            self.Writer.Write("]");
         }
 
         public void WriteEntry<K, V, SK, SV>(K key, V value, SK key_serialize, SV value_serialize)
             where SK : ISerialize<K> where SV : ISerialize<V>
         {
             self.CheckWriteEntry();
-            self.Writer.WriteShortAscii("[");
+            self.Writer.Write("[");
             key_serialize.Write(self, key, self.Options);
-            self.Writer.WriteShortAscii(",");
+            self.Writer.Write(",");
             value_serialize.Write(self, value, self.Options);
-            self.Writer.WriteShortAscii("]");
+            self.Writer.Write("]");
         }
     }
 
@@ -477,10 +479,10 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
         public void WriteKey<K, SK>(K key, SK key_serialize) where SK : ISerialize<K>
         {
             self.CheckWriteKey();
-            self.Writer.WriteShortAscii("");
+            self.Writer.Write("");
             self.KeyStringOnly ??= new(self);
             key_serialize.Write(self.KeyStringOnly, key, self.Options);
-            self.Writer.WriteShortAscii(":");
+            self.Writer.Write(":");
         }
 
         public void WriteValue<V, SV>(V value, SV value_serialize) where SV : ISerialize<V>
@@ -495,7 +497,7 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
             self.CheckWriteEntry();
             self.KeyStringOnly ??= new(self);
             key_serialize.Write(self.KeyStringOnly, key, self.Options);
-            self.Writer.WriteShortAscii(":");
+            self.Writer.Write(":");
             value_serialize.Write(self, value, self.Options);
         }
     }
@@ -557,15 +559,15 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
     {
         if (len is 0)
         {
-            Writer.WriteShortAscii("[]");
+            Writer.Write("[]");
             return;
         }
         var last_state = state;
         state = JsonSerializerState.None;
-        Writer.WriteShortAscii("[");
+        Writer.Write("[");
         SeqMap ??= new(this);
         receiver.Receive(value, SeqMap);
-        Writer.WriteShortAscii("]");
+        Writer.Write("]");
         state = last_state;
     }
 
@@ -580,15 +582,15 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
     {
         if (len is 0)
         {
-            Writer.WriteShortAscii("{}");
+            Writer.Write("{}");
             return;
         }
         var last_state = state;
         state = JsonSerializerState.None;
-        Writer.WriteShortAscii("{");
+        Writer.Write("{");
         KeyStringMap ??= new(this);
         receiver.Receive(value, KeyStringMap);
-        Writer.WriteShortAscii("}");
+        Writer.Write("}");
         state = last_state;
     }
 
@@ -601,7 +603,7 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
     private void CheckWriteField()
     {
         if (state is JsonSerializerState.None) state = JsonSerializerState.Field;
-        else if (state is JsonSerializerState.Field) Writer.WriteShortAscii(",");
+        else if (state is JsonSerializerState.Field) Writer.Write(",");
         else throw new SerializeException("Serializer status error");
     }
 
@@ -611,7 +613,7 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
         {
             self.CheckWriteField();
             self.Writer.WriteString(key, true);
-            self.Writer.WriteShortAscii(":");
+            self.Writer.Write(":");
             serializer.Write(self, value, self.Options);
         }
 
@@ -620,7 +622,7 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
         {
             self.CheckWriteField();
             self.WriteNumber(32, key, default, true);
-            self.Writer.WriteShortAscii(":");
+            self.Writer.Write(":");
             serializer.Write(self, value, self.Options);
         }
     }
@@ -629,15 +631,15 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
     {
         if (len is 0)
         {
-            Writer.WriteShortAscii("{}");
+            Writer.Write("{}");
             return;
         }
         var last_state = state;
         state = JsonSerializerState.None;
-        Writer.WriteShortAscii("{");
+        Writer.Write("{");
         Struct ??= new(this);
         receiver.Receive(value, Struct);
-        Writer.WriteShortAscii("}");
+        Writer.Write("}");
         state = last_state;
     }
 
@@ -695,7 +697,7 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
     public void WriteVariant<T, S>(string? union_name, Variant variant, T value, S serializer,
         SerializerVariantHint? hint) where S : ISerialize<T>
     {
-        Writer.WriteShortAscii("{");
+        Writer.Write("{");
         switch (variant.Kind)
         {
             case VariantKind.NameAndTag:
@@ -739,9 +741,9 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
             default:
                 throw new ArgumentOutOfRangeException();
         }
-        Writer.WriteShortAscii(":");
+        Writer.Write(":");
         serializer.Write(this, value, Options);
-        Writer.WriteShortAscii("}");
+        Writer.Write("}");
     }
 
     #endregion

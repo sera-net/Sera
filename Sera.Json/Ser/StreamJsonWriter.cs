@@ -9,22 +9,6 @@ namespace Sera.Json.Ser;
 public record StreamJsonWriter
     (AJsonFormatter Formatter, Stream Stream) : AJsonWriter(Formatter)
 {
-    public override void WriteShortAscii(ReadOnlySpan<char> str)
-    {
-        var encode = Formatter.Encoding;
-        if (encode.Equals(Encoding.Unicode))
-        {
-            Stream.Write(MemoryMarshal.AsBytes(str));
-        }
-        else
-        {
-            Span<byte> buf = stackalloc byte[Encoding.GetMaxByteCount(str.Length)];
-            var count = encode.GetBytes(str, buf);
-            var span = buf.Slice(0, count);
-            Stream.Write(span);
-        }
-    }
-
     public override void Write(ReadOnlySpan<char> str)
     {
         var encode = Formatter.Encoding;
@@ -35,16 +19,26 @@ public record StreamJsonWriter
         else
         {
             var len = encode.GetMaxByteCount(str.Length);
-            var buf = ArrayPool<byte>.Shared.Rent(len);
-            try
+            if (len <= 256)
             {
+                Span<byte> buf = stackalloc byte[len];
                 var count = encode.GetBytes(str, buf);
-                var span = buf.AsSpan(0, count);
+                var span = buf[..count];
                 Stream.Write(span);
             }
-            finally
+            else
             {
-                ArrayPool<byte>.Shared.Return(buf);
+                var buf = ArrayPool<byte>.Shared.Rent(len);
+                try
+                {
+                    var count = encode.GetBytes(str, buf);
+                    var span = buf.AsSpan(0, count);
+                    Stream.Write(span);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buf);
+                }
             }
         }
     }

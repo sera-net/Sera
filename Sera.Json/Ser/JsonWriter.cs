@@ -10,37 +10,60 @@ namespace Sera.Json.Ser;
 public abstract record AJsonWriter(AJsonFormatter Formatter)
 {
     public Encoding Encoding => Formatter.Encoding;
-
-    public abstract void WriteShortAscii(ReadOnlySpan<char> str);
-
+    
     public abstract void Write(ReadOnlySpan<char> str);
     public abstract void WriteEncoded(ReadOnlySpan<byte> str, Encoding encoding);
 
     public virtual void WriteString(ReadOnlySpan<char> str, bool escape)
     {
-        WriteShortAscii("\"");
+        Write("\"");
         if (escape) WriteEscape(str);
         else Write(str);
-        WriteShortAscii("\"");
+        Write("\"");
     }
 
     public virtual void WriteStringEncoded(ReadOnlySpan<byte> str, Encoding encoding, bool escape)
     {
-        WriteShortAscii("\"");
+        Write("\"");
         if (escape) WriteEscapeEncoded(str, encoding);
         else WriteEncoded(str, encoding);
-        WriteShortAscii("\"");
+        Write("\"");
     }
 
     protected virtual void WriteEscapeHex(Rune rune)
     {
-        Span<char> span = stackalloc char[6];
-        span[0] = '\\';
-        span[1] = 'u';
-        var hex = span[2..];
-        var r = rune.Value.TryFormat(hex, out var len, "X4");
-        if (!r || len != 4) throw new ArgumentOutOfRangeException($"{rune}");
-        Write(span);
+        Span<char> chars = stackalloc char[2];
+        var char_count = rune.EncodeToUtf16(chars);
+
+        if (char_count == 1)
+        {
+            Span<char> span = stackalloc char[6];
+            span[0] = '\\';
+            span[1] = 'u';
+            var hex = span[2..];
+            var c = (ushort)chars[0];
+            var r = c.TryFormat(hex, out var len, "X4");
+            if (!r || len != 4) throw new ArgumentOutOfRangeException($"{rune}");
+            Write(span);
+        }
+        else if (char_count == 2)
+        {
+            Span<char> span = stackalloc char[12];
+            span[0] = '\\';
+            span[1] = 'u';
+            span[6] = '\\';
+            span[7] = 'u';
+            var hex = span[2..];
+            var c1 = (ushort)chars[0];
+            var r = c1.TryFormat(hex, out var len, "X4");
+            if (!r || len != 4) throw new ArgumentOutOfRangeException($"{rune}");
+            hex = span[8..];
+            var c2 = (ushort)chars[1];
+            r = c2.TryFormat(hex, out len, "X4");
+            if (!r || len != 4) throw new ArgumentOutOfRangeException($"{rune}");
+            Write(span);
+        }
+        else throw new ArgumentOutOfRangeException($"{rune}");
     }
 
     protected virtual void WriteEscape(ReadOnlySpan<char> str)
@@ -64,7 +87,7 @@ public abstract record AJsonWriter(AJsonFormatter Formatter)
                 n = 0;
             }
             else if (
-                Formatter.EscapeAllNonAsciiChar && !rune.IsAscii ||
+                (Formatter.EscapeAllNonAsciiChar && !rune.IsAscii) ||
                 Rune.GetUnicodeCategory(rune) is
                     UnicodeCategory.Control or
                     UnicodeCategory.Format or
@@ -106,7 +129,7 @@ public abstract record AJsonWriter(AJsonFormatter Formatter)
                 n = 0;
             }
             else if (
-                Formatter.EscapeAllNonAsciiChar && !rune.IsAscii ||
+                (Formatter.EscapeAllNonAsciiChar && !rune.IsAscii) ||
                 Rune.GetUnicodeCategory(rune) is
                     UnicodeCategory.Control or
                     UnicodeCategory.Format or
@@ -148,5 +171,4 @@ public abstract record AJsonWriter(AJsonFormatter Formatter)
             }
         }
     }
-   
 }

@@ -9,17 +9,17 @@ using Sera.Core.Ser;
 
 namespace Sera.Core.Impls;
 
-public record PrimitiveImpl<T>(SeraPrimitiveTypes type) : PrimitiveImpl(typeof(T)),
+public record PrimitiveImpl<T>(SeraPrimitiveTypes type, SerializerPrimitiveHint? hint = null) : PrimitiveImpl(typeof(T)),
     ISerialize<T>, IDeserialize<T>, IAsyncSerialize<T>, IAsyncDeserialize<T>
 {
     public void Write<S>(S serializer, T value, ISeraOptions options) where S : ISerializer
-        => serializer.WritePrimitive(value, null);
+        => serializer.WritePrimitive(value, hint);
 
     public T Read<D>(D deserializer, ISeraOptions options) where D : IDeserializer
         => deserializer.ReadPrimitive<T>();
 
     public ValueTask WriteAsync<S>(S serializer, T value, ISeraOptions options) where S : IAsyncSerializer
-        => serializer.WritePrimitiveAsync(value, null);
+        => serializer.WritePrimitiveAsync(value, hint);
 
     public ValueTask<T> ReadAsync<D>(D deserializer, ISeraOptions options) where D : IAsyncDeserializer
         => deserializer.ReadPrimitiveAsync<T>();
