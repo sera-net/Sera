@@ -17,3 +17,5 @@ Inspired by [serde-rs](https://github.com/serde-rs/serde)
   - [ ] Yaml
   - [ ] Xml
   - [ ] Msgpack
+  - [ ] Cbor
+  - [ ] Bson
