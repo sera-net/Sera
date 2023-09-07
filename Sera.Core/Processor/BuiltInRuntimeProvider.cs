@@ -127,7 +127,7 @@ public class BuiltInRuntimeProvider : IRuntimeProvider, IAsyncRuntimeProvider
             }
         }
         r = CreateInstance<T, R>(type);
-        InstanceCache.Add(type, r!);
+        InstanceCache.TryAdd(type, r!);
         return r is not null;
     }
 

@@ -39,6 +39,8 @@ namespace Sera.Json
 
 #endregion
 
+#region Serializer
+
 #region ToStream
 
 namespace Sera.Json.Builders
@@ -201,5 +203,7 @@ namespace Sera.Json
     }
 
 }
+
+#endregion
 
 #endregion

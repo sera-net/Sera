@@ -17,9 +17,23 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
     public string FormatMIME => "application/json";
     public SeraFormatType FormatType => SeraFormatType.HumanReadableText;
 
+    public IRuntimeProvider RuntimeProvider { get; set; } = Options.RuntimeProvider;
+
+    public IAsyncRuntimeProvider AsyncRuntimeProvider { get; set; } = Options.AsyncRuntimeProvider;
+
     public AJsonFormatter Formatter => Options.Formatter;
 
     private JsonSerializerState state;
+
+    #region Reference
+
+    public bool MarkReference<T, S>(T obj, S serialize) where T : class where S : ISerialize<T>
+    {
+        // todo circular reference
+        return false;
+    }
+
+    #endregion
 
     #region Primitive
 
@@ -508,6 +522,9 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
         public string FormatMIME => self.FormatMIME;
         public SeraFormatType FormatType => self.FormatType;
 
+        public IRuntimeProvider RuntimeProvider => self.RuntimeProvider;
+
+        public IAsyncRuntimeProvider AsyncRuntimeProvider => self.AsyncRuntimeProvider;
 
         public void WriteString(ReadOnlySpan<char> value)
             => self.WriteString(value);
@@ -518,6 +535,9 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
         private void Throw() => throw new NotSupportedException("key must be a string");
 
         #region Other
+
+        public bool MarkReference<T, S>(T obj, S serialize) where T : class where S : ISerialize<T>
+            => self.MarkReference(obj, serialize);
 
         public void WriteVariantUnit(string? union_name, Variant variant, SerializerVariantHint? hint)
             => Throw();

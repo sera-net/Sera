@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <Nullable>enable</Nullable>
+        <LangVersion>11.0</LangVersion>
+        <TargetFramework>net7.0</TargetFramework>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Sera.Json\Sera.Json.csproj" />
+      <ProjectReference Include="..\Sera.Runtime\Sera.Runtime.csproj" />
+    </ItemGroup>
+
+</Project>

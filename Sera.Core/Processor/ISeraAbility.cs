@@ -5,15 +5,24 @@ public interface ISeraAbility
     /// <summary>
     /// Get the format of the current (de)serializer
     /// </summary>
-    public string FormatName { get; } 
-    
+    public string FormatName { get; }
+
     /// <summary>
     /// Get the format MIME of the current (de)serializer
     /// </summary>
-    public string FormatMIME { get; } 
-    
+    public string FormatMIME { get; }
+
     /// <summary>
     /// Get what type of format the current (de)serializer is
     /// </summary>
     public SeraFormatType FormatType { get; }
+
+    /// <summary>
+    /// Runtime provider
+    /// </summary>
+    public IRuntimeProvider RuntimeProvider { get; }
+    /// <summary>
+    /// Async Runtime provider
+    /// </summary>
+    public IAsyncRuntimeProvider AsyncRuntimeProvider { get; }
 }

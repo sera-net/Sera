@@ -7,9 +7,23 @@ namespace Sera.Core.Ser;
 
 #region Basic
 
-public partial interface ISerializer : ISeraAbility { }
+public partial interface ISerializer : ISeraAbility
+{
+    /// <summary>
+    /// <para>If the serializer supports circular reference handling, this method can skip serialization of duplicate references.</para>
+    /// <para>Must be used in type serialize root.</para>
+    /// </summary>
+    /// <param name="obj">Object reference to check, cannot be null</param>
+    /// <param name="serialize">The serialize used when processing references, can be the current serialize</param>
+    /// <returns>Returns <c>true</c> if it can be skip, when <c>true</c> the serialize should return immediately</returns>
+    public bool MarkReference<T, S>(T obj, S serialize) where T : class where S : ISerialize<T>;
+}
 
-public partial interface IAsyncSerializer : ISeraAbility { }
+public partial interface IAsyncSerializer : ISeraAbility
+{
+    /// <inheritdoc cref="ISerializer.MarkReference{T, S}(T, S)"/>
+    public ValueTask<bool> MarkReference<T, S>(T obj, S serialize) where T : class where S : ISerialize<T>;
+}
 
 #endregion
 
@@ -307,7 +321,7 @@ public partial interface ISerializer
 
 public interface IStructSerializerReceiver<in T>
 {
-    public void Receive<S>(T value, S serialize) where S : IStructSerializer;
+    public void Receive<S>(T value, S serializer) where S : IStructSerializer;
 }
 
 public interface IStructSerializer
@@ -336,7 +350,7 @@ public partial interface IAsyncSerializer
 
 public interface IAsyncStructSerializerReceiver<in T>
 {
-    public ValueTask ReceiveAsync<S>(T value, S serialize) where S : IAsyncStructSerializer;
+    public ValueTask ReceiveAsync<S>(T value, S serializer) where S : IAsyncStructSerializer;
 }
 
 public interface IAsyncStructSerializer
