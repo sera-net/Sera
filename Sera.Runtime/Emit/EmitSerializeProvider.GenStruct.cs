@@ -1,16 +1,15 @@
 ﻿using System;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
-using System.Reflection.Emit;
 using System.Threading;
 using Sera.Core;
+using Sera.Runtime.Utils;
 
 namespace Sera.Runtime.Emit;
 
 internal partial class EmitSerializeProvider
 {
-    public StructMember[] GetStructMembers(Type target, Thread thread)
+    public StructMember[] GetStructMembers(Type target)
     {
         var members = target.GetMembers(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
                                         BindingFlags.GetProperty | BindingFlags.SetProperty);
@@ -25,15 +24,11 @@ internal partial class EmitSerializeProvider
                     if (!get_method.IsPublic) return null; // todo pass private by attr
                     var name = p.Name; // todo change name by attr
                     var type = p.PropertyType;
-                    var (impl_type, cell, impl) = GetImpl(type, thread);
                     return new StructMember
                     {
                         Name = name,
                         Property = p,
                         Kind = PropertyOrField.Property,
-                        ImplType = impl_type,
-                        Cell = cell,
-                        Impl = impl,
                         Type = type,
                     };
                 }
@@ -42,15 +37,11 @@ internal partial class EmitSerializeProvider
                     if (!f.IsPublic) return null; // todo pass private by attr
                     var name = f.Name; // todo change name by attr
                     var type = f.FieldType;
-                    var (impl_type, cell, impl) = GetImpl(type, thread);
                     return new StructMember
                     {
                         Name = name,
                         Field = f,
                         Kind = PropertyOrField.Field,
-                        ImplType = impl_type,
-                        Cell = cell,
-                        Impl = impl,
                         Type = type,
                     };
                 }
@@ -63,9 +54,6 @@ internal partial class EmitSerializeProvider
     internal record StructMember
     {
         public string Name { get; set; }
-        public Type ImplType { get; set; }
-        public CacheCell? Cell { get; set; }
-        public object? Impl { get; set; }
         public Type Type { get; set; }
         public PropertyInfo? Property { get; set; }
         public FieldInfo? Field { get; set; }
@@ -95,7 +83,6 @@ internal partial class EmitSerializeProvider
                 cell.WaitType.WaitOne();
             }
             impl_type = cell.ser_type!;
-            impl = cell.ser_inst!;
         }
         return (impl_type, cell, impl);
     }

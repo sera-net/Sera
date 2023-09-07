@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
 using Sera.Core;
+using Sera.Core.Impls;
 using Sera.Core.Ser;
+using Sera.Runtime.Utils;
 
 namespace Sera.Runtime.Emit;
 
@@ -13,36 +14,58 @@ internal partial class EmitSerializeProvider
 {
     private void GenPublicStruct(Type target, CacheCell cell)
     {
+        #region create type builder
+
         var guid = Guid.NewGuid();
         var module = ReflectionUtils.CreateAssembly($"Ser.{target.Name}._{guid:N}_");
-        var type_builder = module.DefineType($"{module.Assembly.GetName().Name}.SerializeImpl_{target.Name}");
-        cell.ser_type = type_builder;
+        var type_builder = module.DefineType(
+            $"{module.Assembly.GetName().Name}.SerializeImpl_{target.Name}",
+            TypeAttributes.Public | TypeAttributes.Sealed
+        );
+        Type? nullable_type = null;
+
+        if (target.IsValueType)
+        {
+            cell.ser_type = type_builder;
+        }
+        else
+        {
+            nullable_type = typeof(NullableObjectImpl<,>).MakeGenericType(target, type_builder);
+            cell.ser_type = nullable_type;
+        }
         cell.WaitType.Set();
+
+        #endregion
+
+        #region ready
 
         var start_struct = ReflectionUtils.ISerializer_StartStruct_3generic
             .MakeGenericMethod(target, target, type_builder);
 
+        #endregion
+
         #region ready members
 
-        var members = GetStructMembers(target, cell.CreateThread);
+        var members = GetStructMembers(target);
 
         var field_count = members.Length;
 
-        var ser_types = members.AsParallel().AsOrdered()
-            .Select(m => m.ImplType)
-            .Distinct()
-            .ToArray();
-        var ser_impl_field_names = ser_types.AsParallel().AsOrdered()
-            .Select((t, i) => (i, t))
+        var ser_impl_field_names = members.AsParallel()
+            .DistinctBy(m => m.Type)
+            .Select((m, i) => (i, t: m.Type))
             .ToDictionary(a => a.t, a => $"_ser_impl_{a.i}");
-        var ser_impl_fields = new Dictionary<Type, FieldBuilder>();
+        
+        var ser_deps = new Dictionary<Type, CacheCellDeps>();
 
-        foreach (var (field_type, field_name) in ser_impl_field_names)
+        foreach (var (value_type, field_name) in ser_impl_field_names)
         {
-            var field = type_builder.DefineField(field_name, field_type, FieldAttributes.Public | FieldAttributes.Static);
-            ser_impl_fields.Add(field_type, field);
+            var (impl_type, impl_cell, impl) = GetImpl(value_type, cell.CreateThread);
+            var field = type_builder.DefineField(field_name, impl_type, FieldAttributes.Public | FieldAttributes.Static);
+            ser_deps.Add(value_type, new(field, impl_type, impl_cell, impl));
         }
 
+        cell.deps = ser_deps;
+        
         #endregion
 
         #region public void WriteS>(S serializer, T value, ISeraOptions options) where S : ISerializer
@@ -102,11 +125,11 @@ internal partial class EmitSerializeProvider
 
             foreach (var member in members)
             {
-                var impl_type = member.ImplType;
-                var field = ser_impl_fields[impl_type];
+                var field_type = member.Type;
+                var dep = ser_deps[field_type];
 
                 var write_field = ReflectionUtils.IStructSerializer_WriteField_2generic_3arg_string_t_s
-                    .MakeGenericMethod(member.Type, impl_type);
+                    .MakeGenericMethod(member.Type, dep.ImplType);
 
                 #region load serializer
 
@@ -157,7 +180,7 @@ internal partial class EmitSerializeProvider
 
                 #region load Self._impl_n
 
-                ilg.Emit(OpCodes.Ldsfld, field);
+                ilg.Emit(OpCodes.Ldsfld, dep.Field);
 
                 #endregion
 
@@ -187,14 +210,31 @@ internal partial class EmitSerializeProvider
         #region create type
 
         var type = type_builder.CreateType();
-        cell.ser_type = type;
+        cell.dep_container_type = type;
+        if (nullable_type == null)
+        {
+            cell.ser_type = type;
+        }
+        else
+        {
+            nullable_type = typeof(NullableObjectImpl<,>).MakeGenericType(target, type);
+            cell.ser_type = nullable_type;
+        }
 
         #endregion
 
         #region create inst
 
         var inst = Activator.CreateInstance(type)!;
-        cell.ser_inst = inst;
+        if (nullable_type == null)
+        {
+            cell.ser_inst = inst;
+        }
+        else
+        {
+            var ctor = nullable_type.GetConstructor(new[] { type })!;
+            cell.ser_inst = ctor.Invoke(new[] { inst });
+        }
 
         #endregion
 
@@ -202,27 +242,6 @@ internal partial class EmitSerializeProvider
 
         cell.state = CacheCell.CreateState.Created;
         cell.WaitCreate.Set();
-
-        #endregion
-
-        #region set impl insts
-
-        foreach (var member in members)
-        {
-            var impl_type = member.ImplType;
-            var field_name = ser_impl_field_names[impl_type];
-            var field = type.GetField(field_name)!;
-
-            if (member.Impl != null)
-            {
-                field.SetValue(null, member.Impl);
-            }
-            else
-            {
-                member.Cell!.WaitCreate.WaitOne();
-                field.SetValue(null, member.Cell.ser_inst);
-            }
-        }
 
         #endregion
     }

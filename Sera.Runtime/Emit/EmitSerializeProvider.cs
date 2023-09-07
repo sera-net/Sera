@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -15,6 +17,7 @@ internal partial class EmitSerializeProvider
         {
             cell.WaitCreate.WaitOne();
         }
+        cell.CheckDepsReady();
         return (ISerialize<T>)cell.ser_inst!;
     }
 
@@ -40,6 +43,57 @@ internal partial class EmitSerializeProvider
         {
             CreateThread = createThread;
         }
+
+        public Type? dep_container_type;
+        public Dictionary<Type, CacheCellDeps>? deps;
+        private volatile bool deps_ready;
+        private readonly object deps_ready_lock = new();
+
+        public void CheckDepsReady()
+        {
+            if (deps_ready) return;
+            lock (deps_ready_lock)
+            {
+                if (deps_ready) return;
+                try
+                {
+                    foreach (var (_, dep) in deps!)
+                    {
+                        var field_name = dep.Field.Name;
+                        var field = dep_container_type!.GetField(field_name)!;
+
+                        if (dep.ImplInst != null)
+                        {
+                            field.SetValue(null, dep.ImplInst);
+                        }
+                        else
+                        {
+                            dep.ImplCell!.WaitCreate.WaitOne();
+                            field.SetValue(null, dep.ImplCell.ser_inst);
+                        }
+                    }
+                }
+                finally
+                {
+                    deps_ready = true;
+                }
+            }
+            foreach (var (_, dep) in deps)
+            {
+                if (dep.ImplInst == null)
+                {
+                    dep.ImplCell!.CheckDepsReady();
+                }
+            }
+        }
+    }
+
+    internal record CacheCellDeps(FieldInfo Field, Type ImplType, CacheCell? ImplCell, object? ImplInst)
+    {
+        public FieldInfo Field { get; set; } = Field;
+        public Type ImplType { get; set; } = ImplType;
+        public CacheCell? ImplCell { get; set; } = ImplCell;
+        public object? ImplInst { get; set; } = ImplInst;
     }
 
     private CacheCell GetSerialize(Type type, Thread current_thread)

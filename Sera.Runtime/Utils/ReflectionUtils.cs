@@ -5,7 +5,7 @@ using System.Reflection.Emit;
 using Sera.Core;
 using Sera.Core.Ser;
 
-namespace Sera.Runtime.Emit;
+namespace Sera.Runtime.Utils;
 
 internal static class ReflectionUtils
 {
