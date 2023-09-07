@@ -8,20 +8,20 @@ namespace Sera.Runtime.Emit;
 
 internal partial class EmitSerializeProvider
 {
-    public readonly ConditionalWeakTable<Type, CacheCell> cache = new();
+    public readonly ConditionalWeakTable<Type, CacheStub> cache = new();
 
     public ISerialize<T> GetSerialize<T>()
     {
-        var cell = GetSerialize(typeof(T), Thread.CurrentThread);
-        if (cell.state != CacheCell.CreateState.Created)
+        var stub = GetSerializeStub(typeof(T), Thread.CurrentThread);
+        if (stub.state != CacheStub.CreateState.Created)
         {
-            cell.WaitCreate.WaitOne();
+            stub.WaitCreate.WaitOne();
         }
-        cell.CheckDepsReady();
-        return (ISerialize<T>)cell.ser_inst!;
+        stub.EnsureDepsReady();
+        return (ISerialize<T>)stub.ser_inst!;
     }
 
-    internal class CacheCell
+    internal class CacheStub
     {
         public enum CreateState
         {
@@ -39,7 +39,7 @@ internal partial class EmitSerializeProvider
         public Type? ser_type;
         public object? ser_inst;
 
-        public CacheCell(Thread createThread)
+        public CacheStub(Thread createThread)
         {
             CreateThread = createThread;
         }
@@ -48,9 +48,10 @@ internal partial class EmitSerializeProvider
         public Dictionary<Type, CacheCellDeps>? deps;
         private volatile bool deps_ready;
         private readonly object deps_ready_lock = new();
-
-        public void CheckDepsReady()
+        
+        public void EnsureDepsReady()
         {
+            if (deps == null || dep_container_type == null) return;
             if (deps_ready) return;
             lock (deps_ready_lock)
             {
@@ -82,53 +83,53 @@ internal partial class EmitSerializeProvider
             {
                 if (dep.ImplInst == null)
                 {
-                    dep.ImplCell!.CheckDepsReady();
+                    dep.ImplCell!.EnsureDepsReady();
                 }
             }
         }
     }
 
-    internal record CacheCellDeps(FieldInfo Field, Type ImplType, CacheCell? ImplCell, object? ImplInst)
+    internal record CacheCellDeps(FieldInfo Field, Type ImplType, CacheStub? ImplCell, object? ImplInst)
     {
         public FieldInfo Field { get; set; } = Field;
         public Type ImplType { get; set; } = ImplType;
-        public CacheCell? ImplCell { get; set; } = ImplCell;
+        public CacheStub? ImplCell { get; set; } = ImplCell;
         public object? ImplInst { get; set; } = ImplInst;
     }
 
-    private CacheCell GetSerialize(Type type, Thread current_thread)
+    private CacheStub GetSerializeStub(Type type, Thread current_thread)
     {
-        var cell = cache.GetValue(type, _ => new(current_thread));
-        if (cell.CreateThread == current_thread)
+        var stub = cache.GetValue(type, _ => new(current_thread));
+        if (stub.CreateThread == current_thread)
         {
 #pragma warning disable CS0420
-            if (Interlocked.CompareExchange(ref Unsafe.As<CacheCell.CreateState, int>(ref cell.state),
-                    (int)CacheCell.CreateState.Creating, (int)CacheCell.CreateState.Idle) == (int)CacheCell.CreateState.Idle)
+            if (Interlocked.CompareExchange(ref Unsafe.As<CacheStub.CreateState, int>(ref stub.state),
+                    (int)CacheStub.CreateState.Creating, (int)CacheStub.CreateState.Idle) == (int)CacheStub.CreateState.Idle)
             {
-                CreateSerialize(type, cell);
+                CreateSerialize(type, stub);
             }
 #pragma warning restore CS0420
         }
-        return cell;
+        return stub;
     }
 
-    private void CreateSerialize(Type type, CacheCell cell)
+    private void CreateSerialize(Type type, CacheStub stub)
     {
         try
         {
             // todo other type
-            GenStruct(type, cell);
+            GenStruct(type, stub);
         }
         finally
         {
-            cell.state = CacheCell.CreateState.Created;
-            cell.WaitCreate.Set();
+            stub.state = CacheStub.CreateState.Created;
+            stub.WaitCreate.Set();
         }
     }
 
-    private void GenStruct(Type type, CacheCell cell)
+    private void GenStruct(Type type, CacheStub stub)
     {
-        if (type.IsVisible) GenPublicStruct(type, cell);
-        else GenPrivateStruct(type, cell);
+        if (type.IsVisible) GenPublicStruct(type, stub);
+        else GenPrivateStruct(type, stub);
     }
 }

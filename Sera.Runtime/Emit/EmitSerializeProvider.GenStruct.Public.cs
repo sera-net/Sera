@@ -12,7 +12,7 @@ namespace Sera.Runtime.Emit;
 
 internal partial class EmitSerializeProvider
 {
-    private void GenPublicStruct(Type target, CacheCell cell)
+    private void GenPublicStruct(Type target, CacheStub stub)
     {
         #region create type builder
 
@@ -26,14 +26,14 @@ internal partial class EmitSerializeProvider
 
         if (target.IsValueType)
         {
-            cell.ser_type = type_builder;
+            stub.ser_type = type_builder;
         }
         else
         {
             nullable_type = typeof(NullableObjectImpl<,>).MakeGenericType(target, type_builder);
-            cell.ser_type = nullable_type;
+            stub.ser_type = nullable_type;
         }
-        cell.WaitType.Set();
+        stub.WaitType.Set();
 
         #endregion
 
@@ -59,12 +59,12 @@ internal partial class EmitSerializeProvider
 
         foreach (var (value_type, field_name) in ser_impl_field_names)
         {
-            var (impl_type, impl_cell, impl) = GetImpl(value_type, cell.CreateThread);
+            var (impl_type, impl_cell, impl) = GetImpl(value_type, stub.CreateThread);
             var field = type_builder.DefineField(field_name, impl_type, FieldAttributes.Public | FieldAttributes.Static);
             ser_deps.Add(value_type, new(field, impl_type, impl_cell, impl));
         }
 
-        cell.deps = ser_deps;
+        stub.deps = ser_deps;
         
         #endregion
 
@@ -210,15 +210,15 @@ internal partial class EmitSerializeProvider
         #region create type
 
         var type = type_builder.CreateType();
-        cell.dep_container_type = type;
+        stub.dep_container_type = type;
         if (nullable_type == null)
         {
-            cell.ser_type = type;
+            stub.ser_type = type;
         }
         else
         {
             nullable_type = typeof(NullableObjectImpl<,>).MakeGenericType(target, type);
-            cell.ser_type = nullable_type;
+            stub.ser_type = nullable_type;
         }
 
         #endregion
@@ -228,20 +228,20 @@ internal partial class EmitSerializeProvider
         var inst = Activator.CreateInstance(type)!;
         if (nullable_type == null)
         {
-            cell.ser_inst = inst;
+            stub.ser_inst = inst;
         }
         else
         {
             var ctor = nullable_type.GetConstructor(new[] { type })!;
-            cell.ser_inst = ctor.Invoke(new[] { inst });
+            stub.ser_inst = ctor.Invoke(new[] { inst });
         }
 
         #endregion
 
         #region mark type created
 
-        cell.state = CacheCell.CreateState.Created;
-        cell.WaitCreate.Set();
+        stub.state = CacheStub.CreateState.Created;
+        stub.WaitCreate.Set();
 
         #endregion
     }

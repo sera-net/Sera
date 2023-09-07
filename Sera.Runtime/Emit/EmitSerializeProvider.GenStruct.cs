@@ -11,8 +11,9 @@ internal partial class EmitSerializeProvider
 {
     public StructMember[] GetStructMembers(Type target)
     {
-        var members = target.GetMembers(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic |
-                                        BindingFlags.GetProperty | BindingFlags.SetProperty);
+        var members = target.GetMembers(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic
+        );
         return members.AsParallel()
             .AsOrdered()
             .Select(m =>
@@ -53,8 +54,8 @@ internal partial class EmitSerializeProvider
 
     internal record StructMember
     {
-        public string Name { get; set; }
-        public Type Type { get; set; }
+        public required string Name { get; set; }
+        public required Type Type { get; set; }
         public PropertyInfo? Property { get; set; }
         public FieldInfo? Field { get; set; }
         public PropertyOrField Kind { get; set; }
@@ -66,25 +67,26 @@ internal partial class EmitSerializeProvider
         Field,
     }
 
-    private (Type impl_type, CacheCell? cell, object? impl) GetImpl(Type target, Thread thread)
+    /// <returns>Actual type: (Type, CacheStub | object)</returns>
+    private (Type impl_type, CacheStub? stub, object? impl) GetImpl(Type target, Thread thread)
     {
         Type impl_type;
-        CacheCell? cell;
+        CacheStub? stub;
         if (TryGetStaticImpl(target, out var impl))
         {
             impl_type = impl!.GetType();
-            cell = null;
+            stub = null;
         }
         else
         {
-            cell = GetSerialize(target, thread);
-            if (cell.CreateThread != thread)
+            stub = GetSerializeStub(target, thread);
+            if (stub.CreateThread != thread)
             {
-                cell.WaitType.WaitOne();
+                stub.WaitType.WaitOne();
             }
-            impl_type = cell.ser_type!;
+            impl_type = stub.ser_type!;
         }
-        return (impl_type, cell, impl);
+        return (impl_type, stub, impl);
     }
 
     private bool TryGetStaticImpl(Type type, out object? impl)
