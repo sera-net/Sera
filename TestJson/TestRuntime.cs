@@ -185,6 +185,7 @@ public class TestRuntime
     public class StructPrivateField1
     {
         private int Member1 { get; set; } = 123456;
+        [UsedImplicitly]
         private int Member2 = 654321;
     }
 
