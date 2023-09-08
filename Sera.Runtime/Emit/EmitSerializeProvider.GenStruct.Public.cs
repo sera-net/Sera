@@ -54,18 +54,19 @@ internal partial class EmitSerializeProvider
             .DistinctBy(m => m.Type)
             .Select((m, i) => (i, t: m.Type))
             .ToDictionary(a => a.t, a => $"_ser_impl_{a.i}");
-        
+
         var ser_deps = new Dictionary<Type, CacheCellDeps>();
 
         foreach (var (value_type, field_name) in ser_impl_field_names)
         {
             var (impl_type, impl_cell, impl) = GetImpl(value_type, stub.CreateThread);
-            var field = type_builder.DefineField(field_name, impl_type, FieldAttributes.Public | FieldAttributes.Static);
+            var field = type_builder.DefineField(field_name, impl_type,
+                FieldAttributes.Public | FieldAttributes.Static);
             ser_deps.Add(value_type, new(field, impl_type, impl_cell, impl));
         }
 
         stub.deps = ser_deps;
-        
+
         #endregion
 
         #region public void WriteS>(S serializer, T value, ISeraOptions options) where S : ISerializer
@@ -111,7 +112,8 @@ internal partial class EmitSerializeProvider
         #region public void Receive<S>(T value, S serializer) where S : IStructSerializer
 
         {
-            var receive_method = type_builder.DefineMethod("Receive", MethodAttributes.Public | MethodAttributes.Virtual);
+            var receive_method =
+                type_builder.DefineMethod("Receive", MethodAttributes.Public | MethodAttributes.Virtual);
             var generic_parameters = receive_method.DefineGenericParameters("S");
             var TS = generic_parameters[0];
             TS.SetInterfaceConstraints(typeof(IStructSerializer));
@@ -120,6 +122,18 @@ internal partial class EmitSerializeProvider
             receive_method.DefineParameter(2, ParameterAttributes.None, "serializer");
 
             var ilg = receive_method.GetILGenerator();
+
+            #region def local_int_key_null
+
+            LocalBuilder? local_int_key_null = null;
+            if (members.Any(m => !m.IntKey.HasValue))
+            {
+                local_int_key_null = ilg.DeclareLocal(typeof(long?));
+                ilg.Emit(OpCodes.Ldloca_S, local_int_key_null!);
+                ilg.Emit(OpCodes.Initobj, typeof(long?));
+            }
+
+            #endregion
 
             #region write members
 
@@ -140,6 +154,20 @@ internal partial class EmitSerializeProvider
                 #region nameof member
 
                 ilg.Emit(OpCodes.Ldstr, member.Name);
+
+                #endregion
+
+                #region load int_key
+
+                if (member.IntKey.HasValue)
+                {
+                    ilg.Emit(OpCodes.Ldc_I8, member.IntKey.Value);
+                    ilg.Emit(OpCodes.Newobj, ReflectionUtils.Nullable_UInt64_ctor);
+                }
+                else
+                {
+                    ilg.Emit(OpCodes.Ldloc, local_int_key_null!);
+                }
 
                 #endregion
 

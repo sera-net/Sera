@@ -153,17 +153,7 @@ public record AnyImpl :
             case SeraAnyKind.Struct:
             {
                 var s = value.Struct;
-                switch (s.Kind)
-                {
-                    case SeraAnyStructKind.String:
-                        serializer.StartStruct(s.StructName, (nuint)s.StringKeyFields.Count, s, this);
-                        break;
-                    case SeraAnyStructKind.Int:
-                        serializer.StartStruct(s.StructName, (nuint)s.IntKeyFields.Count, s, this);
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
+                serializer.StartStruct(s.StructName, (nuint)s.Fields.Count, s, this);
                 break;
             }
             case SeraAnyKind.Variant:
@@ -197,22 +187,9 @@ public record AnyImpl :
 
     public void Receive<S>(SeraAnyStruct value, S serialize) where S : IStructSerializer
     {
-        switch (value.Kind)
+        foreach (var (k, ik, v) in value.Fields)
         {
-            case SeraAnyStructKind.String:
-                foreach (var (k, v) in value.StringKeyFields)
-                {
-                    serialize.WriteField(k, v, this);
-                }
-                break;
-            case SeraAnyStructKind.Int:
-                foreach (var (k, v) in value.IntKeyFields)
-                {
-                    serialize.WriteField(k, v, this, null);
-                }
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
+            serialize.WriteField(k, ik, v, this);
         }
     }
 
@@ -265,13 +242,8 @@ public record AnyImpl :
                 : serializer.WriteNoneAsync(),
             SeraAnyKind.Seq => serializer.StartSeqAsync((nuint)value.Seq.Count, value.Seq, this),
             SeraAnyKind.Map => serializer.StartMapAsync((nuint)value.Map.Count, value.Map, this),
-            SeraAnyKind.Struct => serializer.StartStructAsync(value.Struct.StructName, (nuint)(value.Struct.Kind switch
-                {
-                    SeraAnyStructKind.String => value.Struct.StringKeyFields.Count,
-                    SeraAnyStructKind.Int => value.Struct.IntKeyFields.Count,
-                    _ => throw new ArgumentOutOfRangeException()
-                }),
-                value.Struct, this),
+            SeraAnyKind.Struct => serializer.StartStructAsync(value.Struct.StructName,
+                (nuint)value.Struct.Fields.Count, value.Struct, this),
             SeraAnyKind.Variant => value.Variant is { Value: not null and var v }
                 ? serializer.WriteVariantAsync(value.Variant.UnionName, value.Variant.Variant, v.Value, this, default)
                 : serializer.WriteVariantUnitAsync(value.Variant.UnionName, value.Variant.Variant, default),
@@ -297,22 +269,9 @@ public record AnyImpl :
 
     public async ValueTask ReceiveAsync<S>(SeraAnyStruct value, S serialize) where S : IAsyncStructSerializer
     {
-        switch (value.Kind)
+        foreach (var (k, ik, v) in value.Fields)
         {
-            case SeraAnyStructKind.String:
-                foreach (var (k, v) in value.StringKeyFields)
-                {
-                    await serialize.WriteFieldAsync(k, v, this);
-                }
-                break;
-            case SeraAnyStructKind.Int:
-                foreach (var (k, v) in value.IntKeyFields)
-                {
-                    await serialize.WriteFieldAsync(k, v, this, null);
-                }
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
+            await serialize.WriteFieldAsync(k, ik, v, this);
         }
     }
 
@@ -479,14 +438,14 @@ public record AnyImpl :
     {
         var name = access.ViewStructName();
         var cap = access.GetLength();
-        Dictionary<string, SeraAny> fields;
+        List<(string, long?, SeraAny)> fields;
         if (cap.HasValue)
         {
             fields = new((int)cap.Value);
             for (nuint i = 0; i < cap.Value; i++)
             {
                 access.ReadField(out SeraAny v, this);
-                fields[$"{i}"] = v;
+                fields.Add(($"{i}", (long)i, v));
             }
         }
         else
@@ -495,7 +454,7 @@ public record AnyImpl :
             for (nuint i = 0; access.HasNext(); i++)
             {
                 access.ReadField(out SeraAny v, this);
-                fields[$"{i}"] = v;
+                fields.Add(($"{i}", (long)i, v));
             }
         }
         return SeraAny.MakeStruct(new SeraAnyStruct(fields) { StructName = name });
@@ -505,53 +464,28 @@ public record AnyImpl :
     {
         var name = access.ViewStructName();
         var cap = access.GetLength();
-        var kind = access.KeyKind();
-        if ((kind & SeraStructKeyKind.Int) == 0)
+        List<(string, long?, SeraAny)> fields;
+        if (cap.HasValue)
         {
-            Dictionary<string, SeraAny> fields;
-            if (cap.HasValue)
+            fields = new((int)cap.Value);
+            for (nuint i = 0; i < cap.Value; i++)
             {
-                fields = new((int)cap.Value);
-                for (nuint i = 0; i < cap.Value; i++)
-                {
-                    access.ReadField(out var k, out SeraAny v, this);
-                    fields[k] = v;
-                }
+                access.ReadField(out var k, out var ik, out SeraAny v, this);
+                if (k == null && ik == null) throw new DeserializeException("Deserializer implementation error");
+                fields.Add((k ?? $"{ik}", ik, v));
             }
-            else
-            {
-                fields = new();
-                while (access.HasNext())
-                {
-                    access.ReadField(out var k, out SeraAny v, this);
-                    fields[k] = v;
-                }
-            }
-            return SeraAny.MakeStruct(new SeraAnyStruct(fields) { StructName = name });
         }
         else
         {
-            Dictionary<nuint, SeraAny> fields;
-            if (cap.HasValue)
+            fields = new();
+            while (access.HasNext())
             {
-                fields = new((int)cap.Value);
-                for (nuint i = 0; i < cap.Value; i++)
-                {
-                    access.ReadFieldIntKey(out var k, out SeraAny v, this);
-                    fields[k] = v;
-                }
+                access.ReadField(out var k, out var ik, out SeraAny v, this);
+                if (k == null && ik == null) throw new DeserializeException("Deserializer implementation error");
+                fields.Add((k ?? $"{ik}", ik, v));
             }
-            else
-            {
-                fields = new();
-                while (access.HasNext())
-                {
-                    access.ReadFieldIntKey(out var k, out SeraAny v, this);
-                    fields[k] = v;
-                }
-            }
-            return SeraAny.MakeStruct(new SeraAnyStruct(fields) { StructName = name });
         }
+        return SeraAny.MakeStruct(new SeraAnyStruct(fields) { StructName = name });
     }
 
     public SeraAny VisitVariantUnit<A>(Variant variant, A access) where A : IVariantAccess
@@ -730,14 +664,14 @@ public record AnyImpl :
     {
         var name = await access.ViewStructNameAsync();
         var cap = await access.GetLengthAsync();
-        Dictionary<string, SeraAny> fields;
+        List<(string, long?, SeraAny)> fields;
         if (cap.HasValue)
         {
             fields = new((int)cap.Value);
             for (nuint i = 0; i < cap.Value; i++)
             {
                 var v = await access.ReadFieldAsync<SeraAny, AnyImpl>(this);
-                fields[$"{i}"] = v;
+                fields.Add(($"{i}", (long)i, v));
             }
         }
         else
@@ -746,7 +680,7 @@ public record AnyImpl :
             for (nuint i = 0; await access.HasNextAsync(); i++)
             {
                 var v = await access.ReadFieldAsync<SeraAny, AnyImpl>(this);
-                fields[$"{i}"] = v;
+                fields.Add(($"{i}", (long)i, v));
             }
         }
         return SeraAny.MakeStruct(new SeraAnyStruct(fields) { StructName = name });
@@ -756,53 +690,28 @@ public record AnyImpl :
     {
         var name = await access.ViewStructNameAsync();
         var cap = await access.GetLengthAsync();
-        var kind = await access.KeyKindAsync();
-        if ((kind & SeraStructKeyKind.Int) == 0)
+        List<(string, long?, SeraAny)> fields;
+        if (cap.HasValue)
         {
-            Dictionary<string, SeraAny> fields;
-            if (cap.HasValue)
+            fields = new((int)cap.Value);
+            for (nuint i = 0; i < cap.Value; i++)
             {
-                fields = new((int)cap.Value);
-                for (nuint i = 0; i < cap.Value; i++)
-                {
-                    var (k, v) = await access.ReadFieldAsync<SeraAny, AnyImpl>(this);
-                    fields[k] = v;
-                }
+                var (k, ik, v) = await access.ReadFieldAsync<SeraAny, AnyImpl>(this);
+                if (k == null && ik == null) throw new DeserializeException("Deserializer implementation error");
+                fields.Add((k ?? $"{ik}", ik, v));
             }
-            else
-            {
-                fields = new();
-                while (await access.HasNextAsync())
-                {
-                    var (k, v) = await access.ReadFieldAsync<SeraAny, AnyImpl>(this);
-                    fields[k] = v;
-                }
-            }
-            return SeraAny.MakeStruct(new SeraAnyStruct(fields) { StructName = name });
         }
         else
         {
-            Dictionary<nuint, SeraAny> fields;
-            if (cap.HasValue)
+            fields = new();
+            while (await access.HasNextAsync())
             {
-                fields = new((int)cap.Value);
-                for (nuint i = 0; i < cap.Value; i++)
-                {
-                    var (k, v) = await access.ReadFieldIntKeyAsync<SeraAny, AnyImpl>(this);
-                    fields[k] = v;
-                }
+                var (k, ik, v) = await access.ReadFieldAsync<SeraAny, AnyImpl>(this);
+                if (k == null && ik == null) throw new DeserializeException("Deserializer implementation error");
+                fields.Add((k ?? $"{ik}", ik, v));
             }
-            else
-            {
-                fields = new();
-                while (await access.HasNextAsync())
-                {
-                    var (k, v) = await access.ReadFieldIntKeyAsync<SeraAny, AnyImpl>(this);
-                    fields[k] = v;
-                }
-            }
-            return SeraAny.MakeStruct(new SeraAnyStruct(fields) { StructName = name });
         }
+        return SeraAny.MakeStruct(new SeraAnyStruct(fields) { StructName = name });
     }
 
     public async ValueTask<SeraAny> VisitVariantUnitAsync<A>(Variant variant, A access) where A : IAsyncVariantAccess

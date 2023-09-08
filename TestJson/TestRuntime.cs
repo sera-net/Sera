@@ -1,4 +1,5 @@
-﻿using Sera.Json;
+﻿using Sera;
+using Sera.Json;
 using Sera.Json.Runtime;
 
 namespace TestJson;
@@ -73,6 +74,31 @@ public class TestRuntime
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"Member1\":{\"Member1\":123456}}"));
+    }
+
+    #endregion
+    
+    #region Struct3
+
+    public class Struct3
+    {
+        [Sera(1)]
+        public int Member1 { get; set; } = 123456;
+        [Sera(2)]
+        public int Member2 = 654321;
+    }
+
+    [Test]
+    public void TestStruct3()
+    {
+        var obj = new Struct3();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"Member1\":123456,\"Member2\":654321}"));
     }
 
     #endregion

@@ -737,18 +737,9 @@ public static partial class DeserializerEx
 
 #region Struct
 
-[Flags]
-public enum SeraStructKeyKind : byte
-{
-    Unknown = 0,
-    
-    String = 1 << 0,
-    Int = 1 << 1,
-}
-
 public partial interface IDeserializer
 {
-    public R ReadStruct<R, V>(string? name, nuint? len, Memory<string>? fields, V visitor)
+    public R ReadStruct<R, V>(string? name, nuint? len, Memory<(string key, nuint? int_key)>? fields, V visitor)
         where V : IStructDeserializerVisitor<R>;
 }
 
@@ -775,20 +766,18 @@ public interface IStructSeqAccess : IStructAccess
 
 public interface IStructMapAccess : IStructAccess
 {
-    public SeraStructKeyKind KeyKind();
-
     public bool HasNext();
 
-    public void ReadField<T, D>(out string key, out T result, D deserialize)
-        where D : IDeserialize<T>;
-
-    public void ReadFieldIntKey<T, D>(out nuint key, out T result, D deserialize)
+    /// <summary>
+    /// At least one of string key and int key must be provided
+    /// </summary>
+    public void ReadField<T, D>(out string? key, out long? int_key, out T result, D deserialize)
         where D : IDeserialize<T>;
 }
 
 public partial interface IAsyncDeserializer
 {
-    public ValueTask<R> ReadStructAsync<R, V>(string? name, nuint? len, Memory<string>? fields, V visitor)
+    public ValueTask<R> ReadStructAsync<R, V>(string? name, nuint? len, Memory<(string key, nuint? int_key)>? fields, V visitor)
         where V : IAsyncStructDeserializerVisitor<R>;
 }
 
@@ -815,14 +804,12 @@ public interface IAsyncStructSeqAccess : IAsyncStructAccess
 
 public interface IAsyncStructMapAccess : IAsyncStructAccess
 {
-    public ValueTask<SeraStructKeyKind> KeyKindAsync();
-
     public ValueTask<bool> HasNextAsync();
 
-    public ValueTask<(string key, T result)> ReadFieldAsync<T, D>(D deserialize)
-        where D : IAsyncDeserialize<T>;
-
-    public ValueTask<(nuint key, T result)> ReadFieldIntKeyAsync<T, D>(D deserialize)
+    /// <summary>
+    /// At least one of string key and int key must be provided
+    /// </summary>
+    public ValueTask<(string? key, long? int_key, T result)> ReadFieldAsync<T, D>(D deserialize)
         where D : IAsyncDeserialize<T>;
 }
 

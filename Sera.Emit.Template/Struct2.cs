@@ -26,23 +26,23 @@ public class Struct2Impl : ISerialize<Struct2>, IStructSerializerReceiver<Struct
     public void Receive<S>(Struct2 value, S serializer) where S : IStructSerializer
     {
         // serializer.WriteField("Property1", value.Property1, _impl_Int32);
-        serializer.WriteField("Field1", value.Field1, _impl_Int32);
+        serializer.WriteField("Field1", 1, value.Field1, _impl_Int32);
         // serializer.WriteField("Property2", value.Property2!, _impl_String);
         // serializer.WriteField("Field2", value.Field2!, _impl_String);
     }
-    
+
     public void Receive2<S>(Struct2 value, S serializer) where S : struct, IStructSerializer
     {
         // serializer.WriteField("Property1", value.Property1, _impl_Int32);
-        serializer.WriteField("Field1", value.Field1, _impl_Int32);
+        serializer.WriteField("Field1", 1, value.Field1, _impl_Int32);
         // serializer.WriteField("Property2", value.Property2!, _impl_String);
         // serializer.WriteField("Field2", value.Field2!, _impl_String);
-    }   
-    
+    }
+
     public void Receive3<S>(Struct2 value, S serializer) where S : class, IStructSerializer
     {
         // serializer.WriteField("Property1", value.Property1, _impl_Int32);
-        serializer.WriteField("Field1", value.Field1, _impl_Int32);
+        serializer.WriteField("Field1", 1, value.Field1, _impl_Int32);
         // serializer.WriteField("Property2", value.Property2!, _impl_String);
         // serializer.WriteField("Field2", value.Field2!, _impl_String);
     }

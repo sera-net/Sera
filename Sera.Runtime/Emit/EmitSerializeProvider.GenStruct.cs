@@ -22,12 +22,15 @@ internal partial class EmitSerializeProvider
                 {
                     var get_method = p.GetMethod;
                     if (get_method == null) return null;
-                    if (!get_method.IsPublic) return null; // todo pass private by attr
-                    var name = p.Name; // todo change name by attr
+                    var sera_ignore_attr = p.GetCustomAttribute<SeraIgnoreAttribute>();
+                    var sera_attr = p.GetCustomAttribute<SeraAttribute>();
+                    if (sera_ignore_attr?.Ser ?? (!get_method.IsPublic && sera_attr == null)) return null;
+                    var name = sera_attr?.Name ?? p.Name;
                     var type = p.PropertyType;
                     return new StructMember
                     {
                         Name = name,
+                        IntKey = sera_attr?.IntKey,
                         Property = p,
                         Kind = PropertyOrField.Property,
                         Type = type,
@@ -35,12 +38,15 @@ internal partial class EmitSerializeProvider
                 }
                 else if (m is FieldInfo f)
                 {
-                    if (!f.IsPublic) return null; // todo pass private by attr
-                    var name = f.Name; // todo change name by attr
+                    var sera_ignore_attr = f.GetCustomAttribute<SeraIgnoreAttribute>();
+                    var sera_attr = f.GetCustomAttribute<SeraAttribute>();
+                    if (sera_ignore_attr?.Ser ?? (!f.IsPublic && sera_attr == null)) return null;
+                    var name = sera_attr?.Name ?? f.Name;
                     var type = f.FieldType;
                     return new StructMember
                     {
                         Name = name,
+                        IntKey = sera_attr?.IntKey,
                         Field = f,
                         Kind = PropertyOrField.Field,
                         Type = type,
@@ -55,6 +61,7 @@ internal partial class EmitSerializeProvider
     internal record StructMember
     {
         public required string Name { get; set; }
+        public long? IntKey { get; set; }
         public required Type Type { get; set; }
         public PropertyInfo? Property { get; set; }
         public FieldInfo? Field { get; set; }

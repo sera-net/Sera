@@ -326,16 +326,14 @@ public interface IStructSerializerReceiver<in T>
 
 public interface IStructSerializer
 {
-    public void WriteField<T, S>(string key, T value, S serializer) where S : ISerialize<T>
-        => WriteField(key.AsMemory(), value, serializer);
+    public void WriteField<T, S>(string key, long? int_key, T value, S serializer) where S : ISerialize<T>
+        => WriteField(key.AsMemory(), int_key, value, serializer);
 
-    public void WriteField<T, S>(ReadOnlyMemory<char> key, T value, S serializer) where S : ISerialize<T>
-        => WriteField(key.Span, value, serializer);
+    public void WriteField<T, S>(ReadOnlyMemory<char> key, long? int_key, T value, S serializer)
+        where S : ISerialize<T>
+        => WriteField(key.Span, int_key, value, serializer);
 
-    public void WriteField<T, S>(ReadOnlySpan<char> key, T value, S serializer) where S : ISerialize<T>;
-
-    public void WriteField<T, S>(nuint key, T value, S serializer, SerializerPrimitiveHint? key_hint)
-        where S : ISerialize<T>;
+    public void WriteField<T, S>(ReadOnlySpan<char> key, long? int_key, T value, S serializer) where S : ISerialize<T>;
 }
 
 public partial interface IAsyncSerializer
@@ -355,12 +353,10 @@ public interface IAsyncStructSerializerReceiver<in T>
 
 public interface IAsyncStructSerializer
 {
-    public ValueTask WriteFieldAsync<T, S>(string key, T value, S serializer) where S : ISerialize<T>
-        => WriteFieldAsync(key.AsMemory(), value, serializer);
+    public ValueTask WriteFieldAsync<T, S>(string key, long? int_key, T value, S serializer) where S : ISerialize<T>
+        => WriteFieldAsync(key.AsMemory(), int_key, value, serializer);
 
-    public ValueTask WriteFieldAsync<T, S>(ReadOnlyMemory<char> key, T value, S serializer) where S : ISerialize<T>;
-
-    public ValueTask WriteFieldAsync<T, S>(nuint key, T value, S serializer, SerializerPrimitiveHint? key_hint)
+    public ValueTask WriteFieldAsync<T, S>(ReadOnlyMemory<char> key, long? int_key, T value, S serializer)
         where S : ISerialize<T>;
 }
 

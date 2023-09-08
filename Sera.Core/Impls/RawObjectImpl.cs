@@ -66,11 +66,12 @@ public class RawObjectNonNullImpl :
         => ValueTask.CompletedTask;
 
     public object Read<D>(D deserializer, ISeraOptions options) where D : IDeserializer
-        => deserializer.ReadStruct<object, EmptyStructVisitor<object>>(nameof(Object), 0, Array.Empty<string>(),
+        => deserializer.ReadStruct<object, EmptyStructVisitor<object>>(nameof(Object), 0,
+            Array.Empty<(string, nuint?)>(),
             new(new()));
 
     public ValueTask<object> ReadAsync<D>(D deserializer, ISeraOptions options) where D : IAsyncDeserializer
         => deserializer.ReadStructAsync<object, EmptyStructVisitor<object>>(
-            nameof(Object), 0, Array.Empty<string>(), new(new())
+            nameof(Object), 0, Array.Empty<(string, nuint?)>(), new(new())
         );
 }

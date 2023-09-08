@@ -444,61 +444,28 @@ public record SeraBoxed<T>(T Value) : IEquatable<T>
     public override string ToString() => $"{Value}";
 }
 
-public enum SeraAnyStructKind
+public record SeraAnyStruct(List<(string key, long? int_key, SeraAny value)> Fields)
 {
-    String,
-    Int,
-}
-
-public record SeraAnyStruct
-{
-    public SeraAnyStruct(Dictionary<string, SeraAny> fields)
-    {
-        _fields = fields;
-        Kind = SeraAnyStructKind.String;
-    }
-
-    public SeraAnyStruct(Dictionary<nuint, SeraAny> fields)
-    {
-        _fields = fields;
-        Kind = SeraAnyStructKind.Int;
-    }
-
-    private object _fields;
-    public Dictionary<string, SeraAny> StringKeyFields => (Dictionary<string, SeraAny>)_fields;
-    public Dictionary<nuint, SeraAny> IntKeyFields => (Dictionary<nuint, SeraAny>)_fields;
+    public List<(string key, long? int_key, SeraAny value)> Fields { get; set; } = Fields;
     public string? StructName { get; set; }
-    public SeraAnyStructKind Kind { get; }
 
     public virtual bool Equals(SeraAnyStruct? other)
     {
         if (ReferenceEquals(null, other)) return false;
         if (ReferenceEquals(this, other)) return true;
-        return StructName == other.StructName && Kind == other.Kind && Kind switch
-        {
-            SeraAnyStructKind.String => StringKeyFields.DictEq(other.StringKeyFields),
-            SeraAnyStructKind.Int => IntKeyFields.DictEq(other.IntKeyFields),
-            _ => throw new ArgumentOutOfRangeException()
-        };
+        return StructName == other.StructName && Fields.SequenceEqual(other.Fields);
     }
 
     public override int GetHashCode()
     {
         // ReSharper disable once NonReadonlyMemberInGetHashCode
-        return HashCode.Combine(StructName, Kind, Kind switch
-        {
-            SeraAnyStructKind.String => StringKeyFields.DictHash(),
-            SeraAnyStructKind.Int => IntKeyFields.DictHash(),
-            _ => throw new ArgumentOutOfRangeException()
-        });
+        return HashCode.Combine(StructName, 
+            // ReSharper disable once NonReadonlyMemberInGetHashCode
+            Fields.SeqHash());
     }
 
     public override string ToString() =>
-        $"struct {StructName ?? "_"} {{ {string.Join(", ", Kind switch {
-            SeraAnyStructKind.String => StringKeyFields.Select(static kv => $"{kv.Key} = {kv.Value}"),
-            SeraAnyStructKind.Int => IntKeyFields.Select(static kv => $"{kv.Key} = {kv.Value}"),
-            _ => throw new ArgumentOutOfRangeException()
-        })} }}";
+        $"struct {StructName ?? "_"} {{ {string.Join(", ", Fields.Select(static kv => $"{kv.key} = {kv.value}"))} }}";
 }
 
 public record SeraAnyVariant(Variant Variant, SeraAny? Value)

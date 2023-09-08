@@ -20,6 +20,22 @@ public sealed class DeserializableAttribute : Attribute
     public bool NoAsync { get; set; } = false;
 }
 
+/// <summary>Mark ignore</summary>
+[AttributeUsage(AttributeTargets.All)]
+public sealed class SeraIgnoreAttribute : Attribute
+{
+    public bool Ser { get; set; } = true;
+    public bool De { get; set; } = true;
+
+    public SeraIgnoreAttribute() { }
+
+    public SeraIgnoreAttribute(bool ser, bool de)
+    {
+        Ser = ser;
+        De = de;
+    }
+}
+
 /// <summary>Prompts when generating implementation</summary>
 [AttributeUsage(AttributeTargets.All)]
 public sealed class SeraAttribute : Attribute
@@ -31,7 +47,25 @@ public sealed class SeraAttribute : Attribute
     /// <summary>
     /// Specify the field int id
     /// </summary>
-    public nuint? IntKey { get; set; }
+    public long? IntKey { get; set; }
+
+    public SeraAttribute() { }
+
+    public SeraAttribute(string name)
+    {
+        Name = name;
+    }
+
+    public SeraAttribute(long intKey)
+    {
+        IntKey = intKey;
+    }
+
+    public SeraAttribute(string name, long intKey)
+    {
+        Name = name;
+        IntKey = intKey;
+    }
 }
 
 #endregion

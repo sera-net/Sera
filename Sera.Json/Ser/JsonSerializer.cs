@@ -629,19 +629,10 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
 
     private record StructSerializer(JsonSerializer self) : IStructSerializer
     {
-        public void WriteField<T, S>(ReadOnlySpan<char> key, T value, S serializer) where S : ISerialize<T>
+        public void WriteField<T, S>(ReadOnlySpan<char> key, long? int_key, T value, S serializer) where S : ISerialize<T>
         {
             self.CheckWriteField();
             self.Writer.WriteString(key, true);
-            self.Writer.Write(":");
-            serializer.Write(self, value, self.Options);
-        }
-
-        public void WriteField<T, S>(UIntPtr key, T value, S serializer, SerializerPrimitiveHint? key_hint)
-            where S : ISerialize<T>
-        {
-            self.CheckWriteField();
-            self.WriteNumber(32, key, default, true);
             self.Writer.Write(":");
             serializer.Write(self, value, self.Options);
         }

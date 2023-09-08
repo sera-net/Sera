@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -9,6 +10,8 @@ namespace Sera.Runtime.Utils;
 
 internal static class ReflectionUtils
 {
+    public static ConstructorInfo Nullable_UInt64_ctor { get; } = typeof(long?).GetConstructor(new[] { typeof(long) })!;
+
     public static MethodInfo StaticRuntimeProvider_TryGetSerialize { get; } =
         typeof(StaticRuntimeProvider).GetMethod("TryGetSerialize")!;
 
@@ -26,9 +29,9 @@ internal static class ReflectionUtils
         .Single(m =>
             m is { Name: "WriteField", IsGenericMethod: true }
             && m.GetGenericArguments() is { Length: 2 }
-            && m.GetParameters() is { Length: 3 } p && p[0].ParameterType == typeof(string)
+            && m.GetParameters() is { Length: 4 } p && p[0].ParameterType == typeof(string)
         );
-    
+
     public static ModuleBuilder CreateAssembly(string name)
     {
         var asm_name = new AssemblyName($"{nameof(Sera)}.{nameof(Runtime)}.{nameof(Emit)}.Impls.{name}");
@@ -37,7 +40,8 @@ internal static class ReflectionUtils
         {
             var con = typeof(DebuggableAttribute).GetConstructor(new[] { typeof(bool), typeof(bool) })!;
             var debug_attr = new CustomAttributeBuilder(con, new object[] { true, true });
-            asm = AssemblyBuilder.DefineDynamicAssembly(asm_name, AssemblyBuilderAccess.RunAndCollect, new[] { debug_attr });
+            asm = AssemblyBuilder.DefineDynamicAssembly(asm_name, AssemblyBuilderAccess.RunAndCollect,
+                new[] { debug_attr });
         }
         else
         {
