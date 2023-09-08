@@ -1,4 +1,5 @@
-﻿using Sera;
+﻿using JetBrains.Annotations;
+using Sera;
 using Sera.Json;
 using Sera.Json.Runtime;
 
@@ -30,6 +31,7 @@ public class TestRuntime
 
     #region Struct1
 
+    [SeraIncludeField]
     public class Struct1
     {
         public int Member1 { get; set; } = 123456;
@@ -77,7 +79,7 @@ public class TestRuntime
     }
 
     #endregion
-    
+
     #region Struct3
 
     public class Struct3
@@ -102,7 +104,33 @@ public class TestRuntime
     }
 
     #endregion
+    
+    #region Struct4
 
+    [SeraIncludeField]
+    public struct Struct4
+    {
+        public int Member1 { get; set; } = 123456;
+        public int Member2 = 654321;
+
+        public Struct4() { }
+    }
+
+    [Test]
+    public void TestStruct4()
+    {
+        var obj = new Struct4();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"Member1\":123456,\"Member2\":654321}"));
+    }
+
+    #endregion
+    
     #region StructCircularReference1
 
     public class StructCircularReference1
@@ -152,6 +180,30 @@ public class TestRuntime
 
     #endregion
 
+    #region StructPrivateField1
+
+    public class StructPrivateField1
+    {
+        private int Member1 { get; set; } = 123456;
+        private int Member2 = 654321;
+    }
+
+    [Test]
+    public void TestStructPrivateField1()
+    {
+        var obj = new StructPrivateField1();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{}"));
+        // todo write test
+    }
+
+    #endregion
+
     #region StructPrivateTypeMember1
 
     public class StructPrivateTypeMember1
@@ -172,7 +224,7 @@ public class TestRuntime
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{}"));
-        // todo
+        // todo write test
     }
 
     #endregion

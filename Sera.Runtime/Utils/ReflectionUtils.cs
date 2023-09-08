@@ -32,9 +32,11 @@ internal static class ReflectionUtils
             && m.GetParameters() is { Length: 4 } p && p[0].ParameterType == typeof(string)
         );
 
+    public static string GetAsmName(string name) => $"{nameof(Sera)}.{nameof(Runtime)}.{nameof(Emit)}.Impls.{name}";
+
     public static ModuleBuilder CreateAssembly(string name)
     {
-        var asm_name = new AssemblyName($"{nameof(Sera)}.{nameof(Runtime)}.{nameof(Emit)}.Impls.{name}");
+        var asm_name = new AssemblyName(GetAsmName(name));
         AssemblyBuilder asm;
         if (Debugger.IsAttached)
         {

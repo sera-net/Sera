@@ -20,6 +20,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Sera.Core\Sera.Core.csproj" />
+      <ProjectReference Include="..\Sera.Runtime\Sera.Runtime.csproj" />
     </ItemGroup>
 
 </Project>

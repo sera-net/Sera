@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using Sera.Core;
 using Sera.Core.Impls;
 using Sera.Core.Ser;
@@ -46,7 +47,7 @@ internal partial class EmitSerializeProvider
 
         #region ready members
 
-        var members = GetStructMembers(target);
+        var members = GetStructMembers(target, true);
 
         var field_count = members.Length;
 
@@ -175,18 +176,34 @@ internal partial class EmitSerializeProvider
 
                 if (member.Kind is PropertyOrField.Property)
                 {
-                    #region load value
+                    if (target.IsValueType)
+                    {
+                        #region load value
 
-                    ilg.Emit(OpCodes.Ldarga_S, 1);
+                        ilg.Emit(OpCodes.Ldarga_S, 1);
 
-                    #endregion
+                        #endregion
 
-                    #region get value.mermber_property
+                        #region get value.mermber_property
+                    
+                        ilg.Emit(OpCodes.Call, member.Property!.GetMethod!);
 
-                    ilg.Emit(OpCodes.Constrained, target);
-                    ilg.Emit(OpCodes.Callvirt, member.Property!.GetMethod!);
+                        #endregion
+                    }
+                    else
+                    {
+                        #region load value
 
-                    #endregion
+                        ilg.Emit(OpCodes.Ldarg_1);
+
+                        #endregion
+
+                        #region get value.mermber_property
+
+                        ilg.Emit(OpCodes.Callvirt, member.Property!.GetMethod!);
+
+                        #endregion
+                    }
                 }
                 else if (member.Kind is PropertyOrField.Field)
                 {

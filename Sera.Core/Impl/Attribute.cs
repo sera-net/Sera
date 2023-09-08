@@ -20,7 +20,11 @@ public sealed class DeserializableAttribute : Attribute
     public bool NoAsync { get; set; } = false;
 }
 
-/// <summary>Mark ignore</summary>
+/// <summary>Mark fields should be included when (de)serializing</summary>
+[AttributeUsage(AttributeTargets.All)]
+public sealed class SeraIncludeFieldAttribute : Attribute { }
+
+/// <summary>Mark this member should be ignored when (de)serializing</summary>
 [AttributeUsage(AttributeTargets.All)]
 public sealed class SeraIgnoreAttribute : Attribute
 {

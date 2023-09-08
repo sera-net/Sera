@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization;
 using System.Threading;
 using Sera.Core;
 using Sera.Runtime.Utils;
@@ -9,8 +10,29 @@ namespace Sera.Runtime.Emit;
 
 internal partial class EmitSerializeProvider
 {
-    public StructMember[] GetStructMembers(Type target)
+    public static bool IsSkipped(MemberInfo m, bool ser)
     {
+        var sera_ignore_attr = m.GetCustomAttribute<SeraIgnoreAttribute>();
+        if (ser)
+        {
+            if (sera_ignore_attr?.Ser ?? false) return true;
+        }
+        else
+        {
+            if (sera_ignore_attr?.De ?? false) return true;
+        }
+
+        var ignore_data_member_attr = m.GetCustomAttribute<IgnoreDataMemberAttribute>();
+        if (ignore_data_member_attr != null) return true;
+
+        var non_serialized_attr = m.GetCustomAttribute<NonSerializedAttribute>();
+        return non_serialized_attr != null;
+    }
+
+    public StructMember[] GetStructMembers(Type target, bool ser)
+    {
+        var include_field_attr = target.GetCustomAttribute<SeraIncludeFieldAttribute>();
+
         var members = target.GetMembers(
             BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic
         );
@@ -22,9 +44,12 @@ internal partial class EmitSerializeProvider
                 {
                     var get_method = p.GetMethod;
                     if (get_method == null) return null;
-                    var sera_ignore_attr = p.GetCustomAttribute<SeraIgnoreAttribute>();
+
+                    var skip = IsSkipped(p, ser);
                     var sera_attr = p.GetCustomAttribute<SeraAttribute>();
-                    if (sera_ignore_attr?.Ser ?? (!get_method.IsPublic && sera_attr == null)) return null;
+                    var include = get_method.IsPublic || sera_attr != null;
+                    if (skip || !include) return null;
+
                     var name = sera_attr?.Name ?? p.Name;
                     var type = p.PropertyType;
                     return new StructMember
@@ -38,9 +63,11 @@ internal partial class EmitSerializeProvider
                 }
                 else if (m is FieldInfo f)
                 {
-                    var sera_ignore_attr = f.GetCustomAttribute<SeraIgnoreAttribute>();
+                    var skip = IsSkipped(f, ser);
                     var sera_attr = f.GetCustomAttribute<SeraAttribute>();
-                    if (sera_ignore_attr?.Ser ?? (!f.IsPublic && sera_attr == null)) return null;
+                    var include = (include_field_attr != null && f.IsPublic) || sera_attr != null;
+                    if (skip || !include) return null;
+
                     var name = sera_attr?.Name ?? f.Name;
                     var type = f.FieldType;
                     return new StructMember
