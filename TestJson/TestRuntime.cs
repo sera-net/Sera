@@ -84,9 +84,9 @@ public class TestRuntime
 
     public class Struct3
     {
-        [Sera(1)]
+        [SeraRename(1)]
         public int Member1 { get; set; } = 123456;
-        [Sera(2)]
+        [SeraRename(2), SeraInclude]
         public int Member2 = 654321;
     }
 
@@ -104,7 +104,7 @@ public class TestRuntime
     }
 
     #endregion
-    
+
     #region Struct4
 
     [SeraIncludeField]
@@ -130,7 +130,7 @@ public class TestRuntime
     }
 
     #endregion
-    
+
     #region StructCircularReference1
 
     public class StructCircularReference1
@@ -184,8 +184,9 @@ public class TestRuntime
 
     public class StructPrivateField1
     {
+        [SeraInclude]
         private int Member1 { get; set; } = 123456;
-        [UsedImplicitly]
+        [SeraInclude, UsedImplicitly]
         private int Member2 = 654321;
     }
 
@@ -199,8 +200,7 @@ public class TestRuntime
             .Serialize(obj);
 
         Console.WriteLine(str);
-        Assert.That(str, Is.EqualTo("{}"));
-        // todo write test
+        Assert.That(str, Is.EqualTo("{\"Member1\":123456,\"Member2\":654321}"));
     }
 
     #endregion

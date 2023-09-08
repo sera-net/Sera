@@ -29,6 +29,15 @@ internal partial class EmitSerializeProvider
         return non_serialized_attr != null;
     }
 
+    public static (string name, long? int_key) GetName(MemberInfo m, bool ser)
+    {
+        // todo auto rename
+        var sera_rename_attr = m.GetCustomAttribute<SeraRenameAttribute>();
+        var name = (ser ? sera_rename_attr?.SerName : sera_rename_attr?.DeName) ?? sera_rename_attr?.Name ?? m.Name;
+        var int_key = (ser ? sera_rename_attr?.SerIntKey : sera_rename_attr?.DeIntKey) ?? sera_rename_attr?.IntKey;
+        return (name, int_key);
+    }
+
     public StructMember[] GetStructMembers(Type target, bool ser)
     {
         var include_field_attr = target.GetCustomAttribute<SeraIncludeFieldAttribute>();
@@ -46,16 +55,17 @@ internal partial class EmitSerializeProvider
                     if (get_method == null) return null;
 
                     var skip = IsSkipped(p, ser);
-                    var sera_attr = p.GetCustomAttribute<SeraAttribute>();
-                    var include = get_method.IsPublic || sera_attr != null;
+                    var sera_include_attr = p.GetCustomAttribute<SeraIncludeAttribute>();
+                    var include = get_method.IsPublic || (sera_include_attr?.Ser ?? false);
                     if (skip || !include) return null;
 
-                    var name = sera_attr?.Name ?? p.Name;
+                    var (name, int_key) = GetName(p, ser);
+
                     var type = p.PropertyType;
                     return new StructMember
                     {
                         Name = name,
-                        IntKey = sera_attr?.IntKey,
+                        IntKey = int_key,
                         Property = p,
                         Kind = PropertyOrField.Property,
                         Type = type,
@@ -64,16 +74,17 @@ internal partial class EmitSerializeProvider
                 else if (m is FieldInfo f)
                 {
                     var skip = IsSkipped(f, ser);
-                    var sera_attr = f.GetCustomAttribute<SeraAttribute>();
-                    var include = (include_field_attr != null && f.IsPublic) || sera_attr != null;
+                    var sera_include_attr = f.GetCustomAttribute<SeraIncludeAttribute>();
+                    var include = (include_field_attr != null && f.IsPublic) || (sera_include_attr?.Ser ?? false);
                     if (skip || !include) return null;
 
-                    var name = sera_attr?.Name ?? f.Name;
+                    var (name, int_key) = GetName(f, ser);
+
                     var type = f.FieldType;
                     return new StructMember
                     {
                         Name = name,
-                        IntKey = sera_attr?.IntKey,
+                        IntKey = int_key,
                         Field = f,
                         Kind = PropertyOrField.Field,
                         Type = type,

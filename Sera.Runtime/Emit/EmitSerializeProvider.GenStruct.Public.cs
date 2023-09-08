@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
 using Sera.Core;
 using Sera.Core.Impls;
 using Sera.Core.Ser;
@@ -31,7 +30,7 @@ internal partial class EmitSerializeProvider
         }
         else
         {
-            nullable_type = typeof(NullableObjectImpl<,>).MakeGenericType(target, type_builder);
+            nullable_type = typeof(ReferenceTypeWrapperSerializeImpl<,>).MakeGenericType(target, type_builder);
             stub.ser_type = nullable_type;
         }
         stub.WaitType.Set();
@@ -67,6 +66,25 @@ internal partial class EmitSerializeProvider
         }
 
         stub.deps = ser_deps;
+
+        #endregion
+
+        #region accesses
+
+        var accesses = new List<(Delegate del, string name)>();
+
+        (FieldBuilder access, MethodInfo access_invoke) AddAccess(Delegate del, Type value_type)
+        {
+            var access_del_type = typeof(AccessGet<,>).MakeGenericType(target, value_type);
+            var access_invoke = access_del_type.GetMethod("Invoke", new[] { target.MakeByRefType() })!;
+            var access_name = $"_access_{accesses.Count}";
+            var access = type_builder.DefineField(
+                access_name, access_del_type,
+                FieldAttributes.Public | FieldAttributes.Static
+            );
+            accesses.Add((del, access_name));
+            return (access, access_invoke);
+        }
 
         #endregion
 
@@ -130,7 +148,7 @@ internal partial class EmitSerializeProvider
             if (members.Any(m => !m.IntKey.HasValue))
             {
                 local_int_key_null = ilg.DeclareLocal(typeof(long?));
-                ilg.Emit(OpCodes.Ldloca_S, local_int_key_null!);
+                ilg.Emit(OpCodes.Ldloca_S, local_int_key_null);
                 ilg.Emit(OpCodes.Initobj, typeof(long?));
             }
 
@@ -176,7 +194,21 @@ internal partial class EmitSerializeProvider
 
                 if (member.Kind is PropertyOrField.Property)
                 {
-                    if (target.IsValueType)
+                    var property = member.Property!;
+                    if (!property!.GetMethod!.IsPublic)
+                    {
+                        var (del, _) = EmitPrivateAccess.Instance.AccessGetProperty(target, property);
+                        var (access, access_invoke) = AddAccess(del, property.PropertyType);
+
+                        #region access Get(ref value)
+
+                        ilg.Emit(OpCodes.Ldsfld, access);
+                        ilg.Emit(OpCodes.Ldarga_S, 1);
+                        ilg.Emit(OpCodes.Callvirt, access_invoke);
+
+                        #endregion
+                    }
+                    else if (target.IsValueType)
                     {
                         #region load value
 
@@ -185,8 +217,8 @@ internal partial class EmitSerializeProvider
                         #endregion
 
                         #region get value.mermber_property
-                    
-                        ilg.Emit(OpCodes.Call, member.Property!.GetMethod!);
+
+                        ilg.Emit(OpCodes.Call, property.GetMethod!);
 
                         #endregion
                     }
@@ -200,24 +232,41 @@ internal partial class EmitSerializeProvider
 
                         #region get value.mermber_property
 
-                        ilg.Emit(OpCodes.Callvirt, member.Property!.GetMethod!);
+                        ilg.Emit(OpCodes.Callvirt, property.GetMethod!);
 
                         #endregion
                     }
                 }
                 else if (member.Kind is PropertyOrField.Field)
                 {
-                    #region load value
+                    var field = member.Field!;
+                    if (!field.IsPublic)
+                    {
+                        var (del, _) = EmitPrivateAccess.Instance.AccessGetField(target, field);
+                        var (access, access_invoke) = AddAccess(del, field.FieldType);
 
-                    ilg.Emit(OpCodes.Ldarg_1);
+                        #region access Get(ref value)
 
-                    #endregion
+                        ilg.Emit(OpCodes.Ldsfld, access);
+                        ilg.Emit(OpCodes.Ldarga_S, 1);
+                        ilg.Emit(OpCodes.Callvirt, access_invoke);
 
-                    #region load get value.mermber_field
+                        #endregion
+                    }
+                    else
+                    {
+                        #region load value
 
-                    ilg.Emit(OpCodes.Ldfld, member.Field!);
+                        ilg.Emit(OpCodes.Ldarg_1);
 
-                    #endregion
+                        #endregion
+
+                        #region load get value.mermber_field
+
+                        ilg.Emit(OpCodes.Ldfld, field);
+
+                        #endregion
+                    }
                 }
                 else throw new ArgumentOutOfRangeException();
 
@@ -262,7 +311,7 @@ internal partial class EmitSerializeProvider
         }
         else
         {
-            nullable_type = typeof(NullableObjectImpl<,>).MakeGenericType(target, type);
+            nullable_type = typeof(ReferenceTypeWrapperSerializeImpl<,>).MakeGenericType(target, type);
             stub.ser_type = nullable_type;
         }
 
@@ -279,6 +328,16 @@ internal partial class EmitSerializeProvider
         {
             var ctor = nullable_type.GetConstructor(new[] { type })!;
             stub.ser_inst = ctor.Invoke(new[] { inst });
+        }
+
+        #endregion
+
+        #region init accesses
+
+        foreach (var (del, name) in accesses)
+        {
+            var field = type.GetField(name)!;
+            field.SetValue(null, del);
         }
 
         #endregion

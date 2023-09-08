@@ -22,7 +22,7 @@ public partial interface ISerializer : ISeraAbility
 public partial interface IAsyncSerializer : ISeraAbility
 {
     /// <inheritdoc cref="ISerializer.MarkReference{T, S}(T, S)"/>
-    public ValueTask<bool> MarkReference<T, S>(T obj, S serialize) where T : class where S : ISerialize<T>;
+    public ValueTask<bool> MarkReferenceAsync<T, S>(T obj, S serialize) where T : class where S : IAsyncSerialize<T>;
 }
 
 #endregion
