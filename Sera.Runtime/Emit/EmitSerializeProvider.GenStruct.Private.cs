@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using Sera.Core;
+using Sera.Core.Impls;
 using Sera.Core.Ser;
 using Sera.Runtime.Utils;
 
@@ -16,7 +17,17 @@ internal partial class EmitSerializeProvider
         #region ready type
 
         var type = typeof(PrivateStructSerializeImpl<>).MakeGenericType(target);
-        stub.ser_type = type;
+
+        Type? reference_type_wrapper = null;
+        if (target.IsValueType)
+        {
+            stub.ser_type = type;
+        }
+        else
+        {
+            reference_type_wrapper = typeof(ReferenceTypeWrapperSerializeImpl<,>).MakeGenericType(target, type);
+            stub.ser_type = reference_type_wrapper;
+        }
         stub.WaitType.Set();
 
         #endregion
@@ -76,12 +87,20 @@ internal partial class EmitSerializeProvider
 
         #endregion
 
-        #region create instance
+        #region create inst
 
         var ctor = type.GetConstructor(BindingFlags.Public | BindingFlags.Instance,
             new[] { typeof(string), typeof(nuint) })!;
         var inst = ctor.Invoke(new object[] { target.Name, (nuint)field_count });
-        stub.ser_inst = inst;
+        if (reference_type_wrapper == null)
+        {
+            stub.ser_inst = inst;
+        }
+        else
+        {
+            var ctor2 = reference_type_wrapper.GetConstructor(new[] { type })!;
+            stub.ser_inst = ctor2.Invoke(new[] { inst });
+        }
 
         #endregion
 

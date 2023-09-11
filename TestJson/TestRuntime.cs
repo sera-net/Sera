@@ -251,4 +251,33 @@ public class TestRuntime
     }
 
     #endregion
+    
+    #region StructPrivateTypeMember2
+
+    public class StructPrivateTypeMember2
+    {
+        [SeraInclude]
+        private PrivateType Member1 { get; set; } = new();
+
+        private class PrivateType
+        {
+            [SeraInclude]
+            private StructPrivateTypeMember2? Member1 { get; set; }
+        }
+    }
+
+    [Test]
+    public void TestStructPrivateTypeMember2()
+    {
+        var obj = new StructPrivateTypeMember2();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"Member1\":{\"Member1\":null}}"));
+    }
+
+    #endregion
 }

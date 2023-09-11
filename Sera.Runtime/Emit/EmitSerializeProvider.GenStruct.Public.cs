@@ -22,7 +22,7 @@ internal partial class EmitSerializeProvider
             $"{module.Assembly.GetName().Name}.SerializeImpl_{target.Name}",
             TypeAttributes.Public | TypeAttributes.Sealed
         );
-        Type? nullable_type = null;
+        Type? reference_type_wrapper = null;
 
         if (target.IsValueType)
         {
@@ -30,8 +30,8 @@ internal partial class EmitSerializeProvider
         }
         else
         {
-            nullable_type = typeof(ReferenceTypeWrapperSerializeImpl<,>).MakeGenericType(target, type_builder);
-            stub.ser_type = nullable_type;
+            reference_type_wrapper = typeof(ReferenceTypeWrapperSerializeImpl<,>).MakeGenericType(target, type_builder);
+            stub.ser_type = reference_type_wrapper;
         }
         stub.WaitType.Set();
 
@@ -305,14 +305,14 @@ internal partial class EmitSerializeProvider
 
         var type = type_builder.CreateType();
         stub.dep_container_type = type;
-        if (nullable_type == null)
+        if (reference_type_wrapper == null)
         {
             stub.ser_type = type;
         }
         else
         {
-            nullable_type = typeof(ReferenceTypeWrapperSerializeImpl<,>).MakeGenericType(target, type);
-            stub.ser_type = nullable_type;
+            reference_type_wrapper = typeof(ReferenceTypeWrapperSerializeImpl<,>).MakeGenericType(target, type);
+            stub.ser_type = reference_type_wrapper;
         }
 
         #endregion
@@ -320,13 +320,13 @@ internal partial class EmitSerializeProvider
         #region create inst
 
         var inst = Activator.CreateInstance(type)!;
-        if (nullable_type == null)
+        if (reference_type_wrapper == null)
         {
             stub.ser_inst = inst;
         }
         else
         {
-            var ctor = nullable_type.GetConstructor(new[] { type })!;
+            var ctor = reference_type_wrapper.GetConstructor(new[] { type })!;
             stub.ser_inst = ctor.Invoke(new[] { inst });
         }
 
