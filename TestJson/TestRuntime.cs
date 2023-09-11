@@ -205,10 +205,33 @@ public class TestRuntime
 
     #endregion
 
+    #region StructPrivateType1
+
+    private class StructPrivateType1
+    {
+        public int Member1 { get; set; } = 123;
+    }
+
+    [Test]
+    public void TestStructPrivateType1()
+    {
+        var obj = new StructPrivateType1();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"Member1\":123}"));
+    }
+
+    #endregion
+
     #region StructPrivateTypeMember1
 
     public class StructPrivateTypeMember1
     {
+        [SeraInclude]
         private PrivateType Member1 { get; set; } = new();
 
         private class PrivateType { }
@@ -224,8 +247,7 @@ public class TestRuntime
             .Serialize(obj);
 
         Console.WriteLine(str);
-        Assert.That(str, Is.EqualTo("{}"));
-        // todo write test
+        Assert.That(str, Is.EqualTo("{\"Member1\":{}}"));
     }
 
     #endregion

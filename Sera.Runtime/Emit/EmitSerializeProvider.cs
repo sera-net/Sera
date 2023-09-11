@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -48,7 +49,7 @@ internal partial class EmitSerializeProvider
         public Dictionary<Type, CacheCellDeps>? deps;
         private volatile bool deps_ready;
         private readonly object deps_ready_lock = new();
-        
+
         public void EnsureDepsReady()
         {
             if (deps == null || dep_container_type == null) return;
@@ -104,7 +105,8 @@ internal partial class EmitSerializeProvider
         {
 #pragma warning disable CS0420
             if (Interlocked.CompareExchange(ref Unsafe.As<CacheStub.CreateState, int>(ref stub.state),
-                    (int)CacheStub.CreateState.Creating, (int)CacheStub.CreateState.Idle) == (int)CacheStub.CreateState.Idle)
+                    (int)CacheStub.CreateState.Creating, (int)CacheStub.CreateState.Idle) ==
+                (int)CacheStub.CreateState.Idle)
             {
                 CreateSerialize(type, stub);
             }
@@ -127,9 +129,16 @@ internal partial class EmitSerializeProvider
         }
     }
 
-    private void GenStruct(Type type, CacheStub stub)
+    private void GenStruct(Type target, CacheStub stub)
     {
-        if (type.IsVisible) GenPublicStruct(type, stub);
-        else GenPrivateStruct(type, stub);
+        var members = GetStructMembers(target, true);
+        if (target.IsVisible && members.All(m => m.Type.IsVisible))
+        {
+            GenPublicStruct(target, members, stub);
+        }
+        else
+        {
+            GenPrivateStruct(target, members, stub);
+        }
     }
 }

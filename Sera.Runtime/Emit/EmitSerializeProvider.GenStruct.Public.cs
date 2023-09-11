@@ -12,7 +12,7 @@ namespace Sera.Runtime.Emit;
 
 internal partial class EmitSerializeProvider
 {
-    private void GenPublicStruct(Type target, CacheStub stub)
+    private void GenPublicStruct(Type target, StructMember[] members, CacheStub stub)
     {
         #region create type builder
 
@@ -45,9 +45,7 @@ internal partial class EmitSerializeProvider
         #endregion
 
         #region ready members
-
-        var members = GetStructMembers(target, true);
-
+        
         var field_count = members.Length;
 
         var ser_impl_field_names = members.AsParallel()
@@ -195,10 +193,12 @@ internal partial class EmitSerializeProvider
                 if (member.Kind is PropertyOrField.Property)
                 {
                     var property = member.Property!;
-                    if (!property!.GetMethod!.IsPublic)
+                    var prop_type = property.PropertyType;
+                    var get_method = property.GetMethod!;
+                    if (!get_method.IsPublic)
                     {
                         var (del, _) = EmitPrivateAccess.Instance.AccessGetProperty(target, property);
-                        var (access, access_invoke) = AddAccess(del, property.PropertyType);
+                        var (access, access_invoke) = AddAccess(del, prop_type);
 
                         #region access Get(ref value)
 
@@ -218,7 +218,7 @@ internal partial class EmitSerializeProvider
 
                         #region get value.mermber_property
 
-                        ilg.Emit(OpCodes.Call, property.GetMethod!);
+                        ilg.Emit(OpCodes.Call, get_method);
 
                         #endregion
                     }
@@ -232,7 +232,7 @@ internal partial class EmitSerializeProvider
 
                         #region get value.mermber_property
 
-                        ilg.Emit(OpCodes.Callvirt, property.GetMethod!);
+                        ilg.Emit(OpCodes.Callvirt, get_method);
 
                         #endregion
                     }
