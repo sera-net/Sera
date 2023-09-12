@@ -1,119 +1,19 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Serialization;
+using System.Reflection.Emit;
 using System.Threading;
 using Sera.Core;
+using Sera.Core.Impls;
 using Sera.Runtime.Utils;
 
 namespace Sera.Runtime.Emit;
 
 internal partial class EmitSerializeProvider
 {
-    public static bool IsSkipped(MemberInfo m, bool ser)
-    {
-        var sera_ignore_attr = m.GetCustomAttribute<SeraIgnoreAttribute>();
-        if (ser)
-        {
-            if (sera_ignore_attr?.Ser ?? false) return true;
-        }
-        else
-        {
-            if (sera_ignore_attr?.De ?? false) return true;
-        }
-
-        var ignore_data_member_attr = m.GetCustomAttribute<IgnoreDataMemberAttribute>();
-        if (ignore_data_member_attr != null) return true;
-
-        var non_serialized_attr = m.GetCustomAttribute<NonSerializedAttribute>();
-        return non_serialized_attr != null;
-    }
-
-    public static (string name, long? int_key) GetName(MemberInfo m, bool ser)
-    {
-        // todo auto rename
-        var sera_rename_attr = m.GetCustomAttribute<SeraRenameAttribute>();
-        var name = (ser ? sera_rename_attr?.SerName : sera_rename_attr?.DeName) ?? sera_rename_attr?.Name ?? m.Name;
-        var int_key = (ser ? sera_rename_attr?.SerIntKey : sera_rename_attr?.DeIntKey) ?? sera_rename_attr?.IntKey;
-        return (name, int_key);
-    }
-
-    public StructMember[] GetStructMembers(Type target, bool ser)
-    {
-        var include_field_attr = target.GetCustomAttribute<SeraIncludeFieldAttribute>();
-
-        var members = target.GetMembers(
-            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic
-        );
-        return members.AsParallel()
-            .AsOrdered()
-            .Select(m =>
-            {
-                if (m is PropertyInfo p)
-                {
-                    var get_method = p.GetMethod;
-                    if (get_method == null) return null;
-
-                    var skip = IsSkipped(p, ser);
-                    var sera_include_attr = p.GetCustomAttribute<SeraIncludeAttribute>();
-                    var include = get_method.IsPublic || (sera_include_attr?.Ser ?? false);
-                    if (skip || !include) return null;
-
-                    var (name, int_key) = GetName(p, ser);
-
-                    var type = p.PropertyType;
-                    return new StructMember
-                    {
-                        Name = name,
-                        IntKey = int_key,
-                        Property = p,
-                        Kind = PropertyOrField.Property,
-                        Type = type,
-                    };
-                }
-                else if (m is FieldInfo f)
-                {
-                    var skip = IsSkipped(f, ser);
-                    var sera_include_attr = f.GetCustomAttribute<SeraIncludeAttribute>();
-                    var include = (include_field_attr != null && f.IsPublic) || (sera_include_attr?.Ser ?? false);
-                    if (skip || !include) return null;
-
-                    var (name, int_key) = GetName(f, ser);
-
-                    var type = f.FieldType;
-                    return new StructMember
-                    {
-                        Name = name,
-                        IntKey = int_key,
-                        Field = f,
-                        Kind = PropertyOrField.Field,
-                        Type = type,
-                    };
-                }
-                else return null;
-            })
-            .Where(a => a != null)
-            .ToArray()!;
-    }
-
-    internal record StructMember
-    {
-        public required string Name { get; set; }
-        public long? IntKey { get; set; }
-        public required Type Type { get; set; }
-        public PropertyInfo? Property { get; set; }
-        public FieldInfo? Field { get; set; }
-        public PropertyOrField Kind { get; set; }
-    }
-
-    internal enum PropertyOrField
-    {
-        Property,
-        Field,
-    }
-
     /// <returns>Actual type: (Type, CacheStub | object)</returns>
-    private (Type impl_type, CacheStub? stub, object? impl) GetImpl(Type target, Thread thread)
+    internal (Type impl_type, CacheStub? stub, object? impl) GetSerImpl(Type target, Thread thread)
     {
         Type impl_type;
         CacheStub? stub;
@@ -134,12 +34,58 @@ internal partial class EmitSerializeProvider
         return (impl_type, stub, impl);
     }
 
-    private bool TryGetStaticImpl(Type type, out object? impl)
+    internal bool TryGetStaticImpl(Type type, out object? impl)
     {
         var method = ReflectionUtils.StaticRuntimeProvider_TryGetSerialize.MakeGenericMethod(type);
         var args = new object?[] { null };
         var r = (bool)method.Invoke(StaticRuntimeProvider.Instance, args)!;
         impl = args[0];
         return r;
+    }
+
+    private static readonly NullabilityInfoContext nullabilityInfoContext = new();
+
+    internal Dictionary<Type, CacheCellDeps> GetSerDeps(StructMember[] members, TypeBuilder dep_container_type_builder,
+        Thread current_thread)
+    {
+        var ser_impl_field_names = members.AsParallel()
+            .Select(m =>
+            {
+                var ref_nullable = false;
+                if (!m.Type.IsValueType)
+                {
+                    var null_info = m.Kind switch
+                    {
+                        PropertyOrField.Property => nullabilityInfoContext.Create(m.Property!),
+                        PropertyOrField.Field => nullabilityInfoContext.Create(m.Field!),
+                        _ => throw new ArgumentOutOfRangeException()
+                    };
+                    ref_nullable = null_info.ReadState != NullabilityState.NotNull;
+                }
+                return (m.Type, ref_nullable);
+            })
+            .DistinctBy(m => (m.Type, m.ref_nullable))
+            .Select((m, i) => (i, m.Type, m.ref_nullable))
+            .ToDictionary(a => (a.Type, a.ref_nullable), a => $"_ser_impl_{a.i}");
+
+        var ser_deps = new Dictionary<Type, CacheCellDeps>();
+
+        foreach (var ((value_type, ref_nullable), field_name) in ser_impl_field_names)
+        {
+            var (impl_type, impl_cell, impl) = GetSerImpl(value_type, current_thread);
+            var raw_impl_type = impl_type;
+            if (ref_nullable)
+            {
+                impl_type = typeof(NullableReferenceTypeImpl<,>).MakeGenericType(value_type, impl_type);
+            }
+            var field = dep_container_type_builder.DefineField(field_name, impl_type,
+                FieldAttributes.Public | FieldAttributes.Static);
+            ser_deps.Add(
+                value_type,
+                new(field, impl_type, raw_impl_type, value_type, impl_cell, impl, ref_nullable)
+            );
+        }
+
+        return ser_deps;
     }
 }

@@ -8,13 +8,8 @@ public record ReferenceTypeWrapperSerializeImpl<T, ST>(ST Serialize) : ISerializ
 {
     public void Write<S>(S serializer, T value, ISeraOptions options) where S : ISerializer
     {
-        // todo remove nullable
-        if (value == null!) serializer.WriteNone<T>();
-        else
-        {
-            if (serializer.MarkReference(value, Serialize)) return;
-            Serialize.Write(serializer, value, options);
-        }
+        if (serializer.MarkReference(value, Serialize)) return;
+        Serialize.Write(serializer, value, options);
     }
 }
 

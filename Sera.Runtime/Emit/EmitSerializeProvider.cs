@@ -4,6 +4,8 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Sera.Core.Impls;
+using Sera.Runtime.Utils;
 
 namespace Sera.Runtime.Emit;
 
@@ -61,18 +63,7 @@ internal partial class EmitSerializeProvider
                 {
                     foreach (var (_, dep) in deps!)
                     {
-                        var field_name = dep.Field.Name;
-                        var field = dep_container_type!.GetField(field_name)!;
-
-                        if (dep.ImplInst != null)
-                        {
-                            field.SetValue(null, dep.ImplInst);
-                        }
-                        else
-                        {
-                            dep.ImplCell!.WaitCreate.WaitOne();
-                            field.SetValue(null, dep.ImplCell.ser_inst);
-                        }
+                        dep.Ready(dep_container_type);
                     }
                 }
                 finally
@@ -82,20 +73,69 @@ internal partial class EmitSerializeProvider
             }
             foreach (var (_, dep) in deps)
             {
-                if (dep.ImplInst == null)
-                {
-                    dep.ImplCell!.EnsureDepsReady();
-                }
+                dep.WaitInstReady();
             }
         }
     }
 
-    internal record CacheCellDeps(FieldInfo Field, Type ImplType, CacheStub? ImplCell, object? ImplInst)
+    internal record CacheCellDeps(
+        FieldInfo Field, Type ImplType, Type RawImplType, Type ValueType, CacheStub? ImplCell, object? ImplInst,
+        bool RefNullable)
     {
         public FieldInfo Field { get; set; } = Field;
         public Type ImplType { get; set; } = ImplType;
-        public CacheStub? ImplCell { get; set; } = ImplCell;
-        public object? ImplInst { get; set; } = ImplInst;
+        public Type RawImplType { get; set; } = RawImplType;
+        public Type ValueType { get; set; } = ValueType;
+
+        private CacheStub? ImplCell { get; set; } = ImplCell;
+        private object? ImplInst { get; set; } = ImplInst;
+
+        /// <summary>
+        /// If <c>true</c>
+        /// <code>
+        /// ImplType == typeof(NullableReferenceTypeImpl&lt;typeof(ImplInst)&gt;)
+        /// </code>
+        /// </summary>
+        private bool RefNullable { get; set; } = RefNullable;
+
+        internal void Ready(Type dep_container_type)
+        {
+            var field_name = Field.Name;
+            var field = dep_container_type.GetField(field_name)!;
+
+            if (ImplInst != null)
+            {
+                var inst = ImplInst;
+                if (RefNullable)
+                {
+                    var ctor = ImplType.GetConstructor(BindingFlags.Public | BindingFlags.Instance,
+                        new[] { RawImplType })!;
+                    inst = ctor.Invoke(new[] { inst });
+                }
+                field.SetValue(null, inst);
+            }
+            else
+            {
+                ImplCell!.WaitCreate.WaitOne();
+                var inst = ImplCell.ser_inst;
+                if (RefNullable)
+                {
+                    var impl_type = field.FieldType;
+                    var ctor = impl_type.GetConstructor(BindingFlags.Public | BindingFlags.Instance,
+                        new[] { ImplCell.ser_type! })!;
+                    inst = ctor.Invoke(new[] { inst });
+                }
+                field.SetValue(null, inst);
+            }
+        }
+
+        internal void WaitInstReady()
+        {
+            if (ImplInst == null)
+            {
+                ImplCell!.EnsureDepsReady();
+            }
+        }
     }
 
     private CacheStub GetSerializeStub(Type type, Thread current_thread)
@@ -131,7 +171,7 @@ internal partial class EmitSerializeProvider
 
     private void GenStruct(Type target, CacheStub stub)
     {
-        var members = GetStructMembers(target, true);
+        var members = StructReflectionUtils.GetStructMembers(target, SerOrDe.Ser);
         if (target.IsVisible && members.All(m => m.Type.IsVisible))
         {
             GenPublicStruct(target, members, stub);

@@ -1,12 +1,27 @@
 ﻿using System.Text;
+using Sera.Core.Impls;
 using Sera.Json.Builders;
 using Sera.Json.Builders.Ser;
 using Sera.Json.Ser;
 using Sera.Runtime.Emit;
+using Sera.Runtime.Utils;
 
 namespace Sera.Json.Runtime;
 
 #region Serializer
+
+#region Utils
+
+public static partial class SeraJsonRuntime
+{
+    private static ISerialize<T> GetSerialize<T>(this EmitRuntimeProvider rt, SeraJsonOptions options)
+    {
+        if (options.RootReferenceNullable) return rt.GetMayReferenceNullableSerialize<T>();
+        else return rt.GetSerialize<T>();
+    }
+}
+
+#endregion
 
 #region ToStream
 
@@ -19,7 +34,7 @@ public static partial class SeraJsonRuntime
         {
             RuntimeProvider = rt,
         };
-        rt.GetSerialize<T>().Write(ser, value, self.Options);
+        rt.GetSerialize<T>(self.Options).Write(ser, value, self.Options);
     }
 }
 
@@ -37,7 +52,7 @@ public static partial class SeraJsonRuntime
         {
             RuntimeProvider = rt,
         };
-        rt.GetSerialize<T>().Write(ser, value, self.Options);
+        rt.GetSerialize<T>(self.Options).Write(ser, value, self.Options);
         return builder.ToString();
     }
 }
@@ -57,7 +72,7 @@ public static partial class SeraJsonRuntime
         {
             RuntimeProvider = rt,
         };
-        rt.GetSerialize<T>().Write(ser, value, self.Options);
+        rt.GetSerialize<T>(self.Options).Write(ser, value, self.Options);
     }
 }
 

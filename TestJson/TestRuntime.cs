@@ -251,7 +251,7 @@ public class TestRuntime
     }
 
     #endregion
-    
+
     #region StructPrivateTypeMember2
 
     public class StructPrivateTypeMember2
@@ -277,6 +277,28 @@ public class TestRuntime
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"Member1\":{\"Member1\":null}}"));
+    }
+
+    #endregion
+    
+    #region StructNullableField1
+
+    public class StructNullableField1
+    {
+        public object? Member1 { get; set; } = null;
+    }
+
+    [Test]
+    public void TestStructNullableField1()
+    {
+        var obj = new StructNullableField1();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"Member1\":null}"));
     }
 
     #endregion

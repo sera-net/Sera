@@ -31,6 +31,10 @@ public interface ISeraOptions
     /// Async Runtime provider
     /// </summary>
     public virtual IAsyncRuntimeProvider AsyncRuntimeProvider => StaticRuntimeProvider.Instance;
+    /// <summary>
+    /// 标记根（传入的实际参数）对象时引用类型时是否可空
+    /// </summary>
+    public virtual bool RootReferenceNullable => true;
 }
 
 public sealed class DefaultSeraOptions : ISeraOptions
@@ -46,4 +50,5 @@ public abstract record ASeraOptions : ISeraOptions
     public bool PropertyNameCaseInsensitive { get; set; } = DefaultSeraOptions.Default.PropertyNameCaseInsensitive;
     public IRuntimeProvider RuntimeProvider { get; set; } = DefaultSeraOptions.Default.RuntimeProvider;
     public IAsyncRuntimeProvider AsyncRuntimeProvider { get; set; } = DefaultSeraOptions.Default.AsyncRuntimeProvider;
+    public virtual bool RootReferenceNullable { get; set; } = DefaultSeraOptions.Default.RootReferenceNullable;
 }

@@ -47,22 +47,8 @@ internal partial class EmitSerializeProvider
         #region ready members
         
         var field_count = members.Length;
-
-        var ser_impl_field_names = members.AsParallel()
-            .DistinctBy(m => m.Type)
-            .Select((m, i) => (i, t: m.Type))
-            .ToDictionary(a => a.t, a => $"_ser_impl_{a.i}");
-
-        var ser_deps = new Dictionary<Type, CacheCellDeps>();
-
-        foreach (var (value_type, field_name) in ser_impl_field_names)
-        {
-            var (impl_type, impl_cell, impl) = GetImpl(value_type, stub.CreateThread);
-            var field = type_builder.DefineField(field_name, impl_type,
-                FieldAttributes.Public | FieldAttributes.Static);
-            ser_deps.Add(value_type, new(field, impl_type, impl_cell, impl));
-        }
-
+        
+        var ser_deps = GetSerDeps(members, type_builder, stub.CreateThread);
         stub.deps = ser_deps;
 
         #endregion
