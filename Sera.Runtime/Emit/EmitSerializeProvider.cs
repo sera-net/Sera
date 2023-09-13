@@ -16,41 +16,103 @@ internal partial class EmitSerializeProvider
     public ISerialize<T> GetSerialize<T>()
     {
         var stub = GetSerializeStub(typeof(T), Thread.CurrentThread);
-        if (stub.state != CacheStub.CreateState.Created)
-        {
-            stub.WaitCreate.WaitOne();
-        }
+        stub.EnsureInstProvided();
         stub.EnsureDepsReady();
-        return (ISerialize<T>)stub.ser_inst!;
+        return (ISerialize<T>)stub.SerInst;
     }
 
     internal class CacheStub
     {
-        public enum CreateState
+        private enum CreateState
         {
             Idle,
             Creating,
             Created,
         }
 
-        public volatile CreateState state = CreateState.Idle;
-        public readonly Thread CreateThread;
+        private volatile CreateState state = CreateState.Idle;
+        public Thread CreateThread { get; }
 
-        public readonly ManualResetEvent WaitType = new(false);
-        public readonly ManualResetEvent WaitCreate = new(false);
+        private readonly ManualResetEvent WaitType = new(false);
+        private readonly ManualResetEvent WaitCreate = new(false);
 
-        public Type? ser_type;
-        public object? ser_inst;
+        private Type? ser_type;
+        private object? ser_inst;
+
+        public Type SerType => ser_type!;
+        public object SerInst => ser_inst!;
 
         public CacheStub(Thread createThread)
         {
             CreateThread = createThread;
         }
 
-        public Type? dep_container_type;
-        public Dictionary<Type, CacheCellDeps>? deps;
+        private Type? dep_container_type;
+        private Dictionary<Type, CacheStubDeps>? deps;
         private volatile bool deps_ready;
         private readonly object deps_ready_lock = new();
+
+#pragma warning disable CS0420
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool TryEnterCreating() =>
+            Interlocked.CompareExchange(ref Unsafe.As<CreateState, int>(ref state),
+                (int)CreateState.Creating, (int)CreateState.Idle) == (int)CreateState.Idle;
+#pragma warning restore CS0420
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WaitTypeProvided()
+        {
+            WaitType.WaitOne();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WaitInstProvided()
+        {
+            WaitType.WaitOne();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void EnsureInstProvided()
+        {
+            if (state != CreateState.Created)
+            {
+                WaitInstProvided();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void MarkTypeProvided()
+        {
+            WaitType.Set();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void MarkInstProvided()
+        {
+            state = CreateState.Created;
+            WaitCreate.Set();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void ProvideType(Type type)
+        {
+            ser_type = type;
+            MarkTypeProvided();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void ProvideInst(object inst)
+        {
+            ser_inst = inst;
+            MarkInstProvided();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void ProvideDeps(Type dep_container_type, Dictionary<Type, CacheStubDeps> deps)
+        {
+            this.dep_container_type = dep_container_type;
+            this.deps = deps;
+        }
 
         public void EnsureDepsReady()
         {
@@ -78,16 +140,17 @@ internal partial class EmitSerializeProvider
         }
     }
 
-    internal record CacheCellDeps(
-        FieldInfo Field, Type ImplType, Type RawImplType, Type ValueType, CacheStub? ImplCell, object? ImplInst,
-        bool RefNullable)
+    internal record CacheStubDeps(
+        FieldInfo Field, Type ImplType, Type RawImplType, Type ValueType,
+        CacheStub? ImplStub, object? ImplInst, bool RefNullable
+    )
     {
         public FieldInfo Field { get; set; } = Field;
         public Type ImplType { get; set; } = ImplType;
         public Type RawImplType { get; set; } = RawImplType;
         public Type ValueType { get; set; } = ValueType;
 
-        private CacheStub? ImplCell { get; set; } = ImplCell;
+        private CacheStub? ImplStub { get; set; } = ImplStub;
         private object? ImplInst { get; set; } = ImplInst;
 
         /// <summary>
@@ -116,13 +179,13 @@ internal partial class EmitSerializeProvider
             }
             else
             {
-                ImplCell!.WaitCreate.WaitOne();
-                var inst = ImplCell.ser_inst;
+                ImplStub!.WaitInstProvided();
+                var inst = ImplStub.SerInst;
                 if (RefNullable)
                 {
                     var impl_type = field.FieldType;
                     var ctor = impl_type.GetConstructor(BindingFlags.Public | BindingFlags.Instance,
-                        new[] { ImplCell.ser_type! })!;
+                        new[] { ImplStub.SerType })!;
                     inst = ctor.Invoke(new[] { inst });
                 }
                 field.SetValue(null, inst);
@@ -133,7 +196,7 @@ internal partial class EmitSerializeProvider
         {
             if (ImplInst == null)
             {
-                ImplCell!.EnsureDepsReady();
+                ImplStub!.EnsureDepsReady();
             }
         }
     }
@@ -143,14 +206,10 @@ internal partial class EmitSerializeProvider
         var stub = cache.GetValue(type, _ => new(current_thread));
         if (stub.CreateThread == current_thread)
         {
-#pragma warning disable CS0420
-            if (Interlocked.CompareExchange(ref Unsafe.As<CacheStub.CreateState, int>(ref stub.state),
-                    (int)CacheStub.CreateState.Creating, (int)CacheStub.CreateState.Idle) ==
-                (int)CacheStub.CreateState.Idle)
+            if (stub.TryEnterCreating())
             {
                 CreateSerialize(type, stub);
             }
-#pragma warning restore CS0420
         }
         return stub;
     }
@@ -160,25 +219,18 @@ internal partial class EmitSerializeProvider
         try
         {
             // todo other type
-            GenStruct(type, stub);
+            if (type.IsEnum)
+            {
+                GenEnum(type, stub);
+            }
+            else
+            {
+                GenStruct(type, stub);
+            }
         }
         finally
         {
-            stub.state = CacheStub.CreateState.Created;
-            stub.WaitCreate.Set();
-        }
-    }
-
-    private void GenStruct(Type target, CacheStub stub)
-    {
-        var members = StructReflectionUtils.GetStructMembers(target, SerOrDe.Ser);
-        if (target.IsVisible && members.All(m => m.Type.IsVisible))
-        {
-            GenPublicStruct(target, members, stub);
-        }
-        else
-        {
-            GenPrivateStruct(target, members, stub);
+            stub.MarkInstProvided();
         }
     }
 }

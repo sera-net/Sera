@@ -488,6 +488,8 @@ public record AnyImpl :
         return SeraAny.MakeStruct(new SeraAnyStruct(fields) { StructName = name });
     }
 
+    public SeraAny VisitEmptyUnion() => SeraAny.MakeEmptyUnion();
+
     public SeraAny VisitVariantUnit<A>(Variant variant, A access) where A : IVariantAccess
     {
         var name = access.ViewUnionName();
@@ -713,6 +715,8 @@ public record AnyImpl :
         }
         return SeraAny.MakeStruct(new SeraAnyStruct(fields) { StructName = name });
     }
+
+    public ValueTask<SeraAny> VisitEmptyUnionAsync() => ValueTask.FromResult(SeraAny.MakeEmptyUnion());
 
     public async ValueTask<SeraAny> VisitVariantUnitAsync<A>(Variant variant, A access) where A : IAsyncVariantAccess
     {

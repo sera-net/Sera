@@ -539,6 +539,9 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
         public bool MarkReference<T, S>(T obj, S serialize) where T : class where S : ISerialize<T>
             => self.MarkReference(obj, serialize);
 
+        public void WriteEmptyUnion(string? union_name)
+            => Throw();
+
         public void WriteVariantUnit(string? union_name, Variant variant, SerializerVariantHint? hint)
             => Throw();
 
@@ -629,7 +632,8 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
 
     private record StructSerializer(JsonSerializer self) : IStructSerializer
     {
-        public void WriteField<T, S>(ReadOnlySpan<char> key, long? int_key, T value, S serializer) where S : ISerialize<T>
+        public void WriteField<T, S>(ReadOnlySpan<char> key, long? int_key, T value, S serializer)
+            where S : ISerialize<T>
         {
             self.CheckWriteField();
             self.Writer.WriteString(key, true);
@@ -657,6 +661,11 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
     #endregion
 
     #region Variant
+
+    public void WriteEmptyUnion(string? union_name)
+    {
+        WriteUnit();
+    }
 
     public void WriteVariantUnit(string? union_name, Variant variant, SerializerVariantHint? hint)
     {

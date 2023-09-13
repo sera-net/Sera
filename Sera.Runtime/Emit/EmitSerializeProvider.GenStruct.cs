@@ -12,8 +12,21 @@ namespace Sera.Runtime.Emit;
 
 internal partial class EmitSerializeProvider
 {
+    private void GenStruct(Type target, CacheStub stub)
+    {
+        var members = StructReflectionUtils.GetStructMembers(target, SerOrDe.Ser);
+        if (target.IsVisible && members.All(m => m.Type.IsVisible))
+        {
+            GenPublicStruct(target, members, stub);
+        }
+        else
+        {
+            GenPrivateStruct(target, members, stub);
+        }
+    }
+
     /// <returns>Actual type: (Type, CacheStub | object)</returns>
-    internal (Type impl_type, CacheStub? stub, object? impl) GetSerImpl(Type target, Thread thread)
+    private (Type impl_type, CacheStub? stub, object? impl) GetSerImpl(Type target, Thread thread)
     {
         Type impl_type;
         CacheStub? stub;
@@ -27,14 +40,14 @@ internal partial class EmitSerializeProvider
             stub = GetSerializeStub(target, thread);
             if (stub.CreateThread != thread)
             {
-                stub.WaitType.WaitOne();
+                stub.WaitTypeProvided();
             }
-            impl_type = stub.ser_type!;
+            impl_type = stub.SerType;
         }
         return (impl_type, stub, impl);
     }
 
-    internal bool TryGetStaticImpl(Type type, out object? impl)
+    private bool TryGetStaticImpl(Type type, out object? impl)
     {
         var method = ReflectionUtils.StaticRuntimeProvider_TryGetSerialize.MakeGenericMethod(type);
         var args = new object?[] { null };
@@ -45,8 +58,9 @@ internal partial class EmitSerializeProvider
 
     private static readonly NullabilityInfoContext nullabilityInfoContext = new();
 
-    internal Dictionary<Type, CacheCellDeps> GetSerDeps(StructMember[] members, TypeBuilder dep_container_type_builder,
-        Thread current_thread)
+    private Dictionary<Type, CacheStubDeps> GetSerDeps(
+        StructMember[] members, TypeBuilder dep_container_type_builder, Thread current_thread
+    )
     {
         var ser_impl_field_names = members.AsParallel()
             .Select(m =>
@@ -68,7 +82,7 @@ internal partial class EmitSerializeProvider
             .Select((m, i) => (i, m.Type, m.ref_nullable))
             .ToDictionary(a => (a.Type, a.ref_nullable), a => $"_ser_impl_{a.i}");
 
-        var ser_deps = new Dictionary<Type, CacheCellDeps>();
+        var ser_deps = new Dictionary<Type, CacheStubDeps>();
 
         foreach (var ((value_type, ref_nullable), field_name) in ser_impl_field_names)
         {

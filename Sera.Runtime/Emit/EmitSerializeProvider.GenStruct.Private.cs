@@ -21,14 +21,13 @@ internal partial class EmitSerializeProvider
         Type? reference_type_wrapper = null;
         if (target.IsValueType)
         {
-            stub.ser_type = type;
+            stub.ProvideType(type);
         }
         else
         {
             reference_type_wrapper = typeof(ReferenceTypeWrapperSerializeImpl<,>).MakeGenericType(target, type);
-            stub.ser_type = reference_type_wrapper;
+            stub.ProvideType(reference_type_wrapper);
         }
-        stub.WaitType.Set();
 
         #endregion
 
@@ -43,19 +42,15 @@ internal partial class EmitSerializeProvider
 
         #endregion
 
-        #region ready members
+        #region ready deps
 
         var field_count = members.Length;
-        
+
         var ser_deps = GetSerDeps(members, deps_type_builder, stub.CreateThread);
-        stub.deps = ser_deps;
-
-        #endregion
-
-        #region create type
-
+        
         var dep_container_type = deps_type_builder.CreateType();
-        stub.dep_container_type = dep_container_type;
+
+        stub.ProvideDeps(dep_container_type, ser_deps);
 
         #endregion
 
@@ -80,20 +75,13 @@ internal partial class EmitSerializeProvider
         var inst = ctor.Invoke(new object[] { target.Name, (nuint)field_count });
         if (reference_type_wrapper == null)
         {
-            stub.ser_inst = inst;
+            stub.ProvideInst(inst);
         }
         else
         {
             var ctor2 = reference_type_wrapper.GetConstructor(new[] { type })!;
-            stub.ser_inst = ctor2.Invoke(new[] { inst });
+            stub.ProvideInst(ctor2.Invoke(new[] { inst }));
         }
-
-        #endregion
-
-        #region mark type created
-
-        stub.state = CacheStub.CreateState.Created;
-        stub.WaitCreate.Set();
 
         #endregion
     }
@@ -107,7 +95,7 @@ internal partial class EmitSerializeProvider
         // ReSharper disable once StaticMemberInGenericType
         internal static StructMember[] members = null!;
         // ReSharper disable once StaticMemberInGenericType
-        internal static Dictionary<Type, CacheCellDeps> ser_deps = null!;
+        internal static Dictionary<Type, CacheStubDeps> ser_deps = null!;
 #pragma warning restore CS0414
 
         public void Write<S>(S serializer, T value, ISeraOptions options) where S : ISerializer

@@ -280,7 +280,7 @@ public class TestRuntime
     }
 
     #endregion
-    
+
     #region StructNullableField1
 
     public class StructNullableField1
@@ -302,4 +302,28 @@ public class TestRuntime
     }
 
     #endregion
+
+    // #region Enum1
+    //
+    // public enum Enum1
+    // {
+    //     A,
+    //     B,
+    //     C
+    // }
+    //
+    // [Test]
+    // public void TestEnum1()
+    // {
+    //     var obj = Enum1.A;
+    //
+    //     var str = SeraJson.Serializer
+    //         .ToString()
+    //         .Serialize(obj);
+    //
+    //     Console.WriteLine(str);
+    //     Assert.That(str, Is.EqualTo("\"A\""));
+    // }
+    //
+    // #endregion
 }

@@ -21,6 +21,7 @@ public enum SeraAnyKind : byte
     Map,
     Struct,
     Variant,
+    EmptyUnion,
 }
 
 public readonly struct SeraAny : IEquatable<SeraAny>,
@@ -271,6 +272,9 @@ public readonly struct SeraAny : IEquatable<SeraAny>,
     public static SeraAny MakeVariant(SeraAnyVariant v)
         => new(default, v, SeraPrimitiveTypes.Unknown, SeraAnyKind.Variant);
 
+    public static SeraAny MakeEmptyUnion()
+        => new(default, null, SeraPrimitiveTypes.Unknown, SeraAnyKind.EmptyUnion);
+    
     #endregion
 
     #region Equals
@@ -322,6 +326,7 @@ public readonly struct SeraAny : IEquatable<SeraAny>,
             SeraAnyKind.Map => other.Map.DictEq(other.Map),
             SeraAnyKind.Struct => Struct == other.Struct,
             SeraAnyKind.Variant => Variant == other.Variant,
+            SeraAnyKind.EmptyUnion => true,
             _ => false,
         };
     }
@@ -373,6 +378,7 @@ public readonly struct SeraAny : IEquatable<SeraAny>,
         SeraAnyKind.Map => HashCode.Combine(Kind, Map.DictHash()),
         SeraAnyKind.Struct => HashCode.Combine(Kind, Struct),
         SeraAnyKind.Variant => HashCode.Combine(Kind, Variant),
+        SeraAnyKind.EmptyUnion => HashCode.Combine(Kind),
         _ => 0
     };
 
@@ -429,6 +435,7 @@ public readonly struct SeraAny : IEquatable<SeraAny>,
         SeraAnyKind.Map => $"{{ {string.Join(", ", Map.Select(static kv => $"{kv.Key}: {kv.Value}"))} }}",
         SeraAnyKind.Struct => $"{Struct}",
         SeraAnyKind.Variant => $"{Variant}",
+        SeraAnyKind.EmptyUnion => "union { }",
         _ => $"{nameof(SeraAny)}({Kind})",
     };
 

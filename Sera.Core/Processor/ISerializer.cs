@@ -374,6 +374,8 @@ public enum SerializerVariantHint : uint
 
 public partial interface ISerializer
 {
+    public void WriteEmptyUnion(string? union_name);
+
     public void WriteVariantUnit(string? union_name, Variant variant, SerializerVariantHint? hint);
 
     public void WriteVariant<T, S>(string? union_name, Variant variant, T value, S serializer,
@@ -391,6 +393,8 @@ public partial interface ISerializer
 
 public partial interface IAsyncSerializer
 {
+    public ValueTask WriteEmptyUnionAsync(string? union_name);
+
     public ValueTask WriteVariantUnitAsync(string? union_name, Variant variant, SerializerVariantHint? hint);
 
     public ValueTask WriteVariantAsync<T, S>(string? union_name, Variant variant, T value, S serializer,

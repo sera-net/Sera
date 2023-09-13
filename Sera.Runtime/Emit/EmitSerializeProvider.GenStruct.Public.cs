@@ -26,14 +26,13 @@ internal partial class EmitSerializeProvider
 
         if (target.IsValueType)
         {
-            stub.ser_type = type_builder;
+            stub.ProvideType(type_builder);
         }
         else
         {
             reference_type_wrapper = typeof(ReferenceTypeWrapperSerializeImpl<,>).MakeGenericType(target, type_builder);
-            stub.ser_type = reference_type_wrapper;
+            stub.ProvideType(reference_type_wrapper);
         }
-        stub.WaitType.Set();
 
         #endregion
 
@@ -45,11 +44,10 @@ internal partial class EmitSerializeProvider
         #endregion
 
         #region ready members
-        
+
         var field_count = members.Length;
-        
+
         var ser_deps = GetSerDeps(members, type_builder, stub.CreateThread);
-        stub.deps = ser_deps;
 
         #endregion
 
@@ -290,16 +288,17 @@ internal partial class EmitSerializeProvider
         #region create type
 
         var type = type_builder.CreateType();
-        stub.dep_container_type = type;
         if (reference_type_wrapper == null)
         {
-            stub.ser_type = type;
+            stub.ProvideType(type);
         }
         else
         {
             reference_type_wrapper = typeof(ReferenceTypeWrapperSerializeImpl<,>).MakeGenericType(target, type);
-            stub.ser_type = reference_type_wrapper;
+            stub.ProvideType(reference_type_wrapper);
         }
+        
+        stub.ProvideDeps(type, ser_deps);
 
         #endregion
 
@@ -308,12 +307,12 @@ internal partial class EmitSerializeProvider
         var inst = Activator.CreateInstance(type)!;
         if (reference_type_wrapper == null)
         {
-            stub.ser_inst = inst;
+            stub.ProvideInst(inst);
         }
         else
         {
             var ctor = reference_type_wrapper.GetConstructor(new[] { type })!;
-            stub.ser_inst = ctor.Invoke(new[] { inst });
+            stub.ProvideInst(ctor.Invoke(new[] { inst }));
         }
 
         #endregion
@@ -325,13 +324,6 @@ internal partial class EmitSerializeProvider
             var field = type.GetField(name)!;
             field.SetValue(null, del);
         }
-
-        #endregion
-
-        #region mark type created
-
-        stub.state = CacheStub.CreateState.Created;
-        stub.WaitCreate.Set();
 
         #endregion
     }

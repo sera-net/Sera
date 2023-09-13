@@ -836,6 +836,7 @@ public partial interface IDeserializer
 
 public interface IVariantDeserializerVisitor<out R>
 {
+    public R VisitEmptyUnion();
     public R VisitVariantUnit<A>(Variant variant, A access) where A : IVariantAccess;
 
     public R VisitVariant<A, D>(Variant variant, A access, D deserializer, ISeraOptions options)
@@ -855,6 +856,7 @@ public partial interface IAsyncDeserializer
 
 public interface IAsyncVariantDeserializerVisitor<R>
 {
+    public ValueTask<R> VisitEmptyUnionAsync();
     public ValueTask<R> VisitVariantUnitAsync<A>(Variant variant, A access) where A : IAsyncVariantAccess;
 
     public ValueTask<R> VisitVariantAsync<A, D>(Variant variant, A access, D deserializer, ISeraOptions options)
