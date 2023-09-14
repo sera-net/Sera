@@ -77,20 +77,23 @@ internal partial class EmitSerializeProvider
     private static readonly MethodInfo _TryMakeJumpTable_MethodInfo = typeof(EmitSerializeProvider)
         .GetMethod(nameof(_TryMakeJumpTable), BindingFlags.Instance | BindingFlags.NonPublic)!;
 
+    private const int MaxJumpTableSizeAllowed = 255;
+
     private EnumJumpTables? _TryMakeJumpTable<V>(EnumInfo[] items)
         where V : unmanaged, INumber<V>
     {
+        if (items.Length <= 1) return null;
         var values = items.AsParallel().AsOrdered()
             .Select((e, i) => (i, v: e.Tag.As<V>(), e))
             .OrderBy(a => a.v)
             .ToArray();
         var value_index_map = values.AsParallel()
             .ToDictionary(a => a.v, a => a.i);
-        var min = values.AsParallel().Min(a => a.v);
-        var max = values.AsParallel().Max(a => a.v);
-        var size = max - min;
-        if (!IsInJumpTableSizeAllowed(size)) return null;
-        var offset = V.Zero - min;
+        var min = values.First().v;
+        var max = values.Last().v;
+        var size = max.PrimitiveToInt128() - min.PrimitiveToInt128();
+        if (size >= MaxJumpTableSizeAllowed) return null;
+        var offset = 0 - min.PrimitiveToInt128();
 
         var last = values.Length - 1;
         var tables = new List<EnumJumpTable>();
@@ -102,24 +105,10 @@ internal partial class EmitSerializeProvider
         tables.Add(new EnumJumpTable(0, values[0].e));
         tables.Reverse();
 
-        return new EnumJumpTables(Convert.ToUInt32(offset), tables.ToArray());
+        return new EnumJumpTables((int)offset, tables.ToArray());
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private bool IsInJumpTableSizeAllowed<V>(V size) => size switch
-    {
-        sbyte v => (byte)v < 255,
-        byte v => v < 255,
-        short v => v < 255,
-        ushort v => v < 255,
-        int v => v < 255,
-        uint v => v < 255,
-        long v => v < 255,
-        ulong v => v < 255,
-        _ => throw new ArgumentOutOfRangeException(nameof(size), size, null)
-    };
 
     private record struct EnumJumpTable(int Index, EnumInfo Info);
 
-    private record EnumJumpTables(uint Offset, EnumJumpTable[] Table);
+    private record EnumJumpTables(int Offset, EnumJumpTable[] Table);
 }

@@ -19,28 +19,28 @@ public class Enum2Impl : ISerialize<Enum2>
             case Enum2.A:
                 serializer.WriteVariantUnit<Enum2>(
                     "Enum2",
-                    new Variant("A", VariantTag.Create((int)value)),
+                    new Variant("A", VariantTag.Create((long)value)),
                     SerializerVariantHint.Unknown
                 );
                 break;
             case Enum2.B:
                 serializer.WriteVariantUnit<Enum2>(
                     "Enum2",
-                    new Variant("B", VariantTag.Create((int)value)),
+                    new Variant("B", VariantTag.Create((long)value)),
                     SerializerVariantHint.Unknown
                 );
                 break;
             case Enum2.C:
                 serializer.WriteVariantUnit<Enum2>(
                     "Enum2",
-                    new Variant("C", VariantTag.Create((int)value)),
+                    new Variant("C", VariantTag.Create((long)value)),
                     SerializerVariantHint.Unknown
                 );
                 break;
             default:
                 serializer.WriteVariantUnit<Enum2>(
                     "Enum2",
-                    new Variant(VariantTag.Create((int)value)),
+                    new Variant(VariantTag.Create((long)value)),
                     SerializerVariantHint.Unknown
                 );
                 break;

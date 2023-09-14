@@ -303,27 +303,59 @@ public class TestRuntime
 
     #endregion
 
-    // #region Enum1
-    //
-    // public enum Enum1
-    // {
-    //     A,
-    //     B,
-    //     C
-    // }
-    //
-    // [Test]
-    // public void TestEnum1()
-    // {
-    //     var obj = Enum1.A;
-    //
-    //     var str = SeraJson.Serializer
-    //         .ToString()
-    //         .Serialize(obj);
-    //
-    //     Console.WriteLine(str);
-    //     Assert.That(str, Is.EqualTo("\"A\""));
-    // }
-    //
-    // #endregion
+    #region Enum1
+
+    public enum Enum1
+    {
+        A,
+        B,
+        C
+    }
+
+    [Test]
+    public void TestEnum1()
+    {
+        {
+            var obj = Enum1.A;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"A\""));
+        }
+        {
+            var obj = Enum1.B;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"B\""));
+        }
+        {
+            var obj = Enum1.C;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"C\""));
+        }
+        {
+            var obj = (Enum1)100;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("100"));
+        }
+    }
+
+    #endregion
 }

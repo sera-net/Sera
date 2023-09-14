@@ -158,11 +158,9 @@ public readonly struct Variant : IEquatable<Variant>, IEqualityOperators<Variant
     public string Name { get; }
     public VariantTagKind TagKind { get; }
     public VariantKind Kind { get; }
-
-
+    
     public VariantTag Tag => new(_tag, TagKind);
-
-
+    
     public Variant(string name)
     {
         Name = name;

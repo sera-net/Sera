@@ -382,6 +382,8 @@ public partial interface ISerializer
         SerializerVariantHint? hint)
         where S : ISerialize<T>;
 
+    public void WriteEmptyUnion<U>(string? union_name) => WriteEmptyUnion(union_name);
+
     public void WriteVariantUnit<U>(string? union_name, Variant variant, SerializerVariantHint? hint)
         => WriteVariantUnit(union_name, variant, hint);
 
@@ -400,6 +402,8 @@ public partial interface IAsyncSerializer
     public ValueTask WriteVariantAsync<T, S>(string? union_name, Variant variant, T value, S serializer,
         SerializerVariantHint? hint)
         where S : ISerialize<T>;
+
+    public ValueTask WriteEmptyUnionAsync<U>(string? union_name) => WriteEmptyUnionAsync(union_name);
 
     public ValueTask WriteVariantUnitAsync<U>(string? union_name, Variant variant, SerializerVariantHint? hint)
         => WriteVariantUnitAsync(union_name, variant, hint);
