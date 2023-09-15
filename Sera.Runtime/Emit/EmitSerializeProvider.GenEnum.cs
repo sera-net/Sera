@@ -52,16 +52,17 @@ internal partial class EmitSerializeProvider
 
     private EnumInfo[] _GetEnumInfo<V>(Type target)
     {
-        var names = target.GetEnumNames();
-        var values = (V[])target.GetEnumValuesAsUnderlyingType();
-        var names_set = names.ToHashSet();
+        var names_set = target.GetEnumNames().ToHashSet();
         var fields = target.GetFields(BindingFlags.Static | BindingFlags.Public)
+            .AsParallel().AsOrdered()
             .Where(a => names_set.Contains(a.Name))
             .ToDictionary(a => a.Name);
 
-        return names.AsParallel().AsOrdered()
-            .Select((name, i) => (name, value: values[i], field: fields[name]))
+        return fields.AsParallel().AsOrdered()
+            .Select((kv, i) => (name: kv.Key, field: kv.Value))
+            .Select(a => (a.name, a.field, value: (V)a.field.GetValue(null)!))
             .Select(a => new EnumInfo(a.name, a.value.MakeVariantTag(), a.field))
+            .DistinctBy(a => a.Tag)
             .ToArray();
     }
 

@@ -85,6 +85,45 @@ public readonly struct VariantTag : IEquatable<VariantTag>, IComparable<VariantT
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public T As<T>() where T : unmanaged => TryAs<T>() ?? throw new ArgumentException();
 
+    public int ToInt() => Kind switch
+    {
+        VariantTagKind.SByte => SByte,
+        VariantTagKind.Byte => Byte,
+        VariantTagKind.Int16 => Int16,
+        VariantTagKind.UInt16 => UInt16,
+        VariantTagKind.Int32 => Int32,
+        VariantTagKind.UInt32 => (int)UInt32,
+        VariantTagKind.Int64 => (int)Int64,
+        VariantTagKind.UInt64 => (int)UInt64,
+        _ => throw new ArgumentOutOfRangeException()
+    };
+
+    public long ToLong() => Kind switch
+    {
+        VariantTagKind.SByte => SByte,
+        VariantTagKind.Byte => Byte,
+        VariantTagKind.Int16 => Int16,
+        VariantTagKind.UInt16 => UInt16,
+        VariantTagKind.Int32 => Int32,
+        VariantTagKind.UInt32 => UInt32,
+        VariantTagKind.Int64 => Int64,
+        VariantTagKind.UInt64 => (long)UInt64,
+        _ => throw new ArgumentOutOfRangeException()
+    };
+
+    public object ToObject() => Kind switch
+    {
+        VariantTagKind.SByte => SByte,
+        VariantTagKind.Byte => Byte,
+        VariantTagKind.Int16 => Int16,
+        VariantTagKind.UInt16 => UInt16,
+        VariantTagKind.Int32 => Int32,
+        VariantTagKind.UInt32 => UInt32,
+        VariantTagKind.Int64 => Int64,
+        VariantTagKind.UInt64 => UInt64,
+        _ => throw new ArgumentOutOfRangeException()
+    };
+
     public override string ToString() => Kind switch
     {
         VariantTagKind.SByte => SByte.ToString(),
@@ -158,9 +197,9 @@ public readonly struct Variant : IEquatable<Variant>, IEqualityOperators<Variant
     public string Name { get; }
     public VariantTagKind TagKind { get; }
     public VariantKind Kind { get; }
-    
+
     public VariantTag Tag => new(_tag, TagKind);
-    
+
     public Variant(string name)
     {
         Name = name;

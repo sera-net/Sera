@@ -70,7 +70,7 @@ internal partial class EmitSerializeProvider
 
         #endregion
 
-        #region public void WriteS>(S serializer, T value, ISeraOptions options) where S : ISerializer
+        #region public void Write<S>(S serializer, T value, ISeraOptions options) where S : ISerializer
 
         {
             var write_method = type_builder.DefineMethod("Write", MethodAttributes.Public | MethodAttributes.Virtual);

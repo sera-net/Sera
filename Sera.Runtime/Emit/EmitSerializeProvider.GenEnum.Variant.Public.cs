@@ -1,9 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using Sera.Core;
-using Sera.Core.Impls;
 using Sera.Core.Ser;
 using Sera.Runtime.Utils;
 
@@ -11,6 +11,15 @@ namespace Sera.Runtime.Emit;
 
 internal partial class EmitSerializeProvider
 {
+    public const int MaxIfNums = 16;
+
+
+    private static readonly Type variant_meta_type = typeof((string name, SerializerVariantHint? hint));
+    private static readonly FieldInfo variant_meta_field_name =
+        variant_meta_type.GetField("Item1", BindingFlags.Public | BindingFlags.Instance)!;
+    private static readonly FieldInfo variant_meta_field_hint =
+        variant_meta_type.GetField("Item2", BindingFlags.Public | BindingFlags.Instance)!;
+
     private void GenEnumVariantPublic(
         Type target, Type underlying_type, EnumInfo[] items, EnumJumpTables? jump_table, CacheStub stub
     )
@@ -44,7 +53,7 @@ internal partial class EmitSerializeProvider
                 BindingFlags.Public | BindingFlags.Instance,
                 new[] { typeof(VariantTag) }
             )!;
-        
+
         var new_variant_by_name_tag = typeof(Variant)
             .GetConstructor(
                 BindingFlags.Public | BindingFlags.Instance,
@@ -64,7 +73,14 @@ internal partial class EmitSerializeProvider
 
         #endregion
 
-        #region public void WriteS>(S serializer, T value, ISeraOptions options) where S : ISerializer
+        #region names
+
+        Type? metas_type = null;
+        FieldBuilder? metas_field = null;
+
+        #endregion
+
+        #region public void Write<S>(S serializer, T value, ISeraOptions options) where S : ISerializer
 
         {
             var write_method = type_builder.DefineMethod("Write", MethodAttributes.Public | MethodAttributes.Virtual);
@@ -90,69 +106,17 @@ internal partial class EmitSerializeProvider
 
             if (items.Length > 0)
             {
-                if (jump_table != null)
+                void GenCases(Label[] labels)
                 {
-                    var labels = items
-                        .Select(_ => ilg.DefineLabel())
-                        .ToArray();
-
-                    #region load value
-
-                    ilg.Emit(OpCodes.Ldarg_2);
-
-                    #endregion
-
-                    #region apply offset
-                    
-                    if (jump_table.Offset == 0)
-                    {
-                        if (underlying_type != typeof(int) && underlying_type != typeof(uint))
-                        {
-                            ilg.Emit(OpCodes.Conv_I4);
-                        }
-                    }
-                    else
-                    {
-                        if (underlying_type == typeof(long) || underlying_type == typeof(ulong))
-                        {
-                            ilg.Emit(OpCodes.Ldc_I8, (long)jump_table.Offset);
-                            ilg.Emit(OpCodes.Add);
-                            ilg.Emit(OpCodes.Conv_I4);
-                        }
-                        else
-                        {
-                            ilg.Emit(OpCodes.Conv_I4);
-                            ilg.Emit(OpCodes.Ldc_I4, jump_table.Offset);
-                            ilg.Emit(OpCodes.Add);
-                        }
-                    }
-                    
-                    #endregion
-
-                    #region switch
-                    
-                    var table = jump_table.Table
-                        .Select(a => labels[a.Index])
-                        .ToArray();
-                    ilg.Emit(OpCodes.Switch, table);
-
-                    #endregion
-                    
-                    #region goto default
-
-                    ilg.Emit(OpCodes.Br, default_label);
-
-                    #endregion
-
                     #region cases
 
                     for (var i = 0; i < items.Length; i++)
                     {
                         var item = items[i];
                         var label = labels[i];
-                        
+
                         ilg.MarkLabel(label);
-                        
+
                         #region load serializer
 
                         ilg.Emit(OpCodes.Ldarga, 1);
@@ -164,7 +128,7 @@ internal partial class EmitSerializeProvider
                         ilg.Emit(OpCodes.Ldstr, target.Name);
 
                         #endregion
-                        
+
                         #region new Variant
 
                         ilg.Emit(OpCodes.Ldstr, item.Name);
@@ -173,7 +137,7 @@ internal partial class EmitSerializeProvider
                         ilg.Emit(OpCodes.Newobj, new_variant_by_name_tag);
 
                         #endregion
-                        
+
                         #region load hint
 
                         ilg.Emit(OpCodes.Ldloc, local_hint_null);
@@ -196,9 +160,220 @@ internal partial class EmitSerializeProvider
 
                     #endregion
                 }
+
+                if (jump_table != null)
+                {
+                    var labels = items
+                        .Select(_ => ilg.DefineLabel())
+                        .ToArray();
+
+                    #region load value
+
+                    ilg.Emit(OpCodes.Ldarg_2);
+
+                    #endregion
+
+                    #region apply offset
+
+                    if (jump_table.Offset == 0)
+                    {
+                        if (underlying_type != typeof(int) && underlying_type != typeof(uint))
+                        {
+                            ilg.Emit(OpCodes.Conv_I4);
+                        }
+                    }
+                    else
+                    {
+                        if (underlying_type == typeof(long) || underlying_type == typeof(ulong))
+                        {
+                            ilg.Emit(OpCodes.Ldc_I8, (long)jump_table.Offset);
+                            ilg.Emit(OpCodes.Add);
+                            ilg.Emit(OpCodes.Conv_I4);
+                        }
+                        else
+                        {
+                            ilg.Emit(OpCodes.Conv_I4);
+                            ilg.Emit(OpCodes.Ldc_I4, jump_table.Offset);
+                            ilg.Emit(OpCodes.Add);
+                        }
+                    }
+
+                    #endregion
+
+                    #region switch
+
+                    var table = jump_table.Table
+                        .Select(a => labels[a.Index])
+                        .ToArray();
+                    ilg.Emit(OpCodes.Switch, table);
+
+                    #endregion
+
+                    #region goto default
+
+                    ilg.Emit(OpCodes.Br, default_label);
+
+                    #endregion
+
+                    GenCases(labels);
+                }
+                else if (items.Length <= MaxIfNums)
+                {
+                    var labels = items
+                        .Select(_ => ilg.DefineLabel())
+                        .ToArray();
+
+                    #region if ... else if ...
+
+                    if (underlying_type == typeof(long) || underlying_type == typeof(ulong))
+                    {
+                        for (var i = 0; i < items.Length; i++)
+                        {
+                            var item = items[i];
+                            var label = labels[i];
+
+                            #region if value == Enum.X then goto label
+
+                            ilg.Emit(OpCodes.Ldarg_2);
+                            ilg.Emit(OpCodes.Ldc_I8, item.Tag.ToLong());
+                            ilg.Emit(OpCodes.Beq, label);
+
+                            #endregion
+                        }
+                    }
+                    else if (underlying_type == typeof(int) || underlying_type == typeof(uint))
+                    {
+                        for (var i = 0; i < items.Length; i++)
+                        {
+                            var item = items[i];
+                            var label = labels[i];
+
+                            #region if value == Enum.X then goto label
+
+                            ilg.Emit(OpCodes.Ldarg_2);
+                            ilg.Emit(OpCodes.Ldc_I4, item.Tag.ToInt());
+                            ilg.Emit(OpCodes.Beq, label);
+
+                            #endregion
+                        }
+                    }
+                    else
+                    {
+                        var tmp = ilg.DeclareLocal(typeof(int));
+
+                        #region tmp = (int)value;
+
+                        ilg.Emit(OpCodes.Ldarg_2);
+                        ilg.Emit(OpCodes.Conv_I4);
+                        ilg.Emit(OpCodes.Stloc, tmp);
+
+                        #endregion
+
+                        for (var i = 0; i < items.Length; i++)
+                        {
+                            var item = items[i];
+                            var label = labels[i];
+
+                            #region if tmp == Enum.X then goto label
+
+                            ilg.Emit(OpCodes.Ldloc, tmp);
+                            ilg.Emit(OpCodes.Ldc_I4, item.Tag.ToInt());
+                            ilg.Emit(OpCodes.Beq, label);
+
+                            #endregion
+                        }
+                    }
+
+                    #endregion
+
+                    #region goto default
+
+                    ilg.Emit(OpCodes.Br, default_label);
+
+                    #endregion
+
+                    GenCases(labels);
+                }
                 else
                 {
-                    // todo
+                    var meta_loc = ilg.DeclareLocal(variant_meta_type);
+                    metas_type = typeof(Dictionary<,>).MakeGenericType(underlying_type, variant_meta_type);
+                    metas_field = type_builder.DefineField(
+                        "_metas", metas_type,
+                        FieldAttributes.Public | FieldAttributes.Static
+                    );
+
+                    var try_gey_meta = metas_type.GetMethod(
+                        "TryGetValue", BindingFlags.Public | BindingFlags.Instance,
+                        new[] { underlying_type, variant_meta_type.MakeByRefType() }
+                    )!;
+
+                    #region if (!_metas.TryGetValue(value, out meta)) goto default
+
+                    ilg.Emit(OpCodes.Ldsfld, metas_field);
+                    ilg.Emit(OpCodes.Ldarg_2);
+                    ilg.Emit(OpCodes.Ldloca_S, (byte)meta_loc.LocalIndex);
+                    ilg.Emit(OpCodes.Callvirt, try_gey_meta);
+
+                    ilg.Emit(OpCodes.Brfalse, default_label);
+
+                    #endregion
+
+                    #region write by meta
+
+                    #region load serializer
+
+                    ilg.Emit(OpCodes.Ldarga, 1);
+
+                    #endregion
+
+                    #region load target.Name
+
+                    ilg.Emit(OpCodes.Ldstr, target.Name);
+
+                    #endregion
+
+                    #region new Variant
+
+                    #region load meta.name
+
+                    ilg.Emit(OpCodes.Ldloc, meta_loc);
+                    ilg.Emit(OpCodes.Ldfld, variant_meta_field_name);
+
+                    #endregion
+
+                    #region load value
+
+                    ilg.Emit(OpCodes.Ldarg_2);
+
+                    #endregion
+
+                    ilg.Emit(OpCodes.Call, create_variant_tag);
+                    ilg.Emit(OpCodes.Newobj, new_variant_by_name_tag);
+
+                    #endregion
+
+                    #region load meta.hint
+
+                    ilg.Emit(OpCodes.Ldloc, meta_loc);
+                    ilg.Emit(OpCodes.Ldfld, variant_meta_field_hint);
+
+                    #endregion
+
+                    #region serializer.WriteVariantUnit<T>(target.Name, variant, null);
+
+                    ilg.Emit(OpCodes.Constrained, TS);
+                    ilg.Emit(OpCodes.Callvirt, write_variant_unit);
+
+                    #endregion
+
+                    #region return;
+
+                    ilg.Emit(OpCodes.Ret);
+
+                    #endregion
+
+                    #endregion
                 }
             }
 
@@ -261,6 +436,23 @@ internal partial class EmitSerializeProvider
 
         var dep_field = type.GetField(underlying_dep_field.Name, BindingFlags.Public | BindingFlags.Static)!;
         dep_field.SetValue(null, underlying_dep_inst);
+
+        if (metas_field != null)
+        {
+            var metas_field2 = type.GetField(metas_field.Name, BindingFlags.Public | BindingFlags.Static)!;
+            var metas_inst = Activator.CreateInstance(metas_type!);
+            var add = metas_type!.GetMethod(
+                nameof(Dictionary<int, string>.Add),
+                BindingFlags.Public | BindingFlags.Instance,
+                new[] { underlying_type, variant_meta_type }
+            )!;
+            foreach (var item in items)
+            {
+                (string name, SerializerVariantHint? hint) meta = (item.Name, null);
+                add.Invoke(metas_inst, new[] { item.Tag.ToObject(), meta });
+            }
+            metas_field2.SetValue(null, metas_inst);
+        }
 
         #endregion
 

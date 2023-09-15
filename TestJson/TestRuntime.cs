@@ -309,7 +309,7 @@ public class TestRuntime
     {
         A,
         B,
-        C
+        C,
     }
 
     [Test]
@@ -347,6 +347,418 @@ public class TestRuntime
         }
         {
             var obj = (Enum1)100;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("100"));
+        }
+    }
+
+    #endregion
+
+    #region Enum2
+
+    public enum Enum2
+    {
+        A = -20,
+        B = 50,
+        C = 500,
+    }
+
+    [Test]
+    public void TestEnum2()
+    {
+        {
+            var obj = Enum2.A;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"A\""));
+        }
+        {
+            var obj = Enum2.B;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"B\""));
+        }
+        {
+            var obj = Enum2.C;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"C\""));
+        }
+        {
+            var obj = (Enum2)1000;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("1000"));
+        }
+    }
+
+    #endregion
+
+    #region Enum3
+
+    public enum Enum3 : byte
+    {
+        A,
+        B,
+        C,
+    }
+
+    [Test]
+    public void TestEnum3()
+    {
+        {
+            var obj = Enum3.A;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"A\""));
+        }
+        {
+            var obj = Enum3.B;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"B\""));
+        }
+        {
+            var obj = Enum3.C;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"C\""));
+        }
+        {
+            var obj = (Enum3)100;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("100"));
+        }
+    }
+
+    #endregion
+
+    #region Enum4
+
+    public enum Enum4 : ulong
+    {
+        A,
+        B,
+        C,
+    }
+
+    [Test]
+    public void TestEnum4()
+    {
+        {
+            var obj = Enum4.A;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"A\""));
+        }
+        {
+            var obj = Enum4.B;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"B\""));
+        }
+        {
+            var obj = Enum4.C;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"C\""));
+        }
+        {
+            var obj = (Enum4)100;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"100\""));
+        }
+    }
+
+    #endregion
+
+    #region Enum5
+
+    public enum Enum5 : short
+    {
+        A = -20,
+        B = 50,
+        C = 500,
+    }
+
+    [Test]
+    public void TestEnum5()
+    {
+        {
+            var obj = Enum5.A;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"A\""));
+        }
+        {
+            var obj = Enum5.B;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"B\""));
+        }
+        {
+            var obj = Enum5.C;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"C\""));
+        }
+        {
+            var obj = (Enum5)1000;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("1000"));
+        }
+    }
+
+    #endregion
+
+    #region Enum6
+
+    public enum Enum6 : long
+    {
+        A = -20,
+        B = 50,
+        C = 500,
+    }
+
+    [Test]
+    public void TestEnum6()
+    {
+        {
+            var obj = Enum6.A;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"A\""));
+        }
+        {
+            var obj = Enum6.B;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"B\""));
+        }
+        {
+            var obj = Enum6.C;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"C\""));
+        }
+        {
+            var obj = (Enum6)1000;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"1000\""));
+        }
+    }
+
+    #endregion
+
+    #region Enum7
+
+    public enum Enum7
+    {
+        A1 = 5,
+        A2 = 9,
+        A3 = 1,
+        A4 = 123,
+        A5 = 456,
+        A6 = -7,
+        A7 = -99,
+        A8 = 99,
+        A9 = 765,
+        A10 = 616,
+        A11 = 90,
+        A12 = 52,
+        A13 = 69,
+        A14 = 233,
+        A15 = 86,
+        A16 = 42,
+        A17 = 137,
+        A18 = 7010,
+        A19 = 2077,
+        A20 = 65536,
+    }
+
+    [Test]
+    public void TestEnum7()
+    {
+        {
+            var obj = Enum7.A3;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"A3\""));
+        }
+        {
+            var obj = Enum7.A20;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"A20\""));
+        }
+        {
+            var obj = Enum7.A15;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"A15\""));
+        }
+        {
+            var obj = (Enum7)100;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("100"));
+        }
+    }
+
+    #endregion
+    
+    #region Enum8
+
+    public enum Enum8
+    {
+        A,
+        B,
+        C,
+        A1 = A,
+        B1 = B,
+        C1 = C,
+    }
+
+    [Test]
+    public void TestEnum8()
+    {
+        {
+            var obj = Enum8.A;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"A\""));
+        }
+        {
+            var obj = Enum8.B;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"B\""));
+        }
+        {
+            var obj = Enum8.C;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"C\""));
+        }
+        {
+            var obj = (Enum8)100;
 
             var str = SeraJson.Serializer
                 .ToString()
