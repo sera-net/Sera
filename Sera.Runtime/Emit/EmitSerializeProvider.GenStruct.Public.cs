@@ -58,7 +58,7 @@ internal partial class EmitSerializeProvider
         (FieldBuilder access, MethodInfo access_invoke) AddAccess(Delegate del, Type value_type)
         {
             var access_del_type = typeof(AccessGet<,>).MakeGenericType(target, value_type);
-            var access_invoke = access_del_type.GetMethod("Invoke", new[] { target.MakeByRefType() })!;
+            var access_invoke = access_del_type.GetMethod(nameof(Action.Invoke), new[] { target.MakeByRefType() })!;
             var access_name = $"_access_{accesses.Count}";
             var access = type_builder.DefineField(
                 access_name, access_del_type,
@@ -73,7 +73,8 @@ internal partial class EmitSerializeProvider
         #region public void Write<S>(S serializer, T value, ISeraOptions options) where S : ISerializer
 
         {
-            var write_method = type_builder.DefineMethod("Write", MethodAttributes.Public | MethodAttributes.Virtual);
+            var write_method = type_builder.DefineMethod(nameof(ISerialize<object>.Write),
+                MethodAttributes.Public | MethodAttributes.Virtual);
             var generic_parameters = write_method.DefineGenericParameters("S");
             var TS = generic_parameters[0];
             TS.SetInterfaceConstraints(typeof(ISerializer));
@@ -105,7 +106,8 @@ internal partial class EmitSerializeProvider
 
             var interface_type = typeof(ISerialize<>).MakeGenericType(target);
             type_builder.AddInterfaceImplementation(interface_type);
-            type_builder.DefineMethodOverride(write_method, interface_type.GetMethod("Write")!);
+            type_builder.DefineMethodOverride(write_method,
+                interface_type.GetMethod(nameof(ISerialize<object>.Write))!);
         }
 
         #endregion
@@ -114,7 +116,8 @@ internal partial class EmitSerializeProvider
 
         {
             var receive_method =
-                type_builder.DefineMethod("Receive", MethodAttributes.Public | MethodAttributes.Virtual);
+                type_builder.DefineMethod(nameof(IStructSerializerReceiver<object>.Receive),
+                    MethodAttributes.Public | MethodAttributes.Virtual);
             var generic_parameters = receive_method.DefineGenericParameters("S");
             var TS = generic_parameters[0];
             TS.SetInterfaceConstraints(typeof(IStructSerializer));
@@ -280,7 +283,8 @@ internal partial class EmitSerializeProvider
 
             var interface_type = typeof(IStructSerializerReceiver<>).MakeGenericType(target);
             type_builder.AddInterfaceImplementation(interface_type);
-            type_builder.DefineMethodOverride(receive_method, interface_type.GetMethod("Receive")!);
+            type_builder.DefineMethodOverride(receive_method,
+                interface_type.GetMethod(nameof(IStructSerializerReceiver<object>.Receive))!);
         }
 
         #endregion
@@ -297,7 +301,7 @@ internal partial class EmitSerializeProvider
             reference_type_wrapper = typeof(ReferenceTypeWrapperSerializeImpl<,>).MakeGenericType(target, type);
             stub.ProvideType(reference_type_wrapper);
         }
-        
+
         stub.ProvideDeps(type, ser_deps);
 
         #endregion

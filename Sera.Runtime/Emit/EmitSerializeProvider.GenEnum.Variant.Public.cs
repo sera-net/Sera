@@ -9,16 +9,17 @@ using Sera.Runtime.Utils;
 
 namespace Sera.Runtime.Emit;
 
+using VariantMetaType = ValueTuple<string, SerializerVariantHint>;
+
 internal partial class EmitSerializeProvider
 {
     public const int MaxIfNums = 16;
 
-
     private static readonly Type variant_meta_type = typeof((string name, SerializerVariantHint? hint));
     private static readonly FieldInfo variant_meta_field_name =
-        variant_meta_type.GetField("Item1", BindingFlags.Public | BindingFlags.Instance)!;
+        variant_meta_type.GetField(nameof(VariantMetaType.Item1), BindingFlags.Public | BindingFlags.Instance)!;
     private static readonly FieldInfo variant_meta_field_hint =
-        variant_meta_type.GetField("Item2", BindingFlags.Public | BindingFlags.Instance)!;
+        variant_meta_type.GetField(nameof(VariantMetaType.Item2), BindingFlags.Public | BindingFlags.Instance)!;
 
     private void GenEnumVariantPublic(
         Type target, Type underlying_type, EnumInfo[] items, EnumJumpTables? jump_table, CacheStub stub
@@ -83,7 +84,8 @@ internal partial class EmitSerializeProvider
         #region public void Write<S>(S serializer, T value, ISeraOptions options) where S : ISerializer
 
         {
-            var write_method = type_builder.DefineMethod("Write", MethodAttributes.Public | MethodAttributes.Virtual);
+            var write_method = type_builder.DefineMethod(nameof(ISerialize<object>.Write),
+                MethodAttributes.Public | MethodAttributes.Virtual);
             var generic_parameters = write_method.DefineGenericParameters("S");
             var TS = generic_parameters[0];
             TS.SetInterfaceConstraints(typeof(ISerializer));
@@ -424,7 +426,8 @@ internal partial class EmitSerializeProvider
 
             var interface_type = typeof(ISerialize<>).MakeGenericType(target);
             type_builder.AddInterfaceImplementation(interface_type);
-            type_builder.DefineMethodOverride(write_method, interface_type.GetMethod("Write")!);
+            type_builder.DefineMethodOverride(write_method,
+                interface_type.GetMethod(nameof(ISerialize<object>.Write))!);
         }
 
         #endregion

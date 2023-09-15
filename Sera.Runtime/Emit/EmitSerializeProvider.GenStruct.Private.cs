@@ -47,7 +47,7 @@ internal partial class EmitSerializeProvider
         var field_count = members.Length;
 
         var ser_deps = GetSerDeps(members, deps_type_builder, stub.CreateThread);
-        
+
         var dep_container_type = deps_type_builder.CreateType();
 
         stub.ProvideDeps(dep_container_type, ser_deps);
@@ -57,13 +57,16 @@ internal partial class EmitSerializeProvider
         #region set statics
 
         var dep_container_type_field =
-            type.GetField("dep_container_type", BindingFlags.Static | BindingFlags.NonPublic)!;
+            type.GetField(nameof(PrivateStructSerializeImpl<object>.dep_container_type),
+                BindingFlags.Static | BindingFlags.NonPublic)!;
         dep_container_type_field.SetValue(null, dep_container_type);
 
-        var members_field = type.GetField("members", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var members_field = type.GetField(nameof(PrivateStructSerializeImpl<object>.members),
+            BindingFlags.Static | BindingFlags.NonPublic)!;
         members_field.SetValue(null, members);
 
-        var ser_deps_field = type.GetField("ser_deps", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var ser_deps_field = type.GetField(nameof(PrivateStructSerializeImpl<object>.ser_deps),
+            BindingFlags.Static | BindingFlags.NonPublic)!;
         ser_deps_field.SetValue(null, ser_deps);
 
         #endregion
