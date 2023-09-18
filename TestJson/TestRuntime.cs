@@ -711,7 +711,7 @@ public class TestRuntime
     }
 
     #endregion
-    
+
     #region Enum8
 
     public enum Enum8
@@ -759,6 +759,62 @@ public class TestRuntime
         }
         {
             var obj = (Enum8)100;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("100"));
+        }
+    }
+
+    #endregion
+    
+    #region Enum9
+
+    private enum Enum9
+    {
+        A,
+        B,
+        C,
+    }
+
+    [Test]
+    public void TestEnum9()
+    {
+        {
+            var obj = Enum9.A;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"A\""));
+        }
+        {
+            var obj = Enum9.B;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"B\""));
+        }
+        {
+            var obj = Enum9.C;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"C\""));
+        }
+        {
+            var obj = (Enum9)100;
 
             var str = SeraJson.Serializer
                 .ToString()

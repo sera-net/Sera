@@ -74,7 +74,7 @@ internal partial class EmitSerializeProvider
 
         #endregion
 
-        #region names
+        #region metas
 
         Type? metas_type = null;
         FieldBuilder? metas_field = null;
