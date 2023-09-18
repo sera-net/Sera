@@ -308,6 +308,7 @@ public class TestRuntime
     public enum Enum1
     {
         A,
+        [SeraRename("X")]
         B,
         C,
     }
@@ -333,7 +334,7 @@ public class TestRuntime
                 .Serialize(obj);
 
             Console.WriteLine(str);
-            Assert.That(str, Is.EqualTo("\"B\""));
+            Assert.That(str, Is.EqualTo("\"X\""));
         }
         {
             var obj = Enum1.C;
@@ -1054,6 +1055,365 @@ public class TestRuntime
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("100"));
+        }
+    }
+
+    #endregion
+
+    #region Flags1
+
+    [Flags, SeraFlags(SeraFlagsMode.String)]
+    public enum Flags1
+    {
+        A = 1 << 0,
+        B = 1 << 1,
+        C = 1 << 2,
+    }
+
+    [Test]
+    public void TestFlags1()
+    {
+        {
+            var obj = Flags1.A;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"A\""));
+        }
+        {
+            var obj = Flags1.B;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"B\""));
+        }
+        {
+            var obj = Flags1.C;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"C\""));
+        }
+        {
+            var obj = (Flags1)100;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"100\""));
+        }
+        {
+            var obj = Flags1.A | Flags1.B;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"A, B\""));
+        }
+        {
+            var obj = Flags1.A | Flags1.B | Flags1.C;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"A, B, C\""));
+        }
+        {
+            var obj = Flags1.A | Flags1.B | (Flags1)100;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"103\""));
+        }
+    }
+
+    #endregion
+
+    #region Flags2
+
+    [Flags, SeraFlags(SeraFlagsMode.StringSplit)]
+    public enum Flags2
+    {
+        A = 1 << 0,
+        B = 1 << 1,
+        C = 1 << 2,
+    }
+
+    [Test]
+    public void TestFlags2()
+    {
+        {
+            var obj = Flags2.A;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[\"A\"]"));
+        }
+        {
+            var obj = Flags2.B;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[\"B\"]"));
+        }
+        {
+            var obj = Flags2.C;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[\"C\"]"));
+        }
+        {
+            var obj = (Flags2)100;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[\"100\"]"));
+        }
+        {
+            var obj = Flags2.A | Flags2.B;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[\"A\",\"B\"]"));
+        }
+        {
+            var obj = Flags2.A | Flags2.B | Flags2.C;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[\"A\",\"B\",\"C\"]"));
+        }
+        {
+            var obj = Flags2.A | Flags2.B | (Flags2)100;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[\"103\"]"));
+        }
+    }
+
+    #endregion
+
+    #region Flags3
+
+    [Flags, SeraFlags(SeraFlagsMode.Number)]
+    public enum Flags3
+    {
+        A = 1 << 0,
+        B = 1 << 1,
+        C = 1 << 2,
+    }
+
+    [Test]
+    public void TestFlags3()
+    {
+        {
+            var obj = Flags3.A;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("1"));
+        }
+        {
+            var obj = Flags3.B;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("2"));
+        }
+        {
+            var obj = Flags3.C;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("4"));
+        }
+        {
+            var obj = (Flags3)100;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("100"));
+        }
+        {
+            var obj = Flags3.A | Flags3.B;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("3"));
+        }
+        {
+            var obj = Flags3.A | Flags3.B | Flags3.C;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("7"));
+        }
+        {
+            var obj = Flags3.A | Flags3.B | (Flags3)100;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("103"));
+        }
+    }
+
+    #endregion
+    
+    #region Flags4
+
+    [Flags, SeraFlags(SeraFlagsMode.Array)]
+    public enum Flags4
+    {
+        A = 1 << 0,
+        [SeraRename("X")]
+        B = 1 << 1,
+        C = 1 << 2,
+    }
+
+    [Test]
+    public void TestFlags4()
+    {
+        {
+            var obj = Flags4.A;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[\"A\"]"));
+        }
+        {
+            var obj = Flags4.B;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[\"X\"]"));
+        }
+        {
+            var obj = Flags4.C;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[\"C\"]"));
+        }
+        {
+            var obj = (Flags4)100;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[\"C\"]"));
+        }
+        {
+            var obj = (Flags4)80;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[]"));
+        }
+        {
+            var obj = Flags4.A | Flags4.B;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[\"A\",\"X\"]"));
+        }
+        {
+            var obj = Flags4.A | Flags4.B | Flags4.C;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[\"A\",\"X\",\"C\"]"));
+        }
+        {
+            var obj = Flags4.A | Flags4.B | (Flags4)80;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[\"A\",\"X\"]"));
         }
     }
 

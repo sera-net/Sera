@@ -269,7 +269,7 @@ public class Tests
             .ToStream(stream)
             .WithFormatter(CompactJsonFormatter.Default)
             .SerializeStatic(new Guid("189819f1-1db6-4b57-be54-1821339b85f7"),
-                PrimitiveImpl.Guid with { hint = SerializerPrimitiveHint.GuidFormatShort });
+                PrimitiveImpl.Guid with { Hint = SerializerPrimitiveHint.GuidFormatShort });
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -288,7 +288,7 @@ public class Tests
             .ToStream(stream)
             .WithFormatter(CompactJsonFormatter.Default)
             .SerializeStatic(new Guid("189819f1-1db6-4b57-be54-1821339b85f7"),
-                PrimitiveImpl.Guid with { hint = SerializerPrimitiveHint.GuidFormatBraces });
+                PrimitiveImpl.Guid with { Hint = SerializerPrimitiveHint.GuidFormatBraces });
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -307,7 +307,7 @@ public class Tests
             .ToStream(stream)
             .WithFormatter(CompactJsonFormatter.Default)
             .SerializeStatic(new Guid("189819f1-1db6-4b57-be54-1821339b85f7"),
-                PrimitiveImpl.Guid with { hint = SerializerPrimitiveHint.GuidFormatHex });
+                PrimitiveImpl.Guid with { Hint = SerializerPrimitiveHint.GuidFormatHex });
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -326,7 +326,7 @@ public class Tests
             .ToStream(stream)
             .WithFormatter(CompactJsonFormatter.Default)
             .SerializeStatic(new Guid("189819f1-1db6-4b57-be54-1821339b85f7"),
-                PrimitiveImpl.Guid with { hint = SerializerPrimitiveHint.GuidFormatGuid });
+                PrimitiveImpl.Guid with { Hint = SerializerPrimitiveHint.GuidFormatGuid });
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);

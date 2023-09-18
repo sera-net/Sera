@@ -9,17 +9,19 @@ using Sera.Core.Ser;
 
 namespace Sera.Core.Impls;
 
-public record PrimitiveImpl<T>(SeraPrimitiveTypes type, SerializerPrimitiveHint? hint = null) : PrimitiveImpl(typeof(T)),
+public record PrimitiveImpl<T>(SerializerPrimitiveHint? Hint = null) : PrimitiveImpl(typeof(T)),
     ISerialize<T>, IDeserialize<T>, IAsyncSerialize<T>, IAsyncDeserialize<T>
 {
+    public static PrimitiveImpl<T> Default { get; } = new();
+    
     public void Write<S>(S serializer, T value, ISeraOptions options) where S : ISerializer
-        => serializer.WritePrimitive(value, hint);
+        => serializer.WritePrimitive(value, Hint);
 
     public T Read<D>(D deserializer, ISeraOptions options) where D : IDeserializer
         => deserializer.ReadPrimitive<T>();
 
     public ValueTask WriteAsync<S>(S serializer, T value, ISeraOptions options) where S : IAsyncSerializer
-        => serializer.WritePrimitiveAsync(value, hint);
+        => serializer.WritePrimitiveAsync(value, Hint);
 
     public ValueTask<T> ReadAsync<D>(D deserializer, ISeraOptions options) where D : IAsyncDeserializer
         => deserializer.ReadPrimitiveAsync<T>();
@@ -27,35 +29,35 @@ public record PrimitiveImpl<T>(SeraPrimitiveTypes type, SerializerPrimitiveHint?
 
 public abstract record PrimitiveImpl(Type Type)
 {
-    public static PrimitiveImpl<bool> Boolean { get; } = new(SeraPrimitiveTypes.Boolean);
-    public static PrimitiveImpl<sbyte> SByte { get; } = new(SeraPrimitiveTypes.SByte);
-    public static PrimitiveImpl<short> Int16 { get; } = new(SeraPrimitiveTypes.Int16);
-    public static PrimitiveImpl<int> Int32 { get; } = new(SeraPrimitiveTypes.Int32);
-    public static PrimitiveImpl<long> Int64 { get; } = new(SeraPrimitiveTypes.Int64);
-    public static PrimitiveImpl<Int128> Int128 { get; } = new(SeraPrimitiveTypes.Int128);
-    public static PrimitiveImpl<byte> Byte { get; } = new(SeraPrimitiveTypes.Byte);
-    public static PrimitiveImpl<ushort> UInt16 { get; } = new(SeraPrimitiveTypes.UInt16);
-    public static PrimitiveImpl<uint> UInt32 { get; } = new(SeraPrimitiveTypes.UInt32);
-    public static PrimitiveImpl<ulong> UInt64 { get; } = new(SeraPrimitiveTypes.UInt64);
-    public static PrimitiveImpl<UInt128> UInt128 { get; } = new(SeraPrimitiveTypes.UInt128);
-    public static PrimitiveImpl<nint> IntPtr { get; } = new(SeraPrimitiveTypes.IntPtr);
-    public static PrimitiveImpl<nuint> UIntPtr { get; } = new(SeraPrimitiveTypes.UIntPtr);
-    public static PrimitiveImpl<Half> Half { get; } = new(SeraPrimitiveTypes.Half);
-    public static PrimitiveImpl<float> Single { get; } = new(SeraPrimitiveTypes.Single);
-    public static PrimitiveImpl<double> Double { get; } = new(SeraPrimitiveTypes.Double);
-    public static PrimitiveImpl<decimal> Decimal { get; } = new(SeraPrimitiveTypes.Decimal);
-    public static PrimitiveImpl<BigInteger> BigInteger { get; } = new(SeraPrimitiveTypes.BigInteger);
-    public static PrimitiveImpl<Complex> Complex { get; } = new(SeraPrimitiveTypes.Complex);
-    public static PrimitiveImpl<TimeSpan> TimeSpan { get; } = new(SeraPrimitiveTypes.TimeSpan);
-    public static PrimitiveImpl<DateOnly> DateOnly { get; } = new(SeraPrimitiveTypes.DateOnly);
-    public static PrimitiveImpl<TimeOnly> TimeOnly { get; } = new(SeraPrimitiveTypes.TimeOnly);
-    public static PrimitiveImpl<DateTime> DateTime { get; } = new(SeraPrimitiveTypes.DateTime);
-    public static PrimitiveImpl<DateTimeOffset> DateTimeOffset { get; } = new(SeraPrimitiveTypes.DateTimeOffset);
-    public static PrimitiveImpl<Guid> Guid { get; } = new(SeraPrimitiveTypes.Guid);
-    public static PrimitiveImpl<Range> Range { get; } = new(SeraPrimitiveTypes.Range);
-    public static PrimitiveImpl<Index> Index { get; } = new(SeraPrimitiveTypes.Index);
-    public static PrimitiveImpl<char> Char { get; } = new(SeraPrimitiveTypes.Char);
-    public static PrimitiveImpl<Rune> Rune { get; } = new(SeraPrimitiveTypes.Rune);
+    public static PrimitiveImpl<bool> Boolean { get; } = new();
+    public static PrimitiveImpl<sbyte> SByte { get; } = new();
+    public static PrimitiveImpl<short> Int16 { get; } = new();
+    public static PrimitiveImpl<int> Int32 { get; } = new();
+    public static PrimitiveImpl<long> Int64 { get; } = new();
+    public static PrimitiveImpl<Int128> Int128 { get; } = new();
+    public static PrimitiveImpl<byte> Byte { get; } = new();
+    public static PrimitiveImpl<ushort> UInt16 { get; } = new();
+    public static PrimitiveImpl<uint> UInt32 { get; } = new();
+    public static PrimitiveImpl<ulong> UInt64 { get; } = new();
+    public static PrimitiveImpl<UInt128> UInt128 { get; } = new();
+    public static PrimitiveImpl<nint> IntPtr { get; } = new();
+    public static PrimitiveImpl<nuint> UIntPtr { get; } = new();
+    public static PrimitiveImpl<Half> Half { get; } = new();
+    public static PrimitiveImpl<float> Single { get; } = new();
+    public static PrimitiveImpl<double> Double { get; } = new();
+    public static PrimitiveImpl<decimal> Decimal { get; } = new();
+    public static PrimitiveImpl<BigInteger> BigInteger { get; } = new();
+    public static PrimitiveImpl<Complex> Complex { get; } = new();
+    public static PrimitiveImpl<TimeSpan> TimeSpan { get; } = new();
+    public static PrimitiveImpl<DateOnly> DateOnly { get; } = new();
+    public static PrimitiveImpl<TimeOnly> TimeOnly { get; } = new();
+    public static PrimitiveImpl<DateTime> DateTime { get; } = new();
+    public static PrimitiveImpl<DateTimeOffset> DateTimeOffset { get; } = new();
+    public static PrimitiveImpl<Guid> Guid { get; } = new();
+    public static PrimitiveImpl<Range> Range { get; } = new();
+    public static PrimitiveImpl<Index> Index { get; } = new();
+    public static PrimitiveImpl<char> Char { get; } = new();
+    public static PrimitiveImpl<Rune> Rune { get; } = new();
 
     public static ReadOnlyDictionary<SeraPrimitiveTypes, PrimitiveImpl> Instances { get; } = new(
         new Dictionary<SeraPrimitiveTypes, PrimitiveImpl>

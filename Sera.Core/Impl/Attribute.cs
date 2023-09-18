@@ -189,22 +189,28 @@ public sealed class SeraFlagsAttribute : Attribute
     {
         Mode = mode;
     }
+
+    public SeraFlagsAttribute() { }
 }
 
 public enum SeraFlagsMode
 {
     /// <summary>
-    /// Use `ToString`
-    /// </summary>
-    String,
-    /// <summary>
-    /// As string array
+    /// As <see cref="string"/> array, flags without names will be ignored， default
     /// </summary>
     Array,
     /// <summary>
     /// As underlying number
     /// </summary>
     Number,
+    /// <summary>
+    /// Use <see cref="Enum.ToString()"/>, ignore member rename
+    /// </summary>
+    String,
+    /// <summary>
+    /// Use <see cref="Enum.ToString()"/>, then split by <c>", "</c>, as <see cref="string"/> array, ignore member rename
+    /// </summary>
+    StringSplit,
 }
 
 #endregion

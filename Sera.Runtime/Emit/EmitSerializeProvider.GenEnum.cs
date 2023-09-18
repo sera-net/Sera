@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using Sera.Core;
 using Sera.Runtime.Utils;
 
@@ -14,22 +13,15 @@ internal partial class EmitSerializeProvider
     private void GenEnum(Type target, CacheStub stub)
     {
         var underlying_type = target.GetEnumUnderlyingType();
-        var items = GetEnumInfo(target, underlying_type);
-        var jump_table = TryMakeJumpTable(underlying_type, items);
         var flags = target.GetCustomAttribute<FlagsAttribute>() != null;
         if (flags)
         {
-            if (target.IsVisible)
-            {
-                GenEnumFlagsPublic(target, underlying_type, items, jump_table, stub);
-            }
-            else
-            {
-                GenEnumFlagsPrivate(target, underlying_type, items, jump_table, stub);
-            }
+            GenEnumFlags(target, underlying_type, stub);
         }
         else
         {
+            var items = GetEnumInfo(target, underlying_type, distinct: true);
+            var jump_table = TryMakeJumpTable(underlying_type, items);
             if (target.IsVisible)
             {
                 GenEnumVariantPublic(target, underlying_type, items, jump_table, stub);
@@ -41,16 +33,16 @@ internal partial class EmitSerializeProvider
         }
     }
 
-    private EnumInfo[] GetEnumInfo(Type target, Type underlying_type)
+    private EnumInfo[] GetEnumInfo(Type target, Type underlying_type, bool distinct)
     {
         var method = _GetEnumInfo_MethodInfo.MakeGenericMethod(underlying_type);
-        return (EnumInfo[])method.Invoke(this, new object?[] { target })!;
+        return (EnumInfo[])method.Invoke(this, new object?[] { target, distinct })!;
     }
 
     private static readonly MethodInfo _GetEnumInfo_MethodInfo = typeof(EmitSerializeProvider)
         .GetMethod(nameof(_GetEnumInfo), BindingFlags.Instance | BindingFlags.NonPublic)!;
 
-    private EnumInfo[] _GetEnumInfo<V>(Type target)
+    private EnumInfo[] _GetEnumInfo<V>(Type target, bool distinct)
     {
         var names_set = target.GetEnumNames().ToHashSet();
         var fields = target.GetFields(BindingFlags.Static | BindingFlags.Public)
@@ -58,16 +50,21 @@ internal partial class EmitSerializeProvider
             .Where(a => names_set.Contains(a.Name))
             .ToDictionary(a => a.Name);
 
-        return fields.AsParallel().AsOrdered()
+        var q = fields.AsParallel().AsOrdered()
             .Select((kv, i) => (name: kv.Key, field: kv.Value))
             .Select(a => (a.name, a.field, value: (V)a.field.GetValue(null)!))
             .Select(a =>
             {
                 var enum_attr = a.field.GetCustomAttribute<SeraEnumAttribute>();
-                return new EnumInfo(a.name, a.value.MakeVariantTag(), a.field, enum_attr);
-            })
-            .DistinctBy(a => a.Tag)
-            .ToArray();
+                var rename_attr = a.field.GetCustomAttribute<SeraRenameAttribute>();
+                var name = rename_attr?.SerName ?? rename_attr?.Name ?? a.name; // todo auto rename
+                return new EnumInfo(name, a.value.MakeVariantTag(), a.field, enum_attr);
+            });
+        if (distinct)
+            return q
+                .DistinctBy(a => a.Tag)
+                .ToArray();
+        else return q.ToArray();
     }
 
     private record EnumInfo(string Name, VariantTag Tag, FieldInfo Field, SeraEnumAttribute? enum_attr);
