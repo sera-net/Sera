@@ -1,4 +1,5 @@
 ﻿using System;
+using Sera.Core.Ser;
 
 namespace Sera;
 
@@ -149,6 +150,61 @@ public enum SeraRenameMode
     kebab_case,
     /// <summary> Screaming kebab case <c>SCREAMING-KEBAB-CASE</c> </summary>
     SCREAMING_KEBAB_CASE,
+}
+
+public abstract class SeraVariantAttributeBase : Attribute
+{
+    public SerializerVariantHint SerHint { get; set; }
+
+    public bool UseNumberTag
+    {
+        get => SerHint == SerializerVariantHint.UseNumberTag;
+        set
+        {
+            if (value) SerHint |= SerializerVariantHint.UseNumberTag;
+            else SerHint &= ~SerializerVariantHint.UseNumberTag;
+        }
+    }
+
+    public bool UseStringTag
+    {
+        get => SerHint == SerializerVariantHint.UseStringTag;
+        set
+        {
+            if (value) SerHint |= SerializerVariantHint.UseStringTag;
+            else SerHint &= ~SerializerVariantHint.UseStringTag;
+        }
+    }
+}
+
+[AttributeUsage(AttributeTargets.Enum | AttributeTargets.Field)]
+public sealed class SeraEnumAttribute : SeraVariantAttributeBase { }
+
+[AttributeUsage(AttributeTargets.Enum)]
+public sealed class SeraFlagsAttribute : Attribute
+{
+    public SeraFlagsMode Mode { get; }
+
+    public SeraFlagsAttribute(SeraFlagsMode mode)
+    {
+        Mode = mode;
+    }
+}
+
+public enum SeraFlagsMode
+{
+    /// <summary>
+    /// Use `ToString`
+    /// </summary>
+    String,
+    /// <summary>
+    /// As string array
+    /// </summary>
+    Array,
+    /// <summary>
+    /// As underlying number
+    /// </summary>
+    Number,
 }
 
 #endregion

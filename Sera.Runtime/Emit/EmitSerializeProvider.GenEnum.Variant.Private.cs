@@ -22,6 +22,9 @@ internal partial class EmitSerializeProvider
 
         #region ready
 
+        var enum_attr = target.GetCustomAttribute<SeraEnumAttribute>();
+        var hint = enum_attr?.SerHint;
+
         var create_variant_tag = typeof(VariantTag)
             .GetMethod(
                 nameof(VariantTag.Create), BindingFlags.Static | BindingFlags.Public,
@@ -52,7 +55,8 @@ internal partial class EmitSerializeProvider
         )!;
         foreach (var item in items)
         {
-            (string name, SerializerVariantHint? hint) meta = (item.Name, null);
+            var item_hint = item.enum_attr?.SerHint ?? hint;
+            (string name, SerializerVariantHint? hint) meta = (item.Name, item_hint);
             add.Invoke(metas_inst, new[] { item.Tag.ToObject(), meta });
         }
         metas_field.SetValue(null, metas_inst);

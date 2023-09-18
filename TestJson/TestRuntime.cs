@@ -770,7 +770,7 @@ public class TestRuntime
     }
 
     #endregion
-    
+
     #region Enum9
 
     private enum Enum9
@@ -815,6 +815,238 @@ public class TestRuntime
         }
         {
             var obj = (Enum9)100;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("100"));
+        }
+    }
+
+    #endregion
+
+    #region Enum10
+
+    [SeraEnum(UseNumberTag = true)]
+    public enum Enum10
+    {
+        A,
+        B,
+        C,
+    }
+
+    [Test]
+    public void TestEnum10()
+    {
+        {
+            var obj = Enum10.A;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("0"));
+        }
+        {
+            var obj = Enum10.B;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("1"));
+        }
+        {
+            var obj = Enum10.C;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("2"));
+        }
+        {
+            var obj = (Enum10)100;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("100"));
+        }
+    }
+
+    #endregion
+
+    #region Enum11
+
+    [SeraEnum(UseNumberTag = true)]
+    private enum Enum11
+    {
+        A,
+        B,
+        C,
+    }
+
+    [Test]
+    public void TestEnum11()
+    {
+        {
+            var obj = Enum11.A;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("0"));
+        }
+        {
+            var obj = Enum11.B;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("1"));
+        }
+        {
+            var obj = Enum11.C;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("2"));
+        }
+        {
+            var obj = (Enum11)100;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("100"));
+        }
+    }
+
+    #endregion
+
+    #region Enum12
+
+    [SeraEnum(UseNumberTag = true)]
+    public enum Enum12
+    {
+        [SeraEnum(UseStringTag = true)]
+        A,
+        [SeraEnum(UseNumberTag = true)]
+        B,
+        C,
+    }
+
+    [Test]
+    public void TestEnum12()
+    {
+        {
+            var obj = Enum12.A;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"A\""));
+        }
+        {
+            var obj = Enum12.B;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("1"));
+        }
+        {
+            var obj = Enum12.C;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("2"));
+        }
+        {
+            var obj = (Enum12)100;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("100"));
+        }
+    }
+
+    #endregion
+
+    #region Enum13
+
+    [SeraEnum(UseNumberTag = true)]
+    private enum Enum13
+    {
+        [SeraEnum(UseStringTag = true)]
+        A,
+        [SeraEnum(UseNumberTag = true)]
+        B,
+        C,
+    }
+
+    [Test]
+    public void TestEnum13()
+    {
+        {
+            var obj = Enum13.A;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"A\""));
+        }
+        {
+            var obj = Enum13.B;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("1"));
+        }
+        {
+            var obj = Enum13.C;
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("2"));
+        }
+        {
+            var obj = (Enum13)100;
 
             var str = SeraJson.Serializer
                 .ToString()

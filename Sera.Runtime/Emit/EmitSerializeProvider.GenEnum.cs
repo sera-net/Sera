@@ -61,12 +61,16 @@ internal partial class EmitSerializeProvider
         return fields.AsParallel().AsOrdered()
             .Select((kv, i) => (name: kv.Key, field: kv.Value))
             .Select(a => (a.name, a.field, value: (V)a.field.GetValue(null)!))
-            .Select(a => new EnumInfo(a.name, a.value.MakeVariantTag(), a.field))
+            .Select(a =>
+            {
+                var enum_attr = a.field.GetCustomAttribute<SeraEnumAttribute>();
+                return new EnumInfo(a.name, a.value.MakeVariantTag(), a.field, enum_attr);
+            })
             .DistinctBy(a => a.Tag)
             .ToArray();
     }
 
-    private record EnumInfo(string Name, VariantTag Tag, FieldInfo Field);
+    private record EnumInfo(string Name, VariantTag Tag, FieldInfo Field, SeraEnumAttribute? enum_attr);
 
     private EnumJumpTables? TryMakeJumpTable(Type underlying_type, EnumInfo[] items)
     {

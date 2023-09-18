@@ -364,6 +364,7 @@ public interface IAsyncStructSerializer
 
 #region Variant
 
+[Flags]
 public enum SerializerVariantHint : uint
 {
     Unknown = 0,

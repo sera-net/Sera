@@ -40,6 +40,15 @@ internal partial class EmitSerializeProvider
 
         #region ready
 
+        var enum_attr = target.GetCustomAttribute<SeraEnumAttribute>();
+        var hint = enum_attr?.SerHint;
+
+        var hint_nullable_ctor = typeof(SerializerVariantHint?)
+            .GetConstructor(
+                BindingFlags.Public | BindingFlags.Instance,
+                new[] { typeof(SerializerVariantHint) }
+            )!;
+
         var write_variant_unit = ReflectionUtils.ISerializer_WriteVariantUnit_1generic
             .MakeGenericMethod(target);
 
@@ -117,6 +126,8 @@ internal partial class EmitSerializeProvider
                         var item = items[i];
                         var label = labels[i];
 
+                        var item_hint = item.enum_attr?.SerHint ?? hint;
+
                         ilg.MarkLabel(label);
 
                         #region load serializer
@@ -142,7 +153,15 @@ internal partial class EmitSerializeProvider
 
                         #region load hint
 
-                        ilg.Emit(OpCodes.Ldloc, local_hint_null);
+                        if (item_hint == null)
+                        {
+                            ilg.Emit(OpCodes.Ldloc, local_hint_null);
+                        }
+                        else
+                        {
+                            ilg.Emit(OpCodes.Ldc_I4, (int)item_hint.Value);
+                            ilg.Emit(OpCodes.Newobj, hint_nullable_ctor);
+                        }
 
                         #endregion
 
@@ -405,7 +424,15 @@ internal partial class EmitSerializeProvider
 
             #region load hint
 
-            ilg.Emit(OpCodes.Ldloc, local_hint_null);
+            if (hint == null)
+            {
+                ilg.Emit(OpCodes.Ldloc, local_hint_null);
+            }
+            else
+            {
+                ilg.Emit(OpCodes.Ldc_I4, (int)hint.Value);
+                ilg.Emit(OpCodes.Newobj, hint_nullable_ctor);
+            }
 
             #endregion
 
@@ -451,7 +478,8 @@ internal partial class EmitSerializeProvider
             )!;
             foreach (var item in items)
             {
-                (string name, SerializerVariantHint? hint) meta = (item.Name, null);
+                var item_hint = item.enum_attr?.SerHint ?? hint;
+                (string name, SerializerVariantHint? hint) meta = (item.Name, item_hint);
                 add.Invoke(metas_inst, new[] { item.Tag.ToObject(), meta });
             }
             metas_field2.SetValue(null, metas_inst);
