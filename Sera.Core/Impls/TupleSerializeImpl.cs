@@ -70,7 +70,7 @@ public abstract record TupleSerializeImplBase<T1, T2, T3, T4, T5, T6, T7> :
 public abstract record TupleSerializeImplBase<T1, T2, T3, T4, T5, T6, T7, T8> :
     ISerialize<Tuple<T1, T2, T3, T4, T5, T6, T7, T8>>,
     ISeqSerializerReceiver<Tuple<T1, T2, T3, T4, T5, T6, T7, T8>>
-    where T8 : struct
+    where T8 : notnull
 {
     public abstract void Write<S>(S serializer, Tuple<T1, T2, T3, T4, T5, T6, T7, T8> value, ISeraOptions options)
         where S : ISerializer;
@@ -82,7 +82,7 @@ public abstract record TupleSerializeImplBase<T1, T2, T3, T4, T5, T6, T7, T8> :
 public abstract record TupleRestSerializeImplBase<T1, T2, T3, T4, T5, T6, T7, TR> :
     ISerialize<Tuple<T1, T2, T3, T4, T5, T6, T7, TR>>,
     ISeqSerializerReceiver<Tuple<T1, T2, T3, T4, T5, T6, T7, TR>>
-    where TR : struct
+    where TR : notnull
 {
     public abstract void Write<S>(S serializer, Tuple<T1, T2, T3, T4, T5, T6, T7, TR> value, ISeraOptions options)
         where S : ISerializer;
@@ -281,7 +281,7 @@ public abstract record TupleSerializeImplAbstract<
     where ST5 : ISerialize<T5>
     where ST6 : ISerialize<T6>
     where ST7 : ISerialize<T7>
-    where T8 : struct
+    where T8 : notnull
     where ST8 : ISerialize<T8>
 {
     public abstract ST1 Serialize1 { get; }
@@ -321,7 +321,7 @@ public abstract record TupleRestSerializeImplAbstract<
     where ST5 : ISerialize<T5>
     where ST6 : ISerialize<T6>
     where ST7 : ISerialize<T7>
-    where TR : struct
+    where TR : notnull
     where RTR : ISeqSerializerReceiver<TR>
 {
     public abstract ST1 Serialize1 { get; }
@@ -480,7 +480,7 @@ public record TupleSerializeImpl<
     where ST5 : ISerialize<T5>
     where ST6 : ISerialize<T6>
     where ST7 : ISerialize<T7>
-    where T8 : struct
+    where T8 : notnull
     where ST8 : ISerialize<T8>
 {
     public override ST1 Serialize1 { get; } = Serialize1;
@@ -511,7 +511,7 @@ public record TupleRestSerializeImpl<
     where ST5 : ISerialize<T5>
     where ST6 : ISerialize<T6>
     where ST7 : ISerialize<T7>
-    where TR : struct
+    where TR : notnull
     where RTR : ISeqSerializerReceiver<TR>
 {
     public override ST1 Serialize1 { get; } = Serialize1;
@@ -670,7 +670,7 @@ public record TupleSerializeDepsImpl<
     where ST5 : ISerialize<T5>
     where ST6 : ISerialize<T6>
     where ST7 : ISerialize<T7>
-    where T8 : struct
+    where T8 : notnull
     where ST8 : ISerialize<T8>
     where D : IDepsContainer<ST1, ST2, ST3, ST4, ST5, ST6, ST7, ST8>
 {
@@ -700,7 +700,7 @@ public record TupleRestSerializeDepsImpl<
     where ST5 : ISerialize<T5>
     where ST6 : ISerialize<T6>
     where ST7 : ISerialize<T7>
-    where TR : struct
+    where TR : notnull
     where RTR : ISeqSerializerReceiver<TR>
     where D : IDepsContainer<ST1, ST2, ST3, ST4, ST5, ST6, ST7, RTR>
 {
@@ -791,7 +791,7 @@ public abstract record AsyncTupleSerializeImplBase<T1, T2, T3, T4, T5, T6, T7> :
 public abstract record AsyncTupleSerializeImplBase<T1, T2, T3, T4, T5, T6, T7, T8> :
     IAsyncSerialize<Tuple<T1, T2, T3, T4, T5, T6, T7, T8>>,
     IAsyncSeqSerializerReceiver<Tuple<T1, T2, T3, T4, T5, T6, T7, T8>>
-    where T8 : struct
+    where T8 : notnull
 {
     public abstract ValueTask WriteAsync<S>(S serializer, Tuple<T1, T2, T3, T4, T5, T6, T7, T8> value,
         ISeraOptions options) where S : IAsyncSerializer;
@@ -803,7 +803,7 @@ public abstract record AsyncTupleSerializeImplBase<T1, T2, T3, T4, T5, T6, T7, T
 public abstract record AsyncTupleRestSerializeImplBase<T1, T2, T3, T4, T5, T6, T7, TR> :
     IAsyncSerialize<Tuple<T1, T2, T3, T4, T5, T6, T7, TR>>,
     IAsyncSeqSerializerReceiver<Tuple<T1, T2, T3, T4, T5, T6, T7, TR>>
-    where TR : struct
+    where TR : notnull
 {
     public abstract ValueTask WriteAsync<S>(S serializer, Tuple<T1, T2, T3, T4, T5, T6, T7, TR> value,
         ISeraOptions options) where S : IAsyncSerializer;
@@ -973,7 +973,7 @@ public record AsyncTupleSerializeImpl<
     where ST5 : IAsyncSerialize<T5>
     where ST6 : IAsyncSerialize<T6>
     where ST7 : IAsyncSerialize<T7>
-    where T8 : struct
+    where T8 : notnull
     where ST8 : IAsyncSerialize<T8>
 {
     public override ValueTask WriteAsync<S>(S serializer, Tuple<T1, T2, T3, T4, T5, T6, T7, T8> value,
@@ -1008,7 +1008,7 @@ public record AsyncTupleRestSerializeImpl<
     where ST5 : IAsyncSerialize<T5>
     where ST6 : IAsyncSerialize<T6>
     where ST7 : IAsyncSerialize<T7>
-    where TR : struct
+    where TR : notnull
     where RTR : IAsyncSeqSerializerReceiver<TR>
 {
     public override ValueTask WriteAsync<S>(S serializer, Tuple<T1, T2, T3, T4, T5, T6, T7, TR> value,

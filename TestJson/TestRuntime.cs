@@ -1325,7 +1325,7 @@ public class TestRuntime
     }
 
     #endregion
-    
+
     #region Flags4
 
     [Flags, SeraFlags(SeraFlagsMode.Array)]
@@ -1423,9 +1423,9 @@ public class TestRuntime
     }
 
     #endregion
-    
+
     #region ValueTuple1
-    
+
     [Test]
     public void TestValueTuple1()
     {
@@ -1442,7 +1442,7 @@ public class TestRuntime
     #endregion
 
     #region ValueTuple2
-    
+
     [Test]
     public void TestValueTuple2()
     {
@@ -1458,4 +1458,40 @@ public class TestRuntime
 
     #endregion
 
+    #region Tuple1
+
+    [Test]
+    public void TestTuple1()
+    {
+        var obj = Tuple.Create(1, 2, 3);
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,2,3]"));
+    }
+
+    #endregion
+
+    #region Tuple2
+
+    [Test]
+    public void TestTuple2()
+    {
+        var obj = new Tuple<int, int, int, int, int, int, int, Tuple<int, int, int, int, int>>(
+            1, 2, 3, 4, 5, 6, 7,
+            new Tuple<int, int, int, int, int>(8, 9, 10, 11, 12)
+        );
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,2,3,4,5,6,7,8,9,10,11,12]"));
+    }
+
+    #endregion
 }
