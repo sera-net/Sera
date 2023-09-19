@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Sera.Core.Impls;
-using Sera.Core.Processor;
+using Sera.Core.SerDe;
 
 namespace Sera.Core.De;
 

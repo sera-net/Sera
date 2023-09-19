@@ -48,7 +48,7 @@ internal partial class EmitSerializeProvider
         }
 
         private Type? dep_container_type;
-        private Dictionary<Type, CacheStubDeps>? deps;
+        private IEnumerable<CacheStubDeps>? deps;
         private volatile bool deps_ready;
         private readonly object deps_ready_lock = new();
 
@@ -108,11 +108,14 @@ internal partial class EmitSerializeProvider
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void ProvideDeps(Type dep_container_type, Dictionary<Type, CacheStubDeps> deps)
+        public void ProvideDeps(Type dep_container_type, IEnumerable<CacheStubDeps> deps)
         {
             this.dep_container_type = dep_container_type;
             this.deps = deps;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void ProvideDeps(TheDep dep) => ProvideDeps(dep.dep_container_type, dep.deps);
 
         public void EnsureDepsReady()
         {
@@ -123,7 +126,7 @@ internal partial class EmitSerializeProvider
                 if (deps_ready) return;
                 try
                 {
-                    foreach (var (_, dep) in deps!)
+                    foreach (var dep in deps!)
                     {
                         dep.Ready(dep_container_type);
                     }
@@ -133,7 +136,7 @@ internal partial class EmitSerializeProvider
                     deps_ready = true;
                 }
             }
-            foreach (var (_, dep) in deps)
+            foreach (var dep in deps)
             {
                 dep.WaitInstReady();
             }
@@ -141,11 +144,12 @@ internal partial class EmitSerializeProvider
     }
 
     internal record CacheStubDeps(
-        FieldInfo Field, Type ImplType, Type RawImplType, Type ValueType,
+        FieldInfo? Field, PropertyInfo? Property, Type ImplType, Type RawImplType, Type ValueType,
         CacheStub? ImplStub, object? ImplInst, bool RefNullable
     )
     {
-        public FieldInfo Field { get; set; } = Field;
+        public FieldInfo? Field { get; set; } = Field;
+        public PropertyInfo? Property { get; set; } = Property;
         public Type ImplType { get; set; } = ImplType;
         public Type RawImplType { get; set; } = RawImplType;
         public Type ValueType { get; set; } = ValueType;
@@ -163,32 +167,65 @@ internal partial class EmitSerializeProvider
 
         internal void Ready(Type dep_container_type)
         {
-            var field_name = Field.Name;
-            var field = dep_container_type.GetField(field_name)!;
-
-            if (ImplInst != null)
+            if (Field != null)
             {
-                var inst = ImplInst;
-                if (RefNullable)
+                var field_name = Field.Name;
+                var field = dep_container_type.GetField(field_name)!;
+
+                if (ImplInst != null)
                 {
-                    var ctor = ImplType.GetConstructor(BindingFlags.Public | BindingFlags.Instance,
-                        new[] { RawImplType })!;
-                    inst = ctor.Invoke(new[] { inst });
+                    var inst = ImplInst;
+                    if (RefNullable)
+                    {
+                        var ctor = ImplType.GetConstructor(BindingFlags.Public | BindingFlags.Instance,
+                            new[] { RawImplType })!;
+                        inst = ctor.Invoke(new[] { inst });
+                    }
+                    field.SetValue(null, inst);
                 }
-                field.SetValue(null, inst);
+                else
+                {
+                    ImplStub!.WaitInstProvided();
+                    var inst = ImplStub.SerInst;
+                    if (RefNullable)
+                    {
+                        var impl_type = field.FieldType;
+                        var ctor = impl_type.GetConstructor(BindingFlags.Public | BindingFlags.Instance,
+                            new[] { ImplStub.SerType })!;
+                        inst = ctor.Invoke(new[] { inst });
+                    }
+                    field.SetValue(null, inst);
+                }
             }
             else
             {
-                ImplStub!.WaitInstProvided();
-                var inst = ImplStub.SerInst;
-                if (RefNullable)
+                var property_name = Property!.Name;
+                var property = dep_container_type.GetProperty(property_name)!;
+
+                if (ImplInst != null)
                 {
-                    var impl_type = field.FieldType;
-                    var ctor = impl_type.GetConstructor(BindingFlags.Public | BindingFlags.Instance,
-                        new[] { ImplStub.SerType })!;
-                    inst = ctor.Invoke(new[] { inst });
+                    var inst = ImplInst;
+                    if (RefNullable)
+                    {
+                        var ctor = ImplType.GetConstructor(BindingFlags.Public | BindingFlags.Instance,
+                            new[] { RawImplType })!;
+                        inst = ctor.Invoke(new[] { inst });
+                    }
+                    property.SetValue(null, inst);
                 }
-                field.SetValue(null, inst);
+                else
+                {
+                    ImplStub!.WaitInstProvided();
+                    var inst = ImplStub.SerInst;
+                    if (RefNullable)
+                    {
+                        var impl_type = property.PropertyType;
+                        var ctor = impl_type.GetConstructor(BindingFlags.Public | BindingFlags.Instance,
+                            new[] { ImplStub.SerType })!;
+                        inst = ctor.Invoke(new[] { inst });
+                    }
+                    property.SetValue(null, inst);
+                }
             }
         }
 
@@ -214,18 +251,22 @@ internal partial class EmitSerializeProvider
         return stub;
     }
 
-    private void CreateSerialize(Type type, CacheStub stub)
+    private void CreateSerialize(Type target, CacheStub stub)
     {
         try
         {
             // todo other type
-            if (type.IsEnum)
+            if (target.IsEnum)
             {
-                GenEnum(type, stub);
+                GenEnum(target, stub);
+            }
+            else if (ReflectionUtils.IsTuple(target))
+            {
+                GenTuple(target, stub);
             }
             else
             {
-                GenStruct(type, stub);
+                GenStruct(target, stub);
             }
         }
         finally

@@ -261,7 +261,7 @@ internal partial class EmitSerializeProvider
 
                 #region load Self._impl_n
 
-                ilg.Emit(OpCodes.Ldsfld, dep.Field);
+                ilg.Emit(OpCodes.Ldsfld, dep.Field!);
 
                 #endregion
 
@@ -302,7 +302,7 @@ internal partial class EmitSerializeProvider
             stub.ProvideType(reference_type_wrapper);
         }
 
-        stub.ProvideDeps(type, ser_deps);
+        stub.ProvideDeps(type, ser_deps.Values);
 
         #endregion
 

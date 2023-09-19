@@ -1,4 +1,4 @@
-﻿namespace Sera.Core.Processor;
+﻿namespace Sera.Core.SerDe;
 
 public interface ISeraAbility
 {

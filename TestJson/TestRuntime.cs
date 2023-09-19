@@ -185,6 +185,7 @@ public class TestRuntime
     public class StructPrivateField1
     {
         [SeraInclude]
+        [UsedImplicitly]
         private int Member1 { get; set; } = 123456;
         [SeraInclude, UsedImplicitly]
         private int Member2 = 654321;
@@ -209,6 +210,7 @@ public class TestRuntime
 
     private class StructPrivateType1
     {
+        [UsedImplicitly]
         public int Member1 { get; set; } = 123;
     }
 
@@ -232,6 +234,7 @@ public class TestRuntime
     public class StructPrivateTypeMember1
     {
         [SeraInclude]
+        [UsedImplicitly]
         private PrivateType Member1 { get; set; } = new();
 
         private class PrivateType { }
@@ -257,11 +260,13 @@ public class TestRuntime
     public class StructPrivateTypeMember2
     {
         [SeraInclude]
+        [UsedImplicitly]
         private PrivateType Member1 { get; set; } = new();
 
         private class PrivateType
         {
             [SeraInclude]
+            [UsedImplicitly]
             private StructPrivateTypeMember2? Member1 { get; set; }
         }
     }
@@ -1418,4 +1423,39 @@ public class TestRuntime
     }
 
     #endregion
+    
+    #region ValueTuple1
+    
+    [Test]
+    public void TestValueTuple1()
+    {
+        var obj = (1, 2, 3);
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,2,3]"));
+    }
+
+    #endregion
+
+    #region ValueTuple2
+    
+    [Test]
+    public void TestValueTuple2()
+    {
+        var obj = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12);
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,2,3,4,5,6,7,8,9,10,11,12]"));
+    }
+
+    #endregion
+
 }

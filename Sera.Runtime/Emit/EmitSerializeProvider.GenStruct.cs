@@ -4,7 +4,6 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Threading;
-using Sera.Core;
 using Sera.Core.Impls;
 using Sera.Runtime.Utils;
 
@@ -24,40 +23,8 @@ internal partial class EmitSerializeProvider
             GenPrivateStruct(target, members, stub);
         }
     }
-
-    /// <returns>Actual type: (Type, CacheStub | object)</returns>
-    private (Type impl_type, CacheStub? stub, object? impl) GetSerImpl(Type target, Thread thread)
-    {
-        Type impl_type;
-        CacheStub? stub;
-        if (TryGetStaticImpl(target, out var impl))
-        {
-            impl_type = impl!.GetType();
-            stub = null;
-        }
-        else
-        {
-            stub = GetSerializeStub(target, thread);
-            if (stub.CreateThread != thread)
-            {
-                stub.WaitTypeProvided();
-            }
-            impl_type = stub.SerType;
-        }
-        return (impl_type, stub, impl);
-    }
-
-    private bool TryGetStaticImpl(Type type, out object? impl)
-    {
-        var method = ReflectionUtils.StaticRuntimeProvider_TryGetSerialize.MakeGenericMethod(type);
-        var args = new object?[] { null };
-        var r = (bool)method.Invoke(StaticRuntimeProvider.Instance, args)!;
-        impl = args[0];
-        return r;
-    }
-
-    private static readonly NullabilityInfoContext nullabilityInfoContext = new();
-
+    
+    /// <returns>CacheStubDeps.Field is not null</returns>
     private Dictionary<Type, CacheStubDeps> GetSerDeps(
         StructMember[] members, TypeBuilder dep_container_type_builder, Thread current_thread
     )
@@ -96,7 +63,7 @@ internal partial class EmitSerializeProvider
                 FieldAttributes.Public | FieldAttributes.Static);
             ser_deps.Add(
                 value_type,
-                new(field, impl_type, raw_impl_type, value_type, impl_cell, impl, ref_nullable)
+                new(field, null, impl_type, raw_impl_type, value_type, impl_cell, impl, ref_nullable)
             );
         }
 

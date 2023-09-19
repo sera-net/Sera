@@ -50,7 +50,7 @@ internal partial class EmitSerializeProvider
 
         var dep_container_type = deps_type_builder.CreateType();
 
-        stub.ProvideDeps(dep_container_type, ser_deps);
+        stub.ProvideDeps(dep_container_type, ser_deps.Values);
 
         #endregion
 

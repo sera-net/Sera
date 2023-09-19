@@ -47,6 +47,7 @@ public class BuiltInRuntimeProvider : IRuntimeProvider, IAsyncRuntimeProvider
         { typeof(object), RawObjectImpl.Instance },
         { typeof(DBNull), DBNullImpl.Instance },
         { typeof(Unit), UnitImpl<Unit>.Instance },
+        { typeof(ValueTuple), EmptyTupleImpl<ValueTuple>.Instance },
     };
 
     private static readonly ConditionalWeakTable<Type, object> InstanceCache = new();
