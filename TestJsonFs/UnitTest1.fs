@@ -1,4 +1,4 @@
-module TestJsonFs
+module TestJsonFs.UnitTest1
 
 open NUnit.Framework
 open Sera
