@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using Sera.Core;
 using Sera.Core.Impls;
 using Sera.Core.Ser;
@@ -12,20 +13,20 @@ namespace Sera.Runtime.Emit;
 
 internal partial class EmitSerializeProvider
 {
-    private void GenPrivateStruct(Type target, StructMember[] members, CacheStub stub)
+    private void GenPrivateStruct(TypeMeta target, StructMember[] members, CacheStub stub)
     {
         #region ready type
 
-        var type = typeof(PrivateStructSerializeImpl<>).MakeGenericType(target);
+        var type = typeof(PrivateStructSerializeImpl<>).MakeGenericType(target.Type);
 
         Type? reference_type_wrapper = null;
-        if (target.IsValueType)
+        if (target.Type.IsValueType)
         {
             stub.ProvideType(type);
         }
         else
         {
-            reference_type_wrapper = typeof(ReferenceTypeWrapperSerializeImpl<,>).MakeGenericType(target, type);
+            reference_type_wrapper = typeof(ReferenceTypeWrapperSerializeImpl<,>).MakeGenericType(target.Type, type);
             stub.ProvideType(reference_type_wrapper);
         }
 
@@ -34,9 +35,9 @@ internal partial class EmitSerializeProvider
         #region create dep_container_type type builder
 
         var guid = Guid.NewGuid();
-        var module = ReflectionUtils.CreateAssembly($"Ser.{target.Name}._{guid:N}_");
+        var module = ReflectionUtils.CreateAssembly($"Ser.{target.Type.Name}._{guid:N}_");
         var deps_type_builder = module.DefineType(
-            $"{module.Assembly.GetName().Name}.SerializeImpl_{target.Name}_Deps",
+            $"{module.Assembly.GetName().Name}.SerializeImpl_{target.Type.Name}_Deps",
             TypeAttributes.Public | TypeAttributes.Sealed
         );
 
@@ -75,7 +76,7 @@ internal partial class EmitSerializeProvider
 
         var ctor = type.GetConstructor(BindingFlags.Public | BindingFlags.Instance,
             new[] { typeof(string), typeof(nuint) })!;
-        var inst = ctor.Invoke(new object[] { target.Name, (nuint)field_count });
+        var inst = ctor.Invoke(new object[] { target.Type.Name, (nuint)field_count });
         if (reference_type_wrapper == null)
         {
             stub.ProvideInst(inst);
@@ -101,8 +102,10 @@ internal partial class EmitSerializeProvider
         internal static Dictionary<Type, CacheStubDeps> ser_deps = null!;
 #pragma warning restore CS0414
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public void Write<S>(S serializer, T value, ISeraOptions options) where S : ISerializer
         {
+            if (!typeof(T).IsValueType && value == null) throw new NullReferenceException();
             serializer.StartStruct(name, field_count, value, this);
         }
 
@@ -236,7 +239,7 @@ internal partial class EmitSerializeProvider
                     #region load Deps._impl_n
 
                     var dep_field = dep_container_type.GetField(
-                        dep.Field.Name,
+                        dep.Field!.Name,
                         BindingFlags.Static | BindingFlags.Public
                     )!;
                     ilg.Emit(OpCodes.Ldsfld, dep_field);

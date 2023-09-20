@@ -13,6 +13,9 @@ namespace Sera.Runtime.Utils;
 
 internal static class ReflectionUtils
 {
+    public static ConstructorInfo NullReferenceException_ctor { get; } =
+        typeof(NullReferenceException).GetConstructor(BindingFlags.Public | BindingFlags.Instance, Array.Empty<Type>())!;
+    
     public static ConstructorInfo Nullable_UInt64_ctor { get; } = typeof(long?).GetConstructor(new[] { typeof(long) })!;
 
     public static MethodInfo StaticRuntimeProvider_TryGetSerialize { get; } =
@@ -107,6 +110,12 @@ internal static class ReflectionUtils
         typeof(Tuple<,,,,,,,>),
     };
 
+    public static bool IsTuple(this TypeMeta target)
+        => IsTuple(target.Type, out _);
+
+    public static bool IsTuple(this TypeMeta target, out bool is_value_tuple)
+        => IsTuple(target.Type, out is_value_tuple);
+
     public static bool IsTuple(Type target) => IsTuple(target, out _);
 
     public static bool IsTuple(Type target, out bool is_value_tuple)
@@ -134,12 +143,18 @@ internal static class ReflectionUtils
         }
     }
 
+    public static bool IsValueTuple(this TypeMeta target)
+        => IsValueTuple(target.Type);
+
     public static bool IsValueTuple(Type target)
     {
         if (!target.IsGenericType) return false;
         var t = target.GetGenericTypeDefinition();
         return ValueTuples.Contains(t);
     }
+
+    public static bool IsClassTuple(this TypeMeta target)
+        => IsClassTuple(target.Type);
 
     public static bool IsClassTuple(Type target)
     {

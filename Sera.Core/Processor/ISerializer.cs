@@ -326,14 +326,14 @@ public interface IStructSerializerReceiver<in T>
 
 public interface IStructSerializer
 {
-    public void WriteField<T, S>(string key, long? int_key, T value, S serializer) where S : ISerialize<T>
-        => WriteField(key.AsMemory(), int_key, value, serializer);
+    public void WriteField<T, S>(string key, long? int_key, T value, S serialize) where S : ISerialize<T>
+        => WriteField(key.AsMemory(), int_key, value, serialize);
 
-    public void WriteField<T, S>(ReadOnlyMemory<char> key, long? int_key, T value, S serializer)
+    public void WriteField<T, S>(ReadOnlyMemory<char> key, long? int_key, T value, S serialize)
         where S : ISerialize<T>
-        => WriteField(key.Span, int_key, value, serializer);
+        => WriteField(key.Span, int_key, value, serialize);
 
-    public void WriteField<T, S>(ReadOnlySpan<char> key, long? int_key, T value, S serializer) where S : ISerialize<T>;
+    public void WriteField<T, S>(ReadOnlySpan<char> key, long? int_key, T value, S serialize) where S : ISerialize<T>;
 }
 
 public partial interface IAsyncSerializer
@@ -353,11 +353,11 @@ public interface IAsyncStructSerializerReceiver<in T>
 
 public interface IAsyncStructSerializer
 {
-    public ValueTask WriteFieldAsync<T, S>(string key, long? int_key, T value, S serializer) where S : ISerialize<T>
-        => WriteFieldAsync(key.AsMemory(), int_key, value, serializer);
+    public ValueTask WriteFieldAsync<T, S>(string key, long? int_key, T value, S serialize) where S : IAsyncSerialize<T>
+        => WriteFieldAsync(key.AsMemory(), int_key, value, serialize);
 
-    public ValueTask WriteFieldAsync<T, S>(ReadOnlyMemory<char> key, long? int_key, T value, S serializer)
-        where S : ISerialize<T>;
+    public ValueTask WriteFieldAsync<T, S>(ReadOnlyMemory<char> key, long? int_key, T value, S serialize)
+        where S : IAsyncSerialize<T>;
 }
 
 #endregion
@@ -379,7 +379,7 @@ public partial interface ISerializer
 
     public void WriteVariantUnit(string? union_name, Variant variant, SerializerVariantHint? hint);
 
-    public void WriteVariant<T, S>(string? union_name, Variant variant, T value, S serializer,
+    public void WriteVariant<T, S>(string? union_name, Variant variant, T value, S serialize,
         SerializerVariantHint? hint)
         where S : ISerialize<T>;
 
@@ -388,10 +388,10 @@ public partial interface ISerializer
     public void WriteVariantUnit<U>(string? union_name, Variant variant, SerializerVariantHint? hint)
         => WriteVariantUnit(union_name, variant, hint);
 
-    public void WriteVariant<U, T, S>(string? union_name, Variant variant, T value, S serializer,
+    public void WriteVariant<U, T, S>(string? union_name, Variant variant, T value, S serialize,
         SerializerVariantHint? hint)
         where S : ISerialize<T>
-        => WriteVariant(union_name, variant, value, serializer, hint);
+        => WriteVariant(union_name, variant, value, serialize, hint);
 }
 
 public partial interface IAsyncSerializer
@@ -400,19 +400,19 @@ public partial interface IAsyncSerializer
 
     public ValueTask WriteVariantUnitAsync(string? union_name, Variant variant, SerializerVariantHint? hint);
 
-    public ValueTask WriteVariantAsync<T, S>(string? union_name, Variant variant, T value, S serializer,
+    public ValueTask WriteVariantAsync<T, S>(string? union_name, Variant variant, T value, S serialize,
         SerializerVariantHint? hint)
-        where S : ISerialize<T>;
+        where S : IAsyncSerialize<T>;
 
     public ValueTask WriteEmptyUnionAsync<U>(string? union_name) => WriteEmptyUnionAsync(union_name);
 
     public ValueTask WriteVariantUnitAsync<U>(string? union_name, Variant variant, SerializerVariantHint? hint)
         => WriteVariantUnitAsync(union_name, variant, hint);
 
-    public ValueTask WriteVariantAsync<U, T, S>(string? union_name, Variant variant, T value, S serializer,
+    public ValueTask WriteVariantAsync<U, T, S>(string? union_name, Variant variant, T value, S serialize,
         SerializerVariantHint? hint)
-        where S : ISerialize<T>
-        => WriteVariantAsync(union_name, variant, value, serializer, hint);
+        where S : IAsyncSerialize<T>
+        => WriteVariantAsync(union_name, variant, value, serialize, hint);
 }
 
 #endregion

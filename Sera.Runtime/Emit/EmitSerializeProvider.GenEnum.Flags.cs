@@ -50,7 +50,7 @@ internal partial class EmitSerializeProvider
                 BindingFlags.Public | BindingFlags.Instance,
                 new[] { typeof(SerializerPrimitiveHint?) }
             )!;
-            var number_impl_inst = number_impl_inst_ctor.Invoke(new object[] { ((SerializerPrimitiveHint?)null) });
+            var number_impl_inst = number_impl_inst_ctor.Invoke(new object?[] { ((SerializerPrimitiveHint?)null) });
 
             var inst_ctor = type.GetConstructor(
                 BindingFlags.Public | BindingFlags.Instance,

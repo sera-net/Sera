@@ -11,10 +11,10 @@ namespace Sera.Runtime.Emit;
 
 internal partial class EmitSerializeProvider
 {
-    private void GenStruct(Type target, CacheStub stub)
+    private void GenStruct(TypeMeta target, CacheStub stub)
     {
-        var members = StructReflectionUtils.GetStructMembers(target, SerOrDe.Ser);
-        if (target.IsVisible && members.All(m => m.Type.IsVisible))
+        var members = StructReflectionUtils.GetStructMembers(target.Type, SerOrDe.Ser);
+        if (target.Type.IsVisible && members.All(m => m.Type.IsVisible))
         {
             GenPublicStruct(target, members, stub);
         }
@@ -23,7 +23,7 @@ internal partial class EmitSerializeProvider
             GenPrivateStruct(target, members, stub);
         }
     }
-    
+
     /// <returns>CacheStubDeps.Field is not null</returns>
     private Dictionary<Type, CacheStubDeps> GetSerDeps(
         StructMember[] members, TypeBuilder dep_container_type_builder, Thread current_thread
@@ -33,27 +33,28 @@ internal partial class EmitSerializeProvider
             .Select(m =>
             {
                 var ref_nullable = false;
+                var null_meta = m.Kind switch
+                {
+                    PropertyOrField.Property => TypeMetas.GetNullabilityMeta(m.Property!),
+                    PropertyOrField.Field => TypeMetas.GetNullabilityMeta(m.Field!),
+                    _ => throw new ArgumentOutOfRangeException()
+                };
                 if (!m.Type.IsValueType)
                 {
-                    var null_info = m.Kind switch
-                    {
-                        PropertyOrField.Property => nullabilityInfoContext.Create(m.Property!),
-                        PropertyOrField.Field => nullabilityInfoContext.Create(m.Field!),
-                        _ => throw new ArgumentOutOfRangeException()
-                    };
-                    ref_nullable = null_info.ReadState != NullabilityState.NotNull;
+                    ref_nullable = null_meta?.NullabilityInfo?.ReadState != NullabilityState.NotNull;
                 }
-                return (m.Type, ref_nullable);
+                return (m.Type, null_meta, ref_nullable);
             })
-            .DistinctBy(m => (m.Type, m.ref_nullable))
-            .Select((m, i) => (i, m.Type, m.ref_nullable))
-            .ToDictionary(a => (a.Type, a.ref_nullable), a => $"_ser_impl_{a.i}");
+            .DistinctBy(m => (m.Type, m.null_meta, m.ref_nullable))
+            .Select((m, i) => (i, m.Type, m.null_meta, m.ref_nullable))
+            .ToDictionary(a => (a.Type, a.null_meta, a.ref_nullable), a => $"_ser_impl_{a.i}");
 
         var ser_deps = new Dictionary<Type, CacheStubDeps>();
 
-        foreach (var ((value_type, ref_nullable), field_name) in ser_impl_field_names)
+        foreach (var ((value_type, null_meta, ref_nullable), field_name) in ser_impl_field_names)
         {
-            var (impl_type, impl_cell, impl) = GetSerImpl(value_type, current_thread);
+            var type_meta = TypeMetas.GetTypeMeta(value_type, null_meta);
+            var (impl_type, impl_cell, impl) = GetSerImpl(type_meta, current_thread);
             var raw_impl_type = impl_type;
             if (ref_nullable)
             {

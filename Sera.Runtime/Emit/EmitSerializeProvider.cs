@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -10,7 +11,7 @@ namespace Sera.Runtime.Emit;
 
 internal partial class EmitSerializeProvider
 {
-    public readonly ConditionalWeakTable<Type, CacheStub> cache = new();
+    public readonly ConditionalWeakTable<Type, ConcurrentDictionary<TypeMeta, CacheStub>> cache = new();
 
     public ISerialize<T> GetSerialize<T>()
     {
@@ -238,19 +239,26 @@ internal partial class EmitSerializeProvider
     }
 
     private CacheStub GetSerializeStub(Type type, Thread current_thread)
+        => GetSerializeStub(type, null, current_thread);
+
+    private CacheStub GetSerializeStub(Type type, NullabilityMeta? nullabilityMeta, Thread current_thread)
+        => GetSerializeStub(TypeMetas.GetTypeMeta(type, nullabilityMeta), current_thread);
+
+    private CacheStub GetSerializeStub(TypeMeta target, Thread current_thread)
     {
-        var stub = cache.GetValue(type, _ => new(current_thread));
+        var cache_group = cache.GetValue(target.Type, static _ => new());
+        var stub = cache_group.GetOrAdd(target, static (_, current_thread) => new(current_thread), current_thread);
         if (stub.CreateThread == current_thread)
         {
             if (stub.TryEnterCreating())
             {
-                CreateSerialize(type, stub);
+                CreateSerialize(target, stub);
             }
         }
         return stub;
     }
 
-    private void CreateSerialize(Type target, CacheStub stub)
+    private void CreateSerialize(TypeMeta target, CacheStub stub)
     {
         try
         {
@@ -259,7 +267,7 @@ internal partial class EmitSerializeProvider
             {
                 GenEnum(target, stub);
             }
-            else if (ReflectionUtils.IsTuple(target, out var is_value_tuple))
+            else if (target.IsTuple(out var is_value_tuple))
             {
                 GenTuple(target, is_value_tuple, stub);
             }
@@ -270,7 +278,7 @@ internal partial class EmitSerializeProvider
         }
         catch
         {
-            var type = typeof(UnitImpl<>).MakeGenericType(target);
+            var type = typeof(UnitImpl<>).MakeGenericType(target.Type);
             stub.ProvideType(type);
             var inst = Activator.CreateInstance(type)!;
             stub.ProvideInst(inst);

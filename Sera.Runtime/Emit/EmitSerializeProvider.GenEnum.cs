@@ -10,25 +10,25 @@ namespace Sera.Runtime.Emit;
 
 internal partial class EmitSerializeProvider
 {
-    private void GenEnum(Type target, CacheStub stub)
+    private void GenEnum(TypeMeta target, CacheStub stub)
     {
-        var underlying_type = target.GetEnumUnderlyingType();
-        var flags = target.GetCustomAttribute<FlagsAttribute>() != null;
+        var underlying_type = target.Type.GetEnumUnderlyingType();
+        var flags = target.Type.GetCustomAttribute<FlagsAttribute>() != null;
         if (flags)
         {
-            GenEnumFlags(target, underlying_type, stub);
+            GenEnumFlags(target.Type, underlying_type, stub);
         }
         else
         {
-            var items = GetEnumInfo(target, underlying_type, distinct: true);
+            var items = GetEnumInfo(target.Type, underlying_type, distinct: true);
             var jump_table = TryMakeJumpTable(underlying_type, items);
-            if (target.IsVisible)
+            if (target.Type.IsVisible)
             {
-                GenEnumVariantPublic(target, underlying_type, items, jump_table, stub);
+                GenEnumVariantPublic(target.Type, underlying_type, items, jump_table, stub);
             }
             else
             {
-                GenEnumVariantPrivate(target, underlying_type, items, jump_table, stub);
+                GenEnumVariantPrivate(target.Type, underlying_type, items, jump_table, stub);
             }
         }
     }

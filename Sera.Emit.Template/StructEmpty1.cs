@@ -9,6 +9,7 @@ public class StructEmpty1Impl : ISerialize<StructEmpty1>, IStructSerializerRecei
 {
     public void Write<S>(S serializer, StructEmpty1 value, ISeraOptions options) where S : ISerializer
     {
+        if (value == null) throw new NullReferenceException();
         serializer.StartStruct<StructEmpty1, StructEmpty1, StructEmpty1Impl>(nameof(StructEmpty1), 0, value, this);
     }
 

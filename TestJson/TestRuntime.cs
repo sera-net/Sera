@@ -308,6 +308,187 @@ public class TestRuntime
 
     #endregion
 
+    #region StructNullableField2
+
+    public class StructNullableField2
+    {
+        public object Member1 { get; set; } = null!;
+    }
+
+    [Test]
+    public void TestStructNullableField2()
+    {
+        var obj = new StructNullableField2();
+
+        Assert.Throws<NullReferenceException>(() => SeraJson.Serializer
+            .ToString()
+            .Serialize(obj));
+    }
+
+    #endregion
+
+    #region StructNullableField3
+
+    public class StructNullableField3
+    {
+        public StructNullableField3A Member1 { get; set; } = null!;
+    }
+
+    public class StructNullableField3A { }
+
+    [Test]
+    public void TestStructNullableField3()
+    {
+        var obj = new StructNullableField3();
+
+        Assert.Throws<NullReferenceException>(() => SeraJson.Serializer
+            .ToString()
+            .Serialize(obj));
+    }
+
+    #endregion
+
+    #region StructNullableField4
+
+    public class StructNullableField4
+    {
+        public StructNullableField4A Member1 { get; set; } = null!;
+    }
+
+    public class StructNullableField4A
+    {
+        public int A { get; set; }
+    }
+
+    [Test]
+    public void TestStructNullableField4()
+    {
+        var obj = new StructNullableField4();
+
+        Assert.Throws<NullReferenceException>(() => SeraJson.Serializer
+            .ToString()
+            .Serialize(obj));
+    }
+
+    #endregion
+
+    #region StructNullableField5
+
+    private class StructNullableField5
+    {
+        public StructNullableField5 Member1 { get; set; } = null!;
+    }
+
+    private class StructNullableField5A { }
+
+    [Test]
+    public void TestStructNullableField5()
+    {
+        var obj = new StructNullableField5();
+
+        Assert.Throws<NullReferenceException>(() => SeraJson.Serializer
+            .ToString()
+            .Serialize(obj));
+    }
+
+    #endregion
+
+    #region StructNullableField6
+
+    private class StructNullableField6
+    {
+        public StructNullableField6 Member1 { get; set; } = null!;
+    }
+
+    private class StructNullableField6A
+    {
+        public int A { get; set; }
+    }
+
+    [Test]
+    public void TestStructNullableField6()
+    {
+        var obj = new StructNullableField6();
+
+        Assert.Throws<NullReferenceException>(() => SeraJson.Serializer
+            .ToString()
+            .Serialize(obj));
+    }
+
+    #endregion
+
+    #region StructGenericNullable1
+
+    public class StructGenericNullable1
+    {
+        [UsedImplicitly]
+        public StructGenericNullable1<StructGenericNullable1?> Member1 { get; set; } = new(null);
+    }
+
+    public record StructGenericNullable1<A>([UsedImplicitly] A Member1);
+
+    [Test]
+    public void TestStructGenericNullable1()
+    {
+        var obj = new StructGenericNullable1();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"Member1\":{\"Member1\":null}}"));
+    }
+
+    #endregion
+
+    #region StructGenericNullable2
+
+    public class StructGenericNullable2
+    {
+        [UsedImplicitly]
+        public StructGenericNullable2<StructGenericNullable2>? Member1 { get; set; }
+    }
+
+    public record StructGenericNullable2<A>([UsedImplicitly] A Member1);
+
+    [Test]
+    public void TestStructGenericNullable2()
+    {
+        var obj = new StructGenericNullable2() { Member1 = new(new()) };
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"Member1\":{\"Member1\":{\"Member1\":null}}}"));
+    }
+
+    #endregion
+
+    #region StructGenericNullable3
+
+    public class StructGenericNullable3
+    {
+        [UsedImplicitly]
+        public StructGenericNullable3<StructGenericNullable3> Member1 { get; set; } = new(null!);
+    }
+
+    public record StructGenericNullable3<A>([UsedImplicitly] A Member1) where A : notnull;
+
+    [Test]
+    public void TestStructGenericNullable3()
+    {
+        var obj = new StructGenericNullable3();
+
+        Assert.Throws<NullReferenceException>(() => SeraJson.Serializer
+            .ToString()
+            .Serialize(obj));
+    }
+
+    #endregion
+
     #region Enum1
 
     public enum Enum1
@@ -1573,7 +1754,7 @@ public class TestRuntime
     }
 
     #endregion
-    
+
     #region Tuple1
 
     [Test]

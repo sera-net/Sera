@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using Sera.Core;
+using Sera.Core.Impls;
 using Sera.Runtime.Utils;
 
 namespace Sera.Runtime.Emit;
@@ -15,11 +16,11 @@ internal partial class EmitSerializeProvider
 
     internal record struct TheDep(Type dep_container_type, IEnumerable<CacheStubDeps> deps);
 
-    private DepInfo GetSerImpl(Type target, Thread thread)
+    private DepInfo GetSerImpl(TypeMeta target, Thread thread)
     {
         Type impl_type;
         CacheStub? stub;
-        if (TryGetStaticImpl(target, out var impl))
+        if (TryGetStaticImpl(target.Type, out var impl))
         {
             impl_type = impl!.GetType();
             stub = null;
@@ -46,21 +47,39 @@ internal partial class EmitSerializeProvider
     }
 
     /// <summary>Make dep with less than 8 quantities</summary>
-    private TheDep MakeDepContainer(DepInfo[] depInfos, Type[] types)
+    private TheDep MakeDepContainer(DepInfo[] depInfos, GenericMeta generics, out Type[] impl_types)
     {
-        if (depInfos.Length != types.Length) throw new ArgumentException($"{nameof(depInfos)} must == {nameof(types)}");
+        if (depInfos.Length != generics.Length) throw new ArgumentException($"{nameof(depInfos)}.Length must == {nameof(generics)}.Length");
         if (depInfos.Length > 8) throw new NotSupportedException();
+
+        var items = new (DepInfo dep, bool ref_nullable, Type raw_impl_type)[depInfos.Length];
+        impl_types = new Type[depInfos.Length];
+        for (var i = 0; i < depInfos.Length; i++)
+        {
+            var value_type = generics.RawTypes[i];
+            var generic_meta = generics.Metas[i];
+            var (impl_type, impl_cell, impl) = depInfos[i];
+            var raw_impl_type = impl_type;
+            var ref_nullable = !generic_meta.KeepRaw && !value_type.IsValueType;
+            if (ref_nullable)
+            {
+                impl_type = typeof(NullableReferenceTypeImpl<,>).MakeGenericType(value_type, impl_type);
+            }
+            impl_types[i] = impl_type;
+            items[i] = (new(impl_type, impl_cell, impl), ref_nullable, raw_impl_type);
+        }
+
         var deps_type = ReflectionUtils.DepsContainers[depInfos.Length]
-            .MakeGenericType(depInfos.Select(a => a.impl_type).ToArray());
+            .MakeGenericType(items.Select(a => a.dep.impl_type).ToArray());
 
         var deps = new List<CacheStubDeps>();
         for (var i = 0; i < depInfos.Length; i++)
         {
-            var value_type = types[i];
-            var (impl_type, impl_cell, impl) = depInfos[i];
+            var value_type = generics.RawTypes[i];
+            var ((impl_type, impl_cell, impl), ref_nullable, raw_impl_type) = items[i];
             var prop = deps_type.GetProperty($"Impl{i + 1}", BindingFlags.Public | BindingFlags.Static);
             deps.Add(
-                new(null, prop, impl_type, impl_type, value_type, impl_cell, impl, false)
+                new(null, prop, impl_type, raw_impl_type, value_type, impl_cell, impl, ref_nullable)
             );
         }
 

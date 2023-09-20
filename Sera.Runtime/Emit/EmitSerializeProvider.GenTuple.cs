@@ -8,44 +8,45 @@ namespace Sera.Runtime.Emit;
 
 internal partial class EmitSerializeProvider
 {
-    private void GenTuple(Type target, bool is_value_tuple, CacheStub stub)
+    private void GenTuple(TypeMeta target, bool is_value_tuple, CacheStub stub)
     {
-        var generics = target.GenericTypeArguments;
+        var generics = target.Generics ?? TypeMetas.GetGenericMeta(target.Type.GenericTypeArguments);
         if (generics.Length is not (> 0 and <= 8)) throw new ArgumentException($"{target} is not a tuple");
         if (generics.Length is 8)
         {
-            var rest = generics[7];
+            var rest = generics.RawTypes[7];
+            generics.Metas[7].KeepRaw = true;
             if (!(is_value_tuple ? ReflectionUtils.IsValueTuple(rest) : ReflectionUtils.IsClassTuple(rest)))
             {
                 throw new ArgumentException($"The eighth element of a tuple must be a tuple");
             }
-            GenTupleRest(target, generics, is_value_tuple, stub);
+            GenTupleRest(generics, is_value_tuple, stub);
         }
         else
         {
-            GenTuple(target, generics, is_value_tuple, stub);
+            GenTuple(generics, is_value_tuple, stub);
         }
     }
 
-    private void GenTuple(Type target, Type[] generics, bool is_value_tuple, CacheStub stub)
+    private void GenTuple(GenericMeta generics, bool is_value_tuple, CacheStub stub)
     {
         #region ready base type
 
         var base_type = (is_value_tuple
                 ? ReflectionUtils.ValueTupleSerBaseImpls[generics.Length]
                 : ReflectionUtils.ClassTupleSerBaseImpls[generics.Length])
-            .MakeGenericType(generics);
+            .MakeGenericType(generics.RawTypes);
         stub.ProvideType(base_type);
 
         #endregion
 
         #region ready deps
 
-        var deps = generics.AsParallel().AsOrdered()
+        var deps = generics.Metas.AsParallel().AsOrdered()
             .Select(t => GetSerImpl(t, stub.CreateThread))
             .ToArray();
 
-        var the_dep = MakeDepContainer(deps, generics);
+        var the_dep = MakeDepContainer(deps, generics, out var impl_types);
         stub.ProvideDeps(the_dep);
 
         var (deps_type, _) = the_dep;
@@ -54,8 +55,8 @@ internal partial class EmitSerializeProvider
 
         #region ready type
 
-        var type_args = generics
-            .Concat(deps.Select(a => a.impl_type))
+        var type_args = generics.RawTypes
+            .Concat(impl_types)
             .Append(deps_type)
             .ToArray();
         var type = (is_value_tuple
@@ -74,31 +75,31 @@ internal partial class EmitSerializeProvider
         #endregion
     }
 
-    private void GenTupleRest(Type target, Type[] generics, bool is_value_tuple, CacheStub stub)
+    private void GenTupleRest(GenericMeta generics, bool is_value_tuple, CacheStub stub)
     {
         #region ready base type
 
         var base_type = (is_value_tuple
                 ? typeof(ValueTupleRestSerializeImplBase<,,,,,,,>)
                 : typeof(TupleRestSerializeImplBase<,,,,,,,>))
-            .MakeGenericType(generics);
+            .MakeGenericType(generics.RawTypes);
         stub.ProvideType(base_type);
 
         #endregion
 
         #region ready size
 
-        var size = GetTupleSize(generics[7], is_value_tuple, 7);
+        var size = GetTupleSize(generics.RawTypes[7], is_value_tuple, 7);
 
         #endregion
 
         #region ready deps
 
-        var deps = generics.AsParallel().AsOrdered()
+        var deps = generics.Metas.AsParallel().AsOrdered()
             .Select(t => GetSerImpl(t, stub.CreateThread))
             .ToArray();
 
-        var the_dep = MakeDepContainer(deps, generics);
+        var the_dep = MakeDepContainer(deps, generics, out var impl_types);
         stub.ProvideDeps(the_dep);
 
         var (deps_type, _) = the_dep;
@@ -107,8 +108,8 @@ internal partial class EmitSerializeProvider
 
         #region ready type
 
-        var type_args = generics
-            .Concat(deps.Select(a => a.impl_type))
+        var type_args = generics.RawTypes
+            .Concat(impl_types)
             .Append(deps_type)
             .ToArray();
         var type = (is_value_tuple

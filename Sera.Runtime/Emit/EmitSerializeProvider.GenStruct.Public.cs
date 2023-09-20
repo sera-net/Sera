@@ -12,25 +12,25 @@ namespace Sera.Runtime.Emit;
 
 internal partial class EmitSerializeProvider
 {
-    private void GenPublicStruct(Type target, StructMember[] members, CacheStub stub)
+    private void GenPublicStruct(TypeMeta target, StructMember[] members, CacheStub stub)
     {
         #region create type builder
 
         var guid = Guid.NewGuid();
-        var module = ReflectionUtils.CreateAssembly($"Ser.{target.Name}._{guid:N}_");
+        var module = ReflectionUtils.CreateAssembly($"Ser.{target.Type.Name}._{guid:N}_");
         var type_builder = module.DefineType(
-            $"{module.Assembly.GetName().Name}.SerializeImpl_{target.Name}",
+            $"{module.Assembly.GetName().Name}.SerializeImpl_{target.Type.Name}",
             TypeAttributes.Public | TypeAttributes.Sealed
         );
         Type? reference_type_wrapper = null;
 
-        if (target.IsValueType)
+        if (target.Type.IsValueType)
         {
             stub.ProvideType(type_builder);
         }
         else
         {
-            reference_type_wrapper = typeof(ReferenceTypeWrapperSerializeImpl<,>).MakeGenericType(target, type_builder);
+            reference_type_wrapper = typeof(ReferenceTypeWrapperSerializeImpl<,>).MakeGenericType(target.Type, type_builder);
             stub.ProvideType(reference_type_wrapper);
         }
 
@@ -39,7 +39,7 @@ internal partial class EmitSerializeProvider
         #region ready
 
         var start_struct = ReflectionUtils.ISerializer_StartStruct_3generic
-            .MakeGenericMethod(target, target, type_builder);
+            .MakeGenericMethod(target.Type, target.Type, type_builder);
 
         #endregion
 
@@ -57,8 +57,8 @@ internal partial class EmitSerializeProvider
 
         (FieldBuilder access, MethodInfo access_invoke) AddAccess(Delegate del, Type value_type)
         {
-            var access_del_type = typeof(AccessGet<,>).MakeGenericType(target, value_type);
-            var access_invoke = access_del_type.GetMethod(nameof(Action.Invoke), new[] { target.MakeByRefType() })!;
+            var access_del_type = typeof(AccessGet<,>).MakeGenericType(target.Type, value_type);
+            var access_invoke = access_del_type.GetMethod(nameof(Action.Invoke), new[] { target.Type.MakeByRefType() })!;
             var access_name = $"_access_{accesses.Count}";
             var access = type_builder.DefineField(
                 access_name, access_del_type,
@@ -78,17 +78,32 @@ internal partial class EmitSerializeProvider
             var generic_parameters = write_method.DefineGenericParameters("S");
             var TS = generic_parameters[0];
             TS.SetInterfaceConstraints(typeof(ISerializer));
-            write_method.SetParameters(TS, target, typeof(ISeraOptions));
+            write_method.SetParameters(TS, target.Type, typeof(ISeraOptions));
             write_method.DefineParameter(1, ParameterAttributes.None, "serializer");
             write_method.DefineParameter(2, ParameterAttributes.None, "value");
             write_method.DefineParameter(3, ParameterAttributes.None, "options");
 
             var ilg = write_method.GetILGenerator();
 
+            var not_null_label = ilg.DefineLabel();
+
+            if (!target.Type.IsValueType)
+            {
+                #region if (value == null) throw new NullReferenceException();
+
+                ilg.Emit(OpCodes.Ldarg_2);
+                ilg.Emit(OpCodes.Brtrue_S, not_null_label);
+                ilg.Emit(OpCodes.Newobj, ReflectionUtils.NullReferenceException_ctor);
+                ilg.Emit(OpCodes.Throw);
+
+                #endregion
+            }
+
             #region serializer.StartStruct<T, T, Self>(target.Name, field_count, value, this);
 
+            ilg.MarkLabel(not_null_label);
             ilg.Emit(OpCodes.Ldarga, 1);
-            ilg.Emit(OpCodes.Ldstr, target.Name);
+            ilg.Emit(OpCodes.Ldstr, target.Type.Name);
             ilg.Emit(OpCodes.Ldc_I4, field_count);
             ilg.Emit(OpCodes.Conv_I);
             ilg.Emit(OpCodes.Ldarg_2);
@@ -104,7 +119,7 @@ internal partial class EmitSerializeProvider
 
             #endregion
 
-            var interface_type = typeof(ISerialize<>).MakeGenericType(target);
+            var interface_type = typeof(ISerialize<>).MakeGenericType(target.Type);
             type_builder.AddInterfaceImplementation(interface_type);
             type_builder.DefineMethodOverride(write_method,
                 interface_type.GetMethod(nameof(ISerialize<object>.Write))!);
@@ -121,7 +136,7 @@ internal partial class EmitSerializeProvider
             var generic_parameters = receive_method.DefineGenericParameters("S");
             var TS = generic_parameters[0];
             TS.SetInterfaceConstraints(typeof(IStructSerializer));
-            receive_method.SetParameters(target, TS);
+            receive_method.SetParameters(target.Type, TS);
             receive_method.DefineParameter(1, ParameterAttributes.None, "value");
             receive_method.DefineParameter(2, ParameterAttributes.None, "serializer");
 
@@ -184,7 +199,7 @@ internal partial class EmitSerializeProvider
                     var get_method = property.GetMethod!;
                     if (!get_method.IsPublic)
                     {
-                        var (del, _) = EmitPrivateAccess.Instance.AccessGetProperty(target, property);
+                        var (del, _) = EmitPrivateAccess.Instance.AccessGetProperty(target.Type, property);
                         var (access, access_invoke) = AddAccess(del, prop_type);
 
                         #region access Get(ref value)
@@ -195,7 +210,7 @@ internal partial class EmitSerializeProvider
 
                         #endregion
                     }
-                    else if (target.IsValueType)
+                    else if (target.Type.IsValueType)
                     {
                         #region load value
 
@@ -229,7 +244,7 @@ internal partial class EmitSerializeProvider
                     var field = member.Field!;
                     if (!field.IsPublic)
                     {
-                        var (del, _) = EmitPrivateAccess.Instance.AccessGetField(target, field);
+                        var (del, _) = EmitPrivateAccess.Instance.AccessGetField(target.Type, field);
                         var (access, access_invoke) = AddAccess(del, field.FieldType);
 
                         #region access Get(ref value)
@@ -281,7 +296,7 @@ internal partial class EmitSerializeProvider
 
             #endregion
 
-            var interface_type = typeof(IStructSerializerReceiver<>).MakeGenericType(target);
+            var interface_type = typeof(IStructSerializerReceiver<>).MakeGenericType(target.Type);
             type_builder.AddInterfaceImplementation(interface_type);
             type_builder.DefineMethodOverride(receive_method,
                 interface_type.GetMethod(nameof(IStructSerializerReceiver<object>.Receive))!);
@@ -298,7 +313,7 @@ internal partial class EmitSerializeProvider
         }
         else
         {
-            reference_type_wrapper = typeof(ReferenceTypeWrapperSerializeImpl<,>).MakeGenericType(target, type);
+            reference_type_wrapper = typeof(ReferenceTypeWrapperSerializeImpl<,>).MakeGenericType(target.Type, type);
             stub.ProvideType(reference_type_wrapper);
         }
 

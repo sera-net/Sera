@@ -13,12 +13,18 @@ public class RawObjectImpl :
     public static RawObjectImpl Instance { get; } = new();
 
     public void Write<S>(S serializer, object value, ISeraOptions options) where S : ISerializer
-        => serializer.StartStruct<object, object, RawObjectImpl>(nameof(Object), 0, value, this);
+    {
+        if (value == null!) throw new NullReferenceException();
+        serializer.StartStruct<object, object, RawObjectImpl>(nameof(Object), 0, value, this);
+    }
 
     public void Receive<S>(object value, S serialize) where S : IStructSerializer { }
 
     public ValueTask WriteAsync<S>(S serializer, object value, ISeraOptions options) where S : IAsyncSerializer
-        => serializer.StartStructAsync<object, object, RawObjectImpl>(nameof(Object), 0, value, this);
+    {
+        if (value == null!) throw new NullReferenceException();
+        return serializer.StartStructAsync<object, object, RawObjectImpl>(nameof(Object), 0, value, this);
+    }
 
     public ValueTask ReceiveAsync<S>(object value, S serialize) where S : IAsyncStructSerializer
         => ValueTask.CompletedTask;
