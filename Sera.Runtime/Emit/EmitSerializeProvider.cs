@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -260,14 +259,22 @@ internal partial class EmitSerializeProvider
             {
                 GenEnum(target, stub);
             }
-            else if (ReflectionUtils.IsTuple(target))
+            else if (ReflectionUtils.IsTuple(target, out var is_value_tuple))
             {
-                GenTuple(target, stub);
+                GenTuple(target, is_value_tuple, stub);
             }
             else
             {
                 GenStruct(target, stub);
             }
+        }
+        catch
+        {
+            var type = typeof(UnitImpl<>).MakeGenericType(target);
+            stub.ProvideType(type);
+            var inst = Activator.CreateInstance(type)!;
+            stub.ProvideInst(inst);
+            throw;
         }
         finally
         {

@@ -5,7 +5,6 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using Sera.Core;
-using Sera.Core.Impls;
 using Sera.Core.Impls.Deps;
 using Sera.Core.Impls.Tuples;
 using Sera.Core.Ser;
@@ -108,11 +107,45 @@ internal static class ReflectionUtils
         typeof(Tuple<,,,,,,,>),
     };
 
-    public static bool IsTuple(Type target)
+    public static bool IsTuple(Type target) => IsTuple(target, out _);
+
+    public static bool IsTuple(Type target, out bool is_value_tuple)
+    {
+        if (!target.IsGenericType)
+        {
+            is_value_tuple = false;
+            return false;
+        }
+        var t = target.GetGenericTypeDefinition();
+        if (ValueTuples.Contains(t))
+        {
+            is_value_tuple = true;
+            return true;
+        }
+        else if (ClassTuples.Contains(t))
+        {
+            is_value_tuple = false;
+            return true;
+        }
+        else
+        {
+            is_value_tuple = false;
+            return false;
+        }
+    }
+
+    public static bool IsValueTuple(Type target)
     {
         if (!target.IsGenericType) return false;
         var t = target.GetGenericTypeDefinition();
-        return ValueTuples.Contains(t) || ClassTuples.Contains(t);
+        return ValueTuples.Contains(t);
+    }
+
+    public static bool IsClassTuple(Type target)
+    {
+        if (!target.IsGenericType) return false;
+        var t = target.GetGenericTypeDefinition();
+        return ClassTuples.Contains(t);
     }
 
     public static Dictionary<int, Type> ValueTupleSerImpls { get; } = new()
@@ -124,7 +157,6 @@ internal static class ReflectionUtils
         { 5, typeof(ValueTupleSerializeDepsImpl<,,,,,,,,,,>) },
         { 6, typeof(ValueTupleSerializeDepsImpl<,,,,,,,,,,,,>) },
         { 7, typeof(ValueTupleSerializeDepsImpl<,,,,,,,,,,,,,,>) },
-        { 8, typeof(ValueTupleSerializeDepsImpl<,,,,,,,,,,,,,,,,>) },
     };
 
     public static Dictionary<int, Type> ClassTupleSerImpls { get; } = new()
@@ -136,7 +168,6 @@ internal static class ReflectionUtils
         { 5, typeof(TupleSerializeDepsImpl<,,,,,,,,,,>) },
         { 6, typeof(TupleSerializeDepsImpl<,,,,,,,,,,,,>) },
         { 7, typeof(TupleSerializeDepsImpl<,,,,,,,,,,,,,,>) },
-        { 8, typeof(TupleSerializeDepsImpl<,,,,,,,,,,,,,,,,>) },
     };
 
     public static Dictionary<int, Type> ValueTupleSerBaseImpls { get; } = new()
@@ -148,7 +179,6 @@ internal static class ReflectionUtils
         { 5, typeof(ValueTupleSerializeImplBase<,,,,>) },
         { 6, typeof(ValueTupleSerializeImplBase<,,,,,>) },
         { 7, typeof(ValueTupleSerializeImplBase<,,,,,,>) },
-        { 8, typeof(ValueTupleSerializeImplBase<,,,,,,,>) },
     };
 
     public static Dictionary<int, Type> ClassTupleSerBaseImpls { get; } = new()
@@ -160,6 +190,5 @@ internal static class ReflectionUtils
         { 5, typeof(TupleSerializeImplBase<,,,,>) },
         { 6, typeof(TupleSerializeImplBase<,,,,,>) },
         { 7, typeof(TupleSerializeImplBase<,,,,,,>) },
-        { 8, typeof(TupleSerializeImplBase<,,,,,,,>) },
     };
 }

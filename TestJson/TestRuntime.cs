@@ -1458,6 +1458,122 @@ public class TestRuntime
 
     #endregion
 
+    #region ValueTuple3
+
+    [Test]
+    public void TestValueTuple3()
+    {
+        var obj = (1, 2, 3, 4, 5, 6, 7, 8);
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,2,3,4,5,6,7,8]"));
+    }
+
+    #endregion
+
+    #region ValueTuple4
+
+    [Test]
+    public void TestValueTuple4()
+    {
+        {
+            var obj = ValueTuple.Create();
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[]"));
+        }
+        {
+            var obj = ValueTuple.Create(1);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[1]"));
+        }
+        {
+            var obj = ValueTuple.Create(1, 2);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[1,2]"));
+        }
+        {
+            var obj = ValueTuple.Create(1, 2, 3);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[1,2,3]"));
+        }
+        {
+            var obj = ValueTuple.Create(1, 2, 3, 4);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[1,2,3,4]"));
+        }
+        {
+            var obj = ValueTuple.Create(1, 2, 3, 4, 5);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[1,2,3,4,5]"));
+        }
+        {
+            var obj = ValueTuple.Create(1, 2, 3, 4, 5, 6);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[1,2,3,4,5,6]"));
+        }
+        {
+            var obj = ValueTuple.Create(1, 2, 3, 4, 5, 6, 7);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[1,2,3,4,5,6,7]"));
+        }
+        {
+            var obj = ValueTuple.Create(1, 2, 3, 4, 5, 6, 7, 8);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[1,2,3,4,5,6,7,8]"));
+        }
+    }
+
+    #endregion
+    
     #region Tuple1
 
     [Test]
@@ -1491,6 +1607,112 @@ public class TestRuntime
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3,4,5,6,7,8,9,10,11,12]"));
+    }
+
+    #endregion
+
+    #region Tuple3
+
+    [Test]
+    public void TestTuple3()
+    {
+        var obj = Tuple.Create(1, 2, 3, 4, 5, 6, 7, 8);
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,2,3,4,5,6,7,8]"));
+    }
+
+    #endregion
+
+    #region Tuple4
+
+    [Test]
+    public void TestTuple4()
+    {
+        {
+            var obj = Tuple.Create(1);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[1]"));
+        }
+        {
+            var obj = Tuple.Create(1, 2);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[1,2]"));
+        }
+        {
+            var obj = Tuple.Create(1, 2, 3);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[1,2,3]"));
+        }
+        {
+            var obj = Tuple.Create(1, 2, 3, 4);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[1,2,3,4]"));
+        }
+        {
+            var obj = Tuple.Create(1, 2, 3, 4, 5);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[1,2,3,4,5]"));
+        }
+        {
+            var obj = Tuple.Create(1, 2, 3, 4, 5, 6);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[1,2,3,4,5,6]"));
+        }
+        {
+            var obj = Tuple.Create(1, 2, 3, 4, 5, 6, 7);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[1,2,3,4,5,6,7]"));
+        }
+        {
+            var obj = Tuple.Create(1, 2, 3, 4, 5, 6, 7, 8);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[1,2,3,4,5,6,7,8]"));
+        }
     }
 
     #endregion

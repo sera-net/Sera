@@ -8,27 +8,28 @@ namespace Sera.Runtime.Emit;
 
 internal partial class EmitSerializeProvider
 {
-    private void GenTuple(Type target, CacheStub stub)
+    private void GenTuple(Type target, bool is_value_tuple, CacheStub stub)
     {
         var generics = target.GenericTypeArguments;
         if (generics.Length is not (> 0 and <= 8)) throw new ArgumentException($"{target} is not a tuple");
         if (generics.Length is 8)
         {
             var rest = generics[7];
-            if (ReflectionUtils.IsTuple(rest))
+            if (!(is_value_tuple ? ReflectionUtils.IsValueTuple(rest) : ReflectionUtils.IsClassTuple(rest)))
             {
-                GenTupleRest(target, generics, stub);
-                return;
+                throw new ArgumentException($"The eighth element of a tuple must be a tuple");
             }
+            GenTupleRest(target, generics, is_value_tuple, stub);
         }
-        GenTuple(target, generics, stub);
+        else
+        {
+            GenTuple(target, generics, is_value_tuple, stub);
+        }
     }
 
-    private void GenTuple(Type target, Type[] generics, CacheStub stub)
+    private void GenTuple(Type target, Type[] generics, bool is_value_tuple, CacheStub stub)
     {
         #region ready base type
-
-        var is_value_tuple = ReflectionUtils.ValueTuples.Contains(target.GetGenericTypeDefinition());
 
         var base_type = (is_value_tuple
                 ? ReflectionUtils.ValueTupleSerBaseImpls[generics.Length]
@@ -73,11 +74,10 @@ internal partial class EmitSerializeProvider
         #endregion
     }
 
-    private void GenTupleRest(Type target, Type[] generics, CacheStub stub)
+    private void GenTupleRest(Type target, Type[] generics, bool is_value_tuple, CacheStub stub)
     {
         #region ready base type
 
-        var is_value_tuple = ReflectionUtils.ValueTuples.Contains(target.GetGenericTypeDefinition());
         var base_type = (is_value_tuple
                 ? typeof(ValueTupleRestSerializeImplBase<,,,,,,,>)
                 : typeof(TupleRestSerializeImplBase<,,,,,,,>))

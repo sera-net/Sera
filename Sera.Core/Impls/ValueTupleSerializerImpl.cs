@@ -67,18 +67,6 @@ public abstract record ValueTupleSerializeImplBase<T1, T2, T3, T4, T5, T6, T7> :
         where S : ISeqSerializer;
 }
 
-public abstract record ValueTupleSerializeImplBase<T1, T2, T3, T4, T5, T6, T7, T8> :
-    ISerialize<ValueTuple<T1, T2, T3, T4, T5, T6, T7, T8>>,
-    ISeqSerializerReceiver<ValueTuple<T1, T2, T3, T4, T5, T6, T7, T8>>
-    where T8 : struct
-{
-    public abstract void Write<S>(S serializer, ValueTuple<T1, T2, T3, T4, T5, T6, T7, T8> value, ISeraOptions options)
-        where S : ISerializer;
-
-    public abstract void Receive<S>(ValueTuple<T1, T2, T3, T4, T5, T6, T7, T8> value, S serializer)
-        where S : ISeqSerializer;
-}
-
 public abstract record ValueTupleRestSerializeImplBase<T1, T2, T3, T4, T5, T6, T7, TR> :
     ISerialize<ValueTuple<T1, T2, T3, T4, T5, T6, T7, TR>>,
     ISeqSerializerReceiver<ValueTuple<T1, T2, T3, T4, T5, T6, T7, TR>>
@@ -269,46 +257,6 @@ public abstract record ValueTupleSerializeImplAbstract<
     }
 }
 
-public abstract record ValueTupleSerializeImplAbstract<
-    T1, T2, T3, T4, T5, T6, T7, T8,
-    ST1, ST2, ST3, ST4, ST5, ST6, ST7, ST8
-> :
-    ValueTupleSerializeImplBase<T1, T2, T3, T4, T5, T6, T7, T8>
-    where ST1 : ISerialize<T1>
-    where ST2 : ISerialize<T2>
-    where ST3 : ISerialize<T3>
-    where ST4 : ISerialize<T4>
-    where ST5 : ISerialize<T5>
-    where ST6 : ISerialize<T6>
-    where ST7 : ISerialize<T7>
-    where T8 : struct
-    where ST8 : ISerialize<T8>
-{
-    public abstract ST1 Serialize1 { get; }
-    public abstract ST2 Serialize2 { get; }
-    public abstract ST3 Serialize3 { get; }
-    public abstract ST4 Serialize4 { get; }
-    public abstract ST5 Serialize5 { get; }
-    public abstract ST6 Serialize6 { get; }
-    public abstract ST7 Serialize7 { get; }
-    public abstract ST8 Serialize8 { get; }
-
-    public override void Write<S>(S serializer, ValueTuple<T1, T2, T3, T4, T5, T6, T7, T8> value, ISeraOptions options)
-        => serializer.StartSeq(8, value, this);
-
-    public override void Receive<S>(ValueTuple<T1, T2, T3, T4, T5, T6, T7, T8> value, S serializer)
-    {
-        serializer.WriteElement(value.Item1, Serialize1);
-        serializer.WriteElement(value.Item2, Serialize2);
-        serializer.WriteElement(value.Item3, Serialize3);
-        serializer.WriteElement(value.Item4, Serialize4);
-        serializer.WriteElement(value.Item5, Serialize5);
-        serializer.WriteElement(value.Item6, Serialize6);
-        serializer.WriteElement(value.Item7, Serialize7);
-        serializer.WriteElement(value.Rest, Serialize8);
-    }
-}
-
 public abstract record ValueTupleRestSerializeImplAbstract<
     T1, T2, T3, T4, T5, T6, T7, TR,
     ST1, ST2, ST3, ST4, ST5, ST6, ST7, RTR
@@ -353,7 +301,7 @@ public abstract record ValueTupleRestSerializeImplAbstract<
 
 #region Sync Record Impl
 
-public abstract record ValueTupleSerializeImpl<T1, ST1>(ST1 Serialize1) :
+public record ValueTupleSerializeImpl<T1, ST1>(ST1 Serialize1) :
     ValueTupleSerializeImplAbstract<T1, ST1>
     where ST1 : ISerialize<T1>
 {
@@ -462,37 +410,6 @@ public record ValueTupleSerializeImpl<
     public override ST7 Serialize7 { get; } = Serialize7;
 }
 
-public record ValueTupleSerializeImpl<
-    T1, T2, T3, T4, T5, T6, T7, T8,
-    ST1, ST2, ST3, ST4, ST5, ST6, ST7, ST8
->(
-    ST1 Serialize1, ST2 Serialize2, ST3 Serialize3, ST4 Serialize4, ST5 Serialize5, ST6 Serialize6, ST7 Serialize7,
-    ST8 Serialize8
-) :
-    ValueTupleSerializeImplAbstract<
-        T1, T2, T3, T4, T5, T6, T7, T8,
-        ST1, ST2, ST3, ST4, ST5, ST6, ST7, ST8
-    >
-    where ST1 : ISerialize<T1>
-    where ST2 : ISerialize<T2>
-    where ST3 : ISerialize<T3>
-    where ST4 : ISerialize<T4>
-    where ST5 : ISerialize<T5>
-    where ST6 : ISerialize<T6>
-    where ST7 : ISerialize<T7>
-    where T8 : struct
-    where ST8 : ISerialize<T8>
-{
-    public override ST1 Serialize1 { get; } = Serialize1;
-    public override ST2 Serialize2 { get; } = Serialize2;
-    public override ST3 Serialize3 { get; } = Serialize3;
-    public override ST4 Serialize4 { get; } = Serialize4;
-    public override ST5 Serialize5 { get; } = Serialize5;
-    public override ST6 Serialize6 { get; } = Serialize6;
-    public override ST7 Serialize7 { get; } = Serialize7;
-    public override ST8 Serialize8 { get; } = Serialize8;
-}
-
 public record ValueTupleRestSerializeImpl<
     T1, T2, T3, T4, T5, T6, T7, TR,
     ST1, ST2, ST3, ST4, ST5, ST6, ST7, RTR
@@ -528,7 +445,7 @@ public record ValueTupleRestSerializeImpl<
 
 #region Sync Deps Impl
 
-public abstract record ValueTupleSerializeDepsImpl<T1, ST1, D> :
+public record ValueTupleSerializeDepsImpl<T1, ST1, D> :
     ValueTupleSerializeImplAbstract<T1, ST1>
     where ST1 : ISerialize<T1>
     where D : IDepsContainer<ST1>
@@ -652,36 +569,6 @@ public record ValueTupleSerializeDepsImpl<
     public override ST5 Serialize5 => D.Impl5!;
     public override ST6 Serialize6 => D.Impl6!;
     public override ST7 Serialize7 => D.Impl7!;
-}
-
-public record ValueTupleSerializeDepsImpl<
-    T1, T2, T3, T4, T5, T6, T7, T8,
-    ST1, ST2, ST3, ST4, ST5, ST6, ST7, ST8,
-    D
-> :
-    ValueTupleSerializeImplAbstract<
-        T1, T2, T3, T4, T5, T6, T7, T8,
-        ST1, ST2, ST3, ST4, ST5, ST6, ST7, ST8
-    >
-    where ST1 : ISerialize<T1>
-    where ST2 : ISerialize<T2>
-    where ST3 : ISerialize<T3>
-    where ST4 : ISerialize<T4>
-    where ST5 : ISerialize<T5>
-    where ST6 : ISerialize<T6>
-    where ST7 : ISerialize<T7>
-    where T8 : struct
-    where ST8 : ISerialize<T8>
-    where D : IDepsContainer<ST1, ST2, ST3, ST4, ST5, ST6, ST7, ST8>
-{
-    public override ST1 Serialize1 => D.Impl1!;
-    public override ST2 Serialize2 => D.Impl2!;
-    public override ST3 Serialize3 => D.Impl3!;
-    public override ST4 Serialize4 => D.Impl4!;
-    public override ST5 Serialize5 => D.Impl5!;
-    public override ST6 Serialize6 => D.Impl6!;
-    public override ST7 Serialize7 => D.Impl7!;
-    public override ST8 Serialize8 => D.Impl8!;
 }
 
 public record ValueTupleRestSerializeDepsImpl<
