@@ -1938,4 +1938,25 @@ public class TestRuntime
     }
 
     #endregion
+
+    #region ValueTupleNullable3
+
+    public class ValueTupleNullable3A { }
+
+    [Test]
+    public void TestValueTupleNullable3()
+    {
+        // Reflection cannot get nullable info in this case
+
+        (int, ValueTupleNullable3A, int) obj = (1, null!, 3);
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,null,3]"));
+    }
+
+    #endregion
 }
