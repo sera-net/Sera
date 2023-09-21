@@ -1897,4 +1897,45 @@ public class TestRuntime
     }
 
     #endregion
+
+    #region ValueTupleNullable1
+
+    public class ValueTupleNullable1A
+    {
+        public (int, ValueTupleNullable1A?, int) Member1 { get; } = (1, null, 3);
+    }
+
+    [Test]
+    public void TestValueTupleNullable1()
+    {
+        var obj = new ValueTupleNullable1A();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"Member1\":[1,null,3]}"));
+    }
+
+    #endregion
+
+    #region ValueTupleNullable2
+
+    public class ValueTupleNullable2A
+    {
+        public (int, ValueTupleNullable2A, int) Member1 { get; } = (1, null!, 3);
+    }
+
+    [Test]
+    public void TestValueTupleNullable2()
+    {
+        var obj = new ValueTupleNullable2A();
+
+        Assert.Throws<NullReferenceException>(() => SeraJson.Serializer
+            .ToString()
+            .Serialize(obj));
+    }
+
+    #endregion
 }

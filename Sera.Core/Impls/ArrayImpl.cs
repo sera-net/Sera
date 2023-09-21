@@ -18,9 +18,10 @@ public record ArraySerializeImpl<T, ST>(ST Serialize) : ISerialize<T[]>, ISeqSer
 
     public void Receive<S>(T[] value, S serialize) where S : ISeqSerializer
     {
-        foreach (ref readonly var item in value.AsSpan())
+        var len = value.LongLength;
+        for (var i = 0L; i < len; i++)
         {
-            serialize.WriteElement(item, Serialize);
+            serialize.WriteElement(value[i], Serialize);
         }
     }
 }
@@ -33,9 +34,10 @@ public record AsyncArraySerializeImpl<T, ST>(ST Serialize) : IAsyncSerialize<T[]
 
     public async ValueTask ReceiveAsync<S>(T[] value, S serialize) where S : IAsyncSeqSerializer
     {
-        foreach (var item in value)
+        var len = value.LongLength;
+        for (var i = 0L; i < len; i++)
         {
-            await serialize.WriteElementAsync(item, Serialize);
+            await serialize.WriteElementAsync(value[i], Serialize);
         }
     }
 }

@@ -49,7 +49,8 @@ internal partial class EmitSerializeProvider
     /// <summary>Make dep with less than 8 quantities</summary>
     private TheDep MakeDepContainer(DepInfo[] depInfos, GenericMeta generics, out Type[] impl_types)
     {
-        if (depInfos.Length != generics.Length) throw new ArgumentException($"{nameof(depInfos)}.Length must == {nameof(generics)}.Length");
+        if (depInfos.Length != generics.Length)
+            throw new ArgumentException($"{nameof(depInfos)}.Length must == {nameof(generics)}.Length");
         if (depInfos.Length > 8) throw new NotSupportedException();
 
         var items = new (DepInfo dep, bool ref_nullable, Type raw_impl_type)[depInfos.Length];
@@ -60,7 +61,8 @@ internal partial class EmitSerializeProvider
             var generic_meta = generics.Metas[i];
             var (impl_type, impl_cell, impl) = depInfos[i];
             var raw_impl_type = impl_type;
-            var ref_nullable = !generic_meta.KeepRaw && !value_type.IsValueType;
+            var ref_nullable = !generic_meta.KeepRaw && !value_type.IsValueType && generic_meta.Nullability is not
+                { NullabilityInfo.ReadState: NullabilityState.NotNull };
             if (ref_nullable)
             {
                 impl_type = typeof(NullableReferenceTypeImpl<,>).MakeGenericType(value_type, impl_type);
