@@ -60,11 +60,22 @@ internal partial class EmitSerializeProvider
             {
                 impl_type = typeof(NullableReferenceTypeImpl<,>).MakeGenericType(value_type, impl_type);
             }
-            var field = dep_container_type_builder.DefineField(field_name, impl_type,
+            var boxed = false;
+            Type? boxed_type = null;
+            if (impl_type.IsValueType && impl == null)
+            {
+                boxed_type = typeof(Box<>).MakeGenericType(impl_type);
+                boxed = true;
+            }
+            var field = dep_container_type_builder.DefineField(field_name, boxed ? boxed_type! : impl_type,
                 FieldAttributes.Public | FieldAttributes.Static);
             ser_deps.Add(
                 value_type,
-                new(field, null, impl_type, raw_impl_type, value_type, impl_cell, impl, ref_nullable)
+                new(
+                    field, null,
+                    impl_type, raw_impl_type, value_type, impl_cell, impl, ref_nullable,
+                    boxed_type, boxed
+                )
             );
         }
 

@@ -143,14 +143,25 @@ internal partial class EmitSerializeProvider
         }
     }
 
+    /// <summary>
+    /// Nesting order
+    /// <list type="number">
+    ///     <item><term>ImplType</term></item>
+    ///     <item><term><see cref="NullableReferenceTypeImpl{T,ST}"/></term></item>
+    ///     <item><term><see cref="Box{T}"/></term></item>
+    /// </list>
+    /// </summary>
+    /// <param name="RefNullable">Whether the type is nested within a <see cref="NullableReferenceTypeImpl{T,ST}"/></param>
+    /// <param name="Boxed">Whether the type is nested within a <see cref="Box{T}"/></param>
     internal record CacheStubDeps(
         FieldInfo? Field, PropertyInfo? Property, Type ImplType, Type RawImplType, Type ValueType,
-        CacheStub? ImplStub, object? ImplInst, bool RefNullable
+        CacheStub? ImplStub, object? ImplInst, bool RefNullable, Type? BoxedType, bool Boxed
     )
     {
         public FieldInfo? Field { get; set; } = Field;
         public PropertyInfo? Property { get; set; } = Property;
         public Type ImplType { get; set; } = ImplType;
+        public Type? BoxedType { get; set; } = BoxedType;
         public Type RawImplType { get; set; } = RawImplType;
         public Type ValueType { get; set; } = ValueType;
 
@@ -167,66 +178,55 @@ internal partial class EmitSerializeProvider
 
         internal void Ready(Type dep_container_type)
         {
+            var inst = Ready();
+
             if (Field != null)
             {
                 var field_name = Field.Name;
                 var field = dep_container_type.GetField(field_name)!;
 
-                if (ImplInst != null)
-                {
-                    var inst = ImplInst;
-                    if (RefNullable)
-                    {
-                        var ctor = ImplType.GetConstructor(BindingFlags.Public | BindingFlags.Instance,
-                            new[] { RawImplType })!;
-                        inst = ctor.Invoke(new[] { inst });
-                    }
-                    field.SetValue(null, inst);
-                }
-                else
-                {
-                    ImplStub!.WaitInstProvided();
-                    var inst = ImplStub.SerInst;
-                    if (RefNullable)
-                    {
-                        var impl_type = field.FieldType;
-                        var ctor = impl_type.GetConstructor(BindingFlags.Public | BindingFlags.Instance,
-                            new[] { ImplStub.SerType })!;
-                        inst = ctor.Invoke(new[] { inst });
-                    }
-                    field.SetValue(null, inst);
-                }
+                field.SetValue(null, inst);
             }
             else
             {
                 var property_name = Property!.Name;
                 var property = dep_container_type.GetProperty(property_name)!;
 
-                if (ImplInst != null)
-                {
-                    var inst = ImplInst;
-                    if (RefNullable)
-                    {
-                        var ctor = ImplType.GetConstructor(BindingFlags.Public | BindingFlags.Instance,
-                            new[] { RawImplType })!;
-                        inst = ctor.Invoke(new[] { inst });
-                    }
-                    property.SetValue(null, inst);
-                }
-                else
-                {
-                    ImplStub!.WaitInstProvided();
-                    var inst = ImplStub.SerInst;
-                    if (RefNullable)
-                    {
-                        var impl_type = property.PropertyType;
-                        var ctor = impl_type.GetConstructor(BindingFlags.Public | BindingFlags.Instance,
-                            new[] { ImplStub.SerType })!;
-                        inst = ctor.Invoke(new[] { inst });
-                    }
-                    property.SetValue(null, inst);
-                }
+                property.SetValue(null, inst);
             }
+        }
+
+        private object? Ready()
+        {
+            var inst = ImplInst;
+            var current_impl_type = RawImplType;
+            if (inst == null)
+            {
+                ImplStub!.WaitInstProvided();
+                inst = ImplStub.SerInst;
+                current_impl_type = ImplStub.SerType;
+            }
+            if (RefNullable)
+            {
+                var ref_type = typeof(NullableReferenceTypeImpl<,>).MakeGenericType(ValueType, current_impl_type);
+                var ctor = ref_type.GetConstructor(
+                    BindingFlags.Public | BindingFlags.Instance,
+                    new[] { current_impl_type }
+                )!;
+                inst = ctor.Invoke(new[] { inst });
+                current_impl_type = ref_type;
+            }
+            if (Boxed)
+            {
+                var boxed_type = typeof(Box<>).MakeGenericType(current_impl_type);
+                var ctor = boxed_type.GetConstructor(
+                    BindingFlags.Public | BindingFlags.Instance,
+                    new[] { current_impl_type }
+                )!;
+                inst = ctor.Invoke(new[] { inst });
+                current_impl_type = boxed_type;
+            }
+            return inst;
         }
 
         internal void WaitInstReady()

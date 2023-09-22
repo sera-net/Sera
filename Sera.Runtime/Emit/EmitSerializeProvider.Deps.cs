@@ -81,7 +81,7 @@ internal partial class EmitSerializeProvider
             var ((impl_type, impl_cell, impl), ref_nullable, raw_impl_type) = items[i];
             var prop = deps_type.GetProperty($"Impl{i + 1}", BindingFlags.Public | BindingFlags.Static);
             deps.Add(
-                new(null, prop, impl_type, raw_impl_type, value_type, impl_cell, impl, ref_nullable)
+                new(null, prop, impl_type, raw_impl_type, value_type, impl_cell, impl, ref_nullable, null, false)
             );
         }
 

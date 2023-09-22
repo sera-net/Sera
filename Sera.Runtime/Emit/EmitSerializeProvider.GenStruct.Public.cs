@@ -274,9 +274,14 @@ internal partial class EmitSerializeProvider
 
                 #endregion
 
-                #region load Self._impl_n
+                #region load dep
 
                 ilg.Emit(OpCodes.Ldsfld, dep.Field!);
+                if (dep.Boxed)
+                {
+                    var get_method = Box.GetMethodInfo.MakeGenericMethod(dep.ImplType);
+                    ilg.Emit(OpCodes.Call, get_method);
+                }
 
                 #endregion
 
