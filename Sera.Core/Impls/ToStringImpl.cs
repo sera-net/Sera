@@ -5,7 +5,7 @@ using Sera.Core.Ser;
 
 namespace Sera.Core.Impls;
 
-public class ToStringSerializeImpl<T> : ISerialize<T>, IAsyncSerialize<T>
+public struct ToStringSerializeImpl<T> : ISerialize<T>, IAsyncSerialize<T>
 {
     public static ToStringSerializeImpl<T> Instance { get; } = new();
 
@@ -22,7 +22,7 @@ public class ToStringSerializeImpl<T> : ISerialize<T>, IAsyncSerialize<T>
     }
 }
 
-public class SpanParsableSerializeImpl<T> : IDeserialize<T>, IStringDeserializerVisitor<T>, IAsyncDeserialize<T>,
+public struct SpanParsableSerializeImpl<T> : IDeserialize<T>, IStringDeserializerVisitor<T>, IAsyncDeserialize<T>,
     IAsyncStringDeserializerVisitor<T>
     where T : ISpanParsable<T>
 {

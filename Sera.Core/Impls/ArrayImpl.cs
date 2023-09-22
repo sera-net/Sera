@@ -1,5 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Sera.Core.De;
 using Sera.Core.Ser;
@@ -8,39 +8,38 @@ namespace Sera.Core.Impls;
 
 #region Serialize
 
-public record ArraySerializeImpl<T, ST>(ST Serialize) : ISerialize<T[]>, ISeqSerializerReceiver<T[]>
+#region Sync
+
+public abstract record ArraySerializeImplBase<T> : ISerialize<T[]>
+{
+    public abstract void Write<S>(S serializer, T[] value, ISeraOptions options) where S : ISerializer;
+}
+
+public sealed record ArraySerializeImpl<T, ST>(ST Serialize) : ArraySerializeImplBase<T>
     where ST : ISerialize<T>
 {
-    public void Write<S>(S serializer, T[] value, ISeraOptions options) where S : ISerializer
-    {
-        serializer.StartSeq<T, T[], ArraySerializeImpl<T, ST>>((nuint)value.Length, value, this);
-    }
-
-    public void Receive<S>(T[] value, S serialize) where S : ISeqSerializer
-    {
-        var len = value.LongLength;
-        for (var i = 0L; i < len; i++)
-        {
-            serialize.WriteElement(value[i], Serialize);
-        }
-    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public override void Write<S>(S serializer, T[] value, ISeraOptions options)
+        => serializer.WriteArray(value, Serialize);
 }
 
-public record AsyncArraySerializeImpl<T, ST>(ST Serialize) : IAsyncSerialize<T[]>, IAsyncSeqSerializerReceiver<T[]>
+#endregion
+
+#region Async
+
+public abstract record AsyncArraySerializeImplBase<T> : IAsyncSerialize<T[]>
+{
+    public abstract ValueTask WriteAsync<S>(S serializer, T[] value, ISeraOptions options) where S : IAsyncSerializer;
+}
+
+public record AsyncArraySerializeImpl<T, ST>(ST Serialize) : AsyncArraySerializeImplBase<T>
     where ST : IAsyncSerialize<T>
 {
-    public ValueTask WriteAsync<S>(S serializer, T[] value, ISeraOptions options) where S : IAsyncSerializer
-        => serializer.StartSeqAsync<T, T[], AsyncArraySerializeImpl<T, ST>>((nuint)value.Length, value, this);
-
-    public async ValueTask ReceiveAsync<S>(T[] value, S serialize) where S : IAsyncSeqSerializer
-    {
-        var len = value.LongLength;
-        for (var i = 0L; i < len; i++)
-        {
-            await serialize.WriteElementAsync(value[i], Serialize);
-        }
-    }
+    public override ValueTask WriteAsync<S>(S serializer, T[] value, ISeraOptions options)
+        => serializer.WriteArrayAsync(value, Serialize);
 }
+
+#endregion
 
 #endregion
 

@@ -5,7 +5,7 @@ using Sera.Core.Ser;
 
 namespace Sera.Core.Impls;
 
-public record EmptyTupleImpl<T> :
+public struct EmptyTupleImpl<T> :
     ISerialize<T>, ISeqSerializerReceiver<T>,
     IAsyncSerialize<T>, IAsyncSeqSerializerReceiver<T>,
     IDeserialize<T>, ISeqDeserializerVisitor<T>,
@@ -38,7 +38,7 @@ public record EmptyTupleImpl<T> :
         => ValueTask.FromResult(default(T));
 }
 
-public record EmptyTupleNewImpl<T> :
+public struct EmptyTupleNewImpl<T> :
     ISerialize<T>, ISeqSerializerReceiver<T>,
     IAsyncSerialize<T>, IAsyncSeqSerializerReceiver<T>,
     IDeserialize<T>, ISeqDeserializerVisitor<T>,
@@ -71,7 +71,7 @@ public record EmptyTupleNewImpl<T> :
         => ValueTask.FromResult(new T());
 }
 
-public record EmptyTupleByImpl<T>(Func<T> Create) :
+public record struct EmptyTupleByImpl<T>(Func<T> Create) :
     ISerialize<T>, ISeqSerializerReceiver<T>,
     IAsyncSerialize<T>, IAsyncSeqSerializerReceiver<T>,
     IDeserialize<T>, ISeqDeserializerVisitor<T>,

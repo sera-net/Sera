@@ -263,6 +263,10 @@ internal partial class EmitSerializeProvider
         try
         {
             // todo other type
+            if (target.IsArray)
+            {
+                GenArray(target, stub);
+            }
             if (target.IsEnum)
             {
                 GenEnum(target, stub);
@@ -276,14 +280,14 @@ internal partial class EmitSerializeProvider
                 GenStruct(target, stub);
             }
         }
-        catch
-        {
-            var type = typeof(UnitImpl<>).MakeGenericType(target.Type);
-            stub.ProvideType(type);
-            var inst = Activator.CreateInstance(type)!;
-            stub.ProvideInst(inst);
-            throw;
-        }
+        // catch
+        // {
+        //     var type = typeof(UnitImpl<>).MakeGenericType(target.Type);
+        //     stub.ProvideType(type);
+        //     var inst = Activator.CreateInstance(type)!;
+        //     stub.ProvideInst(inst);
+        //     throw;
+        // }
         finally
         {
             stub.MarkInstProvided();

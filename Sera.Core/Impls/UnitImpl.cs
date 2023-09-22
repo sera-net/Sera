@@ -4,7 +4,7 @@ using Sera.Core.Ser;
 
 namespace Sera.Core.Impls;
 
-public record UnitImpl<T> : ISerialize<T>, IAsyncSerialize<T>, IDeserialize<T>, IAsyncDeserialize<T>
+public struct UnitImpl<T> : ISerialize<T>, IAsyncSerialize<T>, IDeserialize<T>, IAsyncDeserialize<T>
 {
     public static UnitImpl<T> Instance { get; } = new();
 

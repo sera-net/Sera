@@ -30,7 +30,7 @@ public static partial class SeraJsonRuntime
     public static void Serialize<T>(this Builder<ToStream> self, T value)
     {
         var rt = EmitRuntimeProvider.Instance;
-        var ser = new JsonSerializer(self.Options, new StreamJsonWriter(self.Options.Formatter, self.Value.Stream))
+        var ser = new JsonSerializer(StreamJsonWriter.Create(self))
         {
             RuntimeProvider = rt,
         };
@@ -48,7 +48,7 @@ public static partial class SeraJsonRuntime
     {
         var rt = EmitRuntimeProvider.Instance;
         var builder = new StringBuilder();
-        var ser = new JsonSerializer(self.Options, new StringBuilderJsonWriter(self.Options.Formatter, builder))
+        var ser = new JsonSerializer(StringBuilderJsonWriter.Create(self, builder))
         {
             RuntimeProvider = rt,
         };
@@ -66,9 +66,7 @@ public static partial class SeraJsonRuntime
     public static void Serialize<T>(this Builder<ToStringBuilder> self, T value)
     {
         var rt = EmitRuntimeProvider.Instance;
-        var ser = new JsonSerializer(self.Options,
-            new StringBuilderJsonWriter(self.Options.Formatter, self.Value.Builder)
-        )
+        var ser = new JsonSerializer(StringBuilderJsonWriter.Create(self))
         {
             RuntimeProvider = rt,
         };

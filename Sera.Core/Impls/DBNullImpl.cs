@@ -5,7 +5,7 @@ using Sera.Core.Ser;
 
 namespace Sera.Core.Impls;
 
-public record DBNullImpl : ISerialize<DBNull>, IAsyncSerialize<DBNull>, IDeserialize<DBNull>, IAsyncDeserialize<DBNull>
+public struct DBNullImpl : ISerialize<DBNull>, IAsyncSerialize<DBNull>, IDeserialize<DBNull>, IAsyncDeserialize<DBNull>
 {
     public static DBNullImpl Instance { get; } = new();
 

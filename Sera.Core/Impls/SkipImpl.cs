@@ -5,7 +5,7 @@ using Sera.Core.Ser;
 
 namespace Sera.Core.Impls;
 
-public record SkipImpl<T> : ISerialize<T>, IDeserialize<T>, IAsyncSerialize<T>, IAsyncDeserialize<T>
+public struct SkipImpl<T> : ISerialize<T>, IDeserialize<T>, IAsyncSerialize<T>, IAsyncDeserialize<T>
 {
     public static SkipImpl<T> Instance => new();
 

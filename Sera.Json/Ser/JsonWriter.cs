@@ -1,16 +1,20 @@
 ﻿using System;
 using System.Buffers;
 using System.Globalization;
+using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using Sera.Json.Utils;
 
 namespace Sera.Json.Ser;
 
-public abstract record AJsonWriter(AJsonFormatter Formatter)
+public abstract record AJsonWriter(SeraJsonOptions Options, AJsonFormatter Formatter)
 {
-    public Encoding Encoding => Formatter.Encoding;
-    
+    public Encoding Encoding => Options.Encoding;
+
+    public abstract Stream StartBase64();
+    public abstract void EndBase64();
     public abstract void Write(ReadOnlySpan<char> str);
     public abstract void WriteEncoded(ReadOnlySpan<byte> str, Encoding encoding);
 
@@ -156,7 +160,7 @@ public abstract record AJsonWriter(AJsonFormatter Formatter)
         if (encoding.Equals(Encoding.UTF8)) WriteEscapeUtf8(str);
         else
         {
-            var encode = Formatter.Encoding;
+            var encode = Options.Encoding;
             var char_count = encode.GetMaxCharCount(str.Length);
             var chars = ArrayPool<char>.Shared.Rent(char_count);
             try

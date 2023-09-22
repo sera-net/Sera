@@ -2,16 +2,46 @@
 using System.Buffers;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
+using Sera.Json.Builders;
+using Sera.Json.Builders.Ser;
 
 namespace Sera.Json.Ser;
 
 public record StreamJsonWriter
-    (AJsonFormatter Formatter, Stream Stream) : AJsonWriter(Formatter)
+    (SeraJsonOptions Options, AJsonFormatter Formatter, Stream Stream) : AJsonWriter(Options, Formatter)
 {
+    public static StreamJsonWriter Create(Builder<ToStream> self) =>
+        new(self.Options, self.Formatter, self.Value.Stream);
+    
+    private static Stream? tmpStream;
+
+    public override Stream StartBase64()
+    {
+        Write("\"");
+        if (Equals(Encoding, Encoding.UTF8))
+        {
+            return tmpStream = new CryptoStream(Stream, new ToBase64Transform(), CryptoStreamMode.Write, true);
+        }
+        else
+        {
+            var code_stream = Encoding.CreateTranscodingStream(Stream, Encoding, Encoding.UTF8, true);
+            return tmpStream = new CryptoStream(code_stream, new ToBase64Transform(), CryptoStreamMode.Write);
+        }
+    }
+
+    public override void EndBase64()
+    {
+        tmpStream!.Flush();
+        tmpStream.Dispose();
+        tmpStream = null;
+        Write("\"");
+    }
+
     public override void Write(ReadOnlySpan<char> str)
     {
-        var encode = Formatter.Encoding;
+        var encode = Options.Encoding;
         if (encode.Equals(Encoding.Unicode))
         {
             Stream.Write(MemoryMarshal.AsBytes(str));
@@ -45,7 +75,7 @@ public record StreamJsonWriter
 
     public override void WriteEncoded(ReadOnlySpan<byte> str, Encoding encoding)
     {
-        var encode = Formatter.Encoding;
+        var encode = Options.Encoding;
         if (encode.Equals(encoding))
         {
             Stream.Write(str);

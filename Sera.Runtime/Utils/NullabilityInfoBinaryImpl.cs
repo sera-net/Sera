@@ -18,8 +18,8 @@ internal class NullabilityInfoBinarySerializeImpl : ISerialize<NullabilityInfo>,
 
     public void Receive<S>(NullabilityInfo value, S serializer) where S : ISeqSerializer
     {
-        serializer.WriteElement((byte)value.ReadState, PrimitiveImpl.Byte);
-        serializer.WriteElement((byte)value.WriteState, PrimitiveImpl.Byte);
+        serializer.WriteElement((byte)value.ReadState, PrimitiveImpls.Byte);
+        serializer.WriteElement((byte)value.WriteState, PrimitiveImpls.Byte);
         serializer.WriteElement(value.ElementType, NullableImpl);
         serializer.WriteElement(value.GenericTypeArguments, ArrayImpl);
     }

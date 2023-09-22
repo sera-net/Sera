@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -505,10 +506,12 @@ public interface IBytesAccess
 {
     public int GetLength();
     public byte[] ReadBytes();
+    public List<byte> ReadBytesAsList();
     public void ReadBytes(Memory<byte> value) => ReadBytes(value.Span);
     public void ReadBytes(Span<byte> value);
     public ReadOnlyMemory<byte> ReadBytesAsMemory();
     public Memory<byte> ReadBytesAsMutableMemory();
+    public ReadOnlySequence<byte> ReadBytesAsSequence();
 }
 
 public partial interface IAsyncDeserializer
@@ -527,9 +530,11 @@ public interface IAsyncBytesAccess
 {
     public ValueTask<int> GetLengthAsync();
     public ValueTask<byte[]> ReadBytesAsync();
+    public ValueTask<List<byte>> ReadBytesAsListAsync();
     public ValueTask ReadBytesAsync(Memory<byte> value);
     public ValueTask<ReadOnlyMemory<byte>> ReadBytesAsMemoryAsync();
     public ValueTask<Memory<byte>> ReadBytesAsMutableMemoryAsync();
+    public ValueTask<ReadOnlySequence<byte>> ReadBytesAsSequenceAsync();
 }
 
 public static partial class DeserializerEx
@@ -777,7 +782,8 @@ public interface IStructMapAccess : IStructAccess
 
 public partial interface IAsyncDeserializer
 {
-    public ValueTask<R> ReadStructAsync<R, V>(string? name, nuint? len, Memory<(string key, nuint? int_key)>? fields, V visitor)
+    public ValueTask<R> ReadStructAsync<R, V>(string? name, nuint? len, Memory<(string key, nuint? int_key)>? fields,
+        V visitor)
         where V : IAsyncStructDeserializerVisitor<R>;
 }
 

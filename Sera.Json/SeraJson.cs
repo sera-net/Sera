@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Text;
+using Sera.Core;
 using Sera.Json.Builders;
 using Sera.Json.Builders.Ser;
 using Sera.Json.Ser;
@@ -19,7 +20,10 @@ namespace Sera.Json
 namespace Sera.Json.Builders
 {
 
-    public readonly record struct Builder<T>(SeraJsonOptions Options, T Value);
+    public readonly record struct Builder<T>(SeraJsonOptions Options, AJsonFormatter Formatter, T Value)
+    {
+        public Builder(T value) : this(SeraJsonOptions.Default, CompactJsonFormatter.Default, value) { }
+    }
 
 }
 
@@ -32,7 +36,7 @@ namespace Sera.Json
             self with { Options = options };
 
         public static Builder<T> WithFormatter<T>(this Builder<T> self, AJsonFormatter formatter) =>
-            self with { Options = self.Options with { Formatter = formatter } };
+            self with { Formatter = formatter };
     }
 
 }
@@ -48,10 +52,8 @@ namespace Sera.Json.Builders
 
     public readonly partial struct SerializerBuilder
     {
-        public Builder<ToStream> ToStream(Stream stream) => new(SeraJsonOptions.Default, new(stream));
-
-        public Builder<ToStream> ToStream(Stream stream, SeraJsonOptions options) =>
-            new(options, new(stream));
+        public Builder<ToStream> ToStream(Stream stream) =>
+            new(new(stream));
     }
 
     namespace Ser
@@ -70,21 +72,21 @@ namespace Sera.Json
     {
         public static void SerializeStatic<T>(this Builder<ToStream> self, T value) where T : ISerializable<T>
         {
-            var ser = new JsonSerializer(self.Options, new StreamJsonWriter(self.Options.Formatter, self.Value.Stream));
+            var ser = new JsonSerializer(StreamJsonWriter.Create(self));
             T.GetSerialize().Write(ser, value, self.Options);
         }
 
         public static void SerializeStatic<T, S>(this Builder<ToStream> self, T value)
             where T : ISerializable<T, S> where S : ISerialize<T>
         {
-            var ser = new JsonSerializer(self.Options, new StreamJsonWriter(self.Options.Formatter, self.Value.Stream));
+            var ser = new JsonSerializer(StreamJsonWriter.Create(self));
             T.GetSerialize().Write(ser, value, self.Options);
         }
 
         public static void SerializeStatic<T, S>(this Builder<ToStream> self, T value, S serialize)
             where S : ISerialize<T>
         {
-            var ser = new JsonSerializer(self.Options, new StreamJsonWriter(self.Options.Formatter, self.Value.Stream));
+            var ser = new JsonSerializer(StreamJsonWriter.Create(self));
             serialize.Write(ser, value, self.Options);
         }
     }
@@ -100,9 +102,7 @@ namespace Sera.Json.Builders
 
     public readonly partial struct SerializerBuilder
     {
-        public new Builder<ToString> ToString() => new(SeraJsonOptions.Default, new());
-
-        public Builder<ToString> ToString(SeraJsonOptions options) => new(options, new());
+        public new Builder<ToString> ToString() => new(new());
     }
 
     namespace Ser
@@ -122,7 +122,7 @@ namespace Sera.Json
         public static string SerializeStatic<T>(this Builder<ToString> self, T value) where T : ISerializable<T>
         {
             var builder = new StringBuilder();
-            var ser = new JsonSerializer(self.Options, new StringBuilderJsonWriter(self.Options.Formatter, builder));
+            var ser = new JsonSerializer(StringBuilderJsonWriter.Create(self, builder));
             T.GetSerialize().Write(ser, value, self.Options);
             return builder.ToString();
         }
@@ -131,7 +131,7 @@ namespace Sera.Json
             where T : ISerializable<T, S> where S : ISerialize<T>
         {
             var builder = new StringBuilder();
-            var ser = new JsonSerializer(self.Options, new StringBuilderJsonWriter(self.Options.Formatter, builder));
+            var ser = new JsonSerializer(StringBuilderJsonWriter.Create(self, builder));
             T.GetSerialize().Write(ser, value, self.Options);
             return builder.ToString();
         }
@@ -140,7 +140,7 @@ namespace Sera.Json
             where S : ISerialize<T>
         {
             var builder = new StringBuilder();
-            var ser = new JsonSerializer(self.Options, new StringBuilderJsonWriter(self.Options.Formatter, builder));
+            var ser = new JsonSerializer(StringBuilderJsonWriter.Create(self, builder));
             serialize.Write(ser, value, self.Options);
             return builder.ToString();
         }
@@ -157,11 +157,7 @@ namespace Sera.Json.Builders
 
     public readonly partial struct SerializerBuilder
     {
-        public Builder<ToStringBuilder> ToString(StringBuilder builder) =>
-            new(SeraJsonOptions.Default, new(builder));
-
-        public Builder<ToStringBuilder> ToString(StringBuilder builder, SeraJsonOptions options) =>
-            new(options, new(builder));
+        public Builder<ToStringBuilder> ToString(StringBuilder builder) => new(new(builder));
     }
 
     namespace Ser
@@ -180,24 +176,21 @@ namespace Sera.Json
     {
         public static void SerializeStatic<T>(this Builder<ToStringBuilder> self, T value) where T : ISerializable<T>
         {
-            var ser = new JsonSerializer(self.Options,
-                new StringBuilderJsonWriter(self.Options.Formatter, self.Value.Builder));
+            var ser = new JsonSerializer(StringBuilderJsonWriter.Create(self));
             T.GetSerialize().Write(ser, value, self.Options);
         }
 
         public static void SerializeStatic<T, S>(this Builder<ToStringBuilder> self, T value)
             where T : ISerializable<T, S> where S : ISerialize<T>
         {
-            var ser = new JsonSerializer(self.Options,
-                new StringBuilderJsonWriter(self.Options.Formatter, self.Value.Builder));
+            var ser = new JsonSerializer(StringBuilderJsonWriter.Create(self));
             T.GetSerialize().Write(ser, value, self.Options);
         }
 
         public static void SerializeStatic<T, S>(this Builder<ToStringBuilder> self, T value, S serialize)
             where S : ISerialize<T>
         {
-            var ser = new JsonSerializer(self.Options,
-                new StringBuilderJsonWriter(self.Options.Formatter, self.Value.Builder));
+            var ser = new JsonSerializer(StringBuilderJsonWriter.Create(self));
             serialize.Write(ser, value, self.Options);
         }
     }

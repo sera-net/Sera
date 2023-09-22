@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.IO;
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -216,19 +217,52 @@ internal class BytesSerializer : ISerializer, IDisposable, IAsyncDisposable
         Writer.Write(value);
     }
 
+
     public void WriteBytes(ReadOnlySpan<byte> value)
     {
-        var len = value.Length;
-        if (len <= 15)
-        {
-            Writer.Write((byte)((byte)TypeToken.Bytes | (1 << 3) | (value.Length << 4)));
-        }
-        else
-        {
-            Writer.Write((byte)TypeToken.Bytes);
-            Writer.Write(value.Length);
-        }
+        Writer.Write((byte)TypeToken.Bytes);
+        Writer.Write(value.Length);
         Writer.Write(value);
+    }
+
+    public void WriteBytes(ReadOnlySequence<byte> value)
+    {
+        var length = value.Length;
+        Writer.Write((byte)((byte)TypeToken.Bytes | (1 << 3)));
+        Writer.Write(length);
+        foreach (var mem in value)
+        {
+            Writer.Write(mem.Span);
+        }
+    }
+
+    public void WriteArray<T, S>(ReadOnlySpan<T> value, S serialize) where S : ISerialize<T>
+    {
+        Writer.Write((byte)((byte)TypeToken.Seq | (byte)SplitToken.Start << 3));
+        var first = true;
+        foreach (var item in value)
+        {
+            if (first) first = false;
+            else Writer.Write((byte)((byte)TypeToken.Seq | (byte)SplitToken.Split << 3));
+            serialize.Write(this, item, Options);
+        }
+        Writer.Write((byte)((byte)TypeToken.Seq | (byte)SplitToken.End << 3));
+    }
+
+    public void WriteArray<T, S>(ReadOnlySequence<T> value, S serialize) where S : ISerialize<T>
+    {
+        Writer.Write((byte)((byte)TypeToken.Seq | (byte)SplitToken.Start << 3));
+        bool first = true;
+        foreach (var mem in value)
+        {
+            foreach (var item in mem.Span)
+            {
+                if (first) first = false;
+                else Writer.Write((byte)((byte)TypeToken.Seq | (byte)SplitToken.Split << 3));
+                serialize.Write(this, item, Options);
+            }
+        }
+        Writer.Write((byte)((byte)TypeToken.Seq | (byte)SplitToken.End << 3));
     }
 
     public void WriteUnit()

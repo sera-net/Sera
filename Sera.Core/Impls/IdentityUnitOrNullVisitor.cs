@@ -3,7 +3,7 @@ using Sera.Core.De;
 
 namespace Sera.Core.Impls;
 
-public class IdentityUnitOrNullVisitor<R> :
+public struct IdentityUnitOrNullVisitor<R> :
     IUnitDeserializerVisitor<R>, IAsyncUnitDeserializerVisitor<R>
 {
     public R VisitUnit() => default!;

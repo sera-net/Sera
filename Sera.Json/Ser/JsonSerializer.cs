@@ -4,15 +4,16 @@ using System.Buffers.Text;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
 using System.Text;
 using Sera.Core;
 using Sera.Core.Ser;
 
 namespace Sera.Json.Ser;
 
-public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISerializer
+public record JsonSerializer(SeraJsonOptions Options, AJsonFormatter Formatter, AJsonWriter Writer) : ISerializer
 {
+    public JsonSerializer(AJsonWriter Writer) : this(Writer.Options, Writer.Formatter, Writer) { }
+
     public string FormatName => "json";
     public string FormatMIME => "application/json";
     public SeraFormatType FormatType => SeraFormatType.HumanReadableText;
@@ -21,7 +22,6 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
 
     public IAsyncRuntimeProvider AsyncRuntimeProvider { get; set; } = Options.AsyncRuntimeProvider;
 
-    public AJsonFormatter Formatter => Options.Formatter;
 
     private JsonSerializerState state;
 
@@ -370,6 +370,85 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
         }
     }
 
+    public void WriteBytes(ReadOnlySequence<byte> value)
+    {
+        if (Formatter.Base64Bytes)
+        {
+            var stream = Writer.StartBase64();
+            try
+            {
+                foreach (var mem in value)
+                {
+                    stream.Write(mem.Span);
+                }
+            }
+            finally
+            {
+                Writer.EndBase64();
+            }
+        }
+        else
+        {
+            Writer.Write("[");
+            var first = true;
+            foreach (var mem in value)
+            {
+                foreach (var v in mem.Span)
+                {
+                    if (first) first = false;
+                    else Writer.Write(",");
+                    WriteNumber(4, v, default, false);
+                }
+            }
+            Writer.Write("]");
+        }
+    }
+
+    #endregion
+
+    #region Array
+
+    public void WriteArray<T, S>(ReadOnlySpan<T> value, S serialize) where S : ISerialize<T>
+    {
+        var len = value.Length;
+        if (len is 0)
+        {
+            Writer.Write("[]");
+            return;
+        }
+        var last_state = state;
+        state = JsonSerializerState.None;
+        Writer.Write("[");
+        var isFirst = true;
+        foreach (var item in value)
+        {
+            if (isFirst) isFirst = false;
+            else Writer.Write(",");
+            serialize.Write(this, item, Options);
+        }
+        Writer.Write("]");
+        state = last_state;
+    }
+
+    public void WriteArray<T, S>(ReadOnlySequence<T> value, S serialize) where S : ISerialize<T>
+    {
+        var last_state = state;
+        state = JsonSerializerState.None;
+        Writer.Write("[");
+        var isFirst = true;
+        foreach (var mem in value)
+        {
+            foreach (var item in mem.Span)
+            {
+                if (isFirst) isFirst = false;
+                else Writer.Write(",");
+                serialize.Write(this, item, Options);
+            }
+        }
+        Writer.Write("]");
+        state = last_state;
+    }
+
     #endregion
 
     #region Unit
@@ -567,6 +646,15 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonWriter Writer) : ISer
             => Throw();
 
         public void WriteUnit()
+            => Throw();
+
+        public void WriteArray<T, S>(ReadOnlySequence<T> value, S serialize) where S : ISerialize<T>
+            => Throw();
+
+        public void WriteArray<T, S>(ReadOnlySpan<T> value, S serialize) where S : ISerialize<T>
+            => Throw();
+
+        public void WriteBytes(ReadOnlySequence<byte> value)
             => Throw();
 
         public void WriteBytes(ReadOnlySpan<byte> value)

@@ -15,7 +15,7 @@ public struct Struct2
 
 public class Struct2Impl : ISerialize<Struct2>, IStructSerializerReceiver<Struct2>
 {
-    public static PrimitiveImpl<int> _impl_Int32 = PrimitiveImpl.Int32;
+    public static PrimitiveImpl<int> _impl_Int32 = PrimitiveImpls.Int32;
     public static StringImpl _impl_String = StringImpl.Instance;
 
     public void Write<S>(S serializer, Struct2 value, ISeraOptions options) where S : ISerializer

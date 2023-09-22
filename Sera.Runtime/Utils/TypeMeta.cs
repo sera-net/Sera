@@ -16,6 +16,9 @@ internal record struct TypeMeta(Type Type, GenericMeta? Generics, NullabilityMet
     public bool KeepRaw { get; set; }
 
     public bool IsEnum => Type.IsEnum;
+
+    public bool IsArray => Type.IsArray;
+    public bool IsSZArray => Type.IsSZArray;
 }
 
 internal record struct GenericMeta(

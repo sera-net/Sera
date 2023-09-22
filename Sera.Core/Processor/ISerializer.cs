@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Buffers;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Sera.Core.SerDe;
@@ -161,6 +164,8 @@ public partial interface IAsyncSerializer
 public partial interface ISerializer
 {
     public void WriteBytes(byte[] value) => WriteBytes(value.AsSpan());
+    public void WriteBytes(List<byte> value) => WriteBytes(CollectionsMarshal.AsSpan(value));
+    public void WriteBytes(ReadOnlySequence<byte> value);
     public void WriteBytes(ReadOnlyMemory<byte> value) => WriteBytes(value.Span);
     public void WriteBytes(ReadOnlySpan<byte> value);
 }
@@ -168,7 +173,41 @@ public partial interface ISerializer
 public partial interface IAsyncSerializer
 {
     public ValueTask WriteBytesAsync(byte[] value) => WriteBytesAsync(value.AsMemory());
+    public ValueTask WriteBytesAsync(List<byte> value);
+    public ValueTask WriteBytesAsync(ReadOnlySequence<byte> value);
     public ValueTask WriteBytesAsync(ReadOnlyMemory<byte> value);
+}
+
+#endregion
+
+#region Array
+
+public partial interface ISerializer
+{
+    public void WriteArray<T, S>(T[] value, S serialize) where S : ISerialize<T> =>
+        WriteArray<T, S>(value.AsSpan(), serialize);
+
+    public void WriteArray<T, S>(List<T> value, S serialize) where S : ISerialize<T> =>
+        WriteArray<T, S>(CollectionsMarshal.AsSpan(value), serialize);
+
+    public void WriteArray<T, S>(ReadOnlySequence<T> value, S serialize) where S : ISerialize<T>;
+
+    public void WriteArray<T, S>(ReadOnlyMemory<T> value, S serialize) where S : ISerialize<T> =>
+        WriteArray(value.Span, serialize);
+
+    public void WriteArray<T, S>(ReadOnlySpan<T> value, S serialize) where S : ISerialize<T>;
+}
+
+public partial interface IAsyncSerializer
+{
+    public ValueTask WriteArrayAsync<T, S>(T[] value, S serialize) where S : IAsyncSerialize<T>
+        => WriteArrayAsync<T, S>(value.AsMemory(), serialize);
+
+    public ValueTask WriteArrayAsync<T, S>(List<T> value, S serialize) where S : IAsyncSerialize<T>;
+
+    public ValueTask WriteArrayAsync<T, S>(ReadOnlySequence<T> value, S serialize) where S : IAsyncSerialize<T>;
+
+    public ValueTask WriteArrayAsync<T, S>(ReadOnlyMemory<T> value, S serialize) where S : IAsyncSerialize<T>;
 }
 
 #endregion
