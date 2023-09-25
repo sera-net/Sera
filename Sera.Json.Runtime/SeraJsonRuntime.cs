@@ -1,5 +1,4 @@
 ﻿using System.Text;
-using Sera.Core.Impls;
 using Sera.Json.Builders;
 using Sera.Json.Builders.Ser;
 using Sera.Json.Ser;
@@ -36,6 +35,16 @@ public static partial class SeraJsonRuntime
         };
         rt.GetSerialize<T>(self.Options).Write(ser, value, self.Options);
     }
+
+    public static void Serialize<T, S>(this Builder<ToStream> self, T value, S serialize) where S : ISerialize<T>
+    {
+        var rt = EmitRuntimeProvider.Instance;
+        var ser = new JsonSerializer(StreamJsonWriter.Create(self))
+        {
+            RuntimeProvider = rt,
+        };
+        serialize.Write(ser, value, self.Options);
+    }
 }
 
 #endregion
@@ -55,6 +64,18 @@ public static partial class SeraJsonRuntime
         rt.GetSerialize<T>(self.Options).Write(ser, value, self.Options);
         return builder.ToString();
     }
+
+    public static string Serialize<T, S>(this Builder<ToString> self, T value, S serialize) where S : ISerialize<T>
+    {
+        var rt = EmitRuntimeProvider.Instance;
+        var builder = new StringBuilder();
+        var ser = new JsonSerializer(StringBuilderJsonWriter.Create(self, builder))
+        {
+            RuntimeProvider = rt,
+        };
+        serialize.Write(ser, value, self.Options);
+        return builder.ToString();
+    }
 }
 
 #endregion
@@ -71,6 +92,16 @@ public static partial class SeraJsonRuntime
             RuntimeProvider = rt,
         };
         rt.GetSerialize<T>(self.Options).Write(ser, value, self.Options);
+    }
+
+    public static void Serialize<T, S>(this Builder<ToStringBuilder> self, T value, S serialize) where S : ISerialize<T>
+    {
+        var rt = EmitRuntimeProvider.Instance;
+        var ser = new JsonSerializer(StringBuilderJsonWriter.Create(self))
+        {
+            RuntimeProvider = rt,
+        };
+        serialize.Write(ser, value, self.Options);
     }
 }
 

@@ -91,7 +91,8 @@ internal partial class EmitSerializeProvider
                 var ref_nullable = !meta.KeepRaw && !value_type.IsValueType && meta.Nullability is not
                     { NullabilityInfo.ReadState: NullabilityState.NotNull };
                 return (i, value_type, meta, ref_nullable);
-            }).ToArray();
+            })
+            .ToArray();
         var grouped = tmp1
             .GroupBy(a => (a.value_type, a.meta.Nullability, a.ref_nullable))
             .Select(g =>
@@ -99,7 +100,8 @@ internal partial class EmitSerializeProvider
                 var (_, value_type, meta, ref_nullable) = g.First();
                 var indexes = g.Select(a => a.i).ToArray();
                 return (value_type, meta, ref_nullable, indexes);
-            }).ToArray();
+            })
+            .ToArray();
         var infos = grouped.AsParallel().AsOrdered()
             .Select(g =>
             {
