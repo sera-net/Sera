@@ -1959,4 +1959,31 @@ public class TestRuntime
     }
 
     #endregion
+
+    #region ValueTupleNullable4
+
+    public class ValueTupleNullable4A
+    {
+        public (int, ValueTupleNullable4B?, int) Member1 { get; } = (1, new(), 3);
+    }
+
+    public class ValueTupleNullable4B
+    {
+        public (int, ValueTupleNullable1A?, int) Member1 { get; } = (1, null, 3);
+    }
+
+    [Test]
+    public void TestValueTupleNullable4()
+    {
+        var obj = new ValueTupleNullable4A();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"Member1\":[1,{\"Member1\":[1,null,3]},3]}"));
+    }
+
+    #endregion
 }
