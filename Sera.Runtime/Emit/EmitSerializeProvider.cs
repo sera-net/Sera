@@ -154,6 +154,7 @@ internal partial class EmitSerializeProvider
     /// <param name="RefNullable">Whether the type is nested within a <see cref="NullableReferenceTypeImpl{T,ST}"/></param>
     /// <param name="Boxed">Whether the type is nested within a <see cref="Box{T}"/></param>
     internal record CacheStubDeps(
+        int index, int[] rawIndexes,
         FieldInfo? Field, PropertyInfo? Property, Type ImplType, Type RawImplType, Type ValueType,
         CacheStub? ImplStub, object? ImplInst, bool RefNullable, Type? BoxedType, bool Boxed
     )

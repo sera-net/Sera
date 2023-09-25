@@ -42,22 +42,21 @@ internal partial class EmitSerializeProvider
 
         #region ready deps
 
-        var deps = generics.Metas.AsParallel().AsOrdered()
-            .Select(t => GetSerImpl(t, stub.CreateThread))
-            .ToArray();
+        var dep_count = generics.Length;
 
-        var the_dep = MakeDepContainer(deps, generics, out var impl_types);
+        var the_dep = MakeDepContainer(generics, stub.CreateThread);
         stub.ProvideDeps(the_dep);
 
-        var (deps_type, _) = the_dep;
+        var wraps = ParallelEnumerable.Range(0, dep_count).AsOrdered().Select(the_dep.GetSerWarp).ToArray();
+        var wrapTypes = wraps.Select(a => a.type).ToArray();
+        var wrapInsts = wraps.Select(a => a.inst).ToArray();
 
         #endregion
 
         #region ready type
 
         var type_args = generics.RawTypes
-            .Concat(impl_types)
-            .Append(deps_type)
+            .Concat(wrapTypes)
             .ToArray();
         var type = (is_value_tuple
                 ? ReflectionUtils.ValueTupleSerImpls[generics.Length]
@@ -69,7 +68,11 @@ internal partial class EmitSerializeProvider
 
         #region create inst
 
-        var inst = Activator.CreateInstance(type)!;
+        var ctor = type.GetConstructor(
+            BindingFlags.Public | BindingFlags.Instance,
+            wrapTypes
+        )!;
+        var inst = ctor.Invoke(wrapInsts);
         stub.ProvideInst(inst);
 
         #endregion
@@ -95,26 +98,28 @@ internal partial class EmitSerializeProvider
 
         #region ready deps
 
-        var deps = generics.Metas.AsParallel().AsOrdered()
-            .Select(t => GetSerImpl(t, stub.CreateThread))
-            .ToArray();
+        var dep_count = generics.Length;
 
-        var the_dep = MakeDepContainer(deps, generics, out var impl_types);
+        var the_dep = MakeDepContainer(generics, stub.CreateThread);
         stub.ProvideDeps(the_dep);
 
-        var (deps_type, _) = the_dep;
+        var wraps = ParallelEnumerable.Range(0, dep_count - 1).AsOrdered().Select(the_dep.GetSerWarp).ToArray();
+        var wrapTypes = wraps.Select(a => a.type).ToArray();
+        var wrapInsts = wraps.Select(a => a.inst).ToArray();
+
+        var (seq_wrap_type, seq_wrap_inst) = the_dep.GetSeqSerReceiverWarp(7);
 
         #endregion
 
         #region ready type
 
         var type_args = generics.RawTypes
-            .Concat(impl_types)
-            .Append(deps_type)
+            .Concat(wrapTypes)
+            .Append(seq_wrap_type)
             .ToArray();
         var type = (is_value_tuple
-                ? typeof(ValueTupleRestSerializeDepsImpl<,,,,,,,,,,,,,,,,>)
-                : typeof(TupleRestSerializeDepsImpl<,,,,,,,,,,,,,,,,>))
+                ? typeof(ValueTupleRestSerializeImpl<,,,,,,,,,,,,,,,>)
+                : typeof(TupleRestSerializeImpl<,,,,,,,,,,,,,,,>))
             .MakeGenericType(type_args);
         stub.ProvideType(type);
 
@@ -124,9 +129,9 @@ internal partial class EmitSerializeProvider
 
         var inst_ctor = type.GetConstructor(
             BindingFlags.Public | BindingFlags.Instance,
-            new[] { typeof(nuint) }
+            wrapTypes.Append(seq_wrap_type).Append(typeof(nuint)).ToArray()
         )!;
-        var inst = inst_ctor.Invoke(new object[] { (nuint)size });
+        var inst = inst_ctor.Invoke(wrapInsts.Append(seq_wrap_inst).Append((nuint)size).ToArray());
         stub.ProvideInst(inst);
 
         #endregion

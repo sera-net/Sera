@@ -14,8 +14,9 @@ namespace Sera.Runtime.Utils;
 internal static class ReflectionUtils
 {
     public static ConstructorInfo NullReferenceException_ctor { get; } =
-        typeof(NullReferenceException).GetConstructor(BindingFlags.Public | BindingFlags.Instance, Array.Empty<Type>())!;
-    
+        typeof(NullReferenceException).GetConstructor(BindingFlags.Public | BindingFlags.Instance,
+            Array.Empty<Type>())!;
+
     public static ConstructorInfo Nullable_UInt64_ctor { get; } = typeof(long?).GetConstructor(new[] { typeof(long) })!;
 
     public static MethodInfo StaticRuntimeProvider_TryGetSerialize { get; } =
@@ -84,6 +85,30 @@ internal static class ReflectionUtils
         { 6, typeof(DepsContainer<,,,,,>) },
         { 7, typeof(DepsContainer<,,,,,,>) },
         { 8, typeof(DepsContainer<,,,,,,,>) },
+    };
+
+    public static Dictionary<int, Type> DepsSerWraps { get; } = new()
+    {
+        { 0, typeof(DepsSerializerWrapper1<,,>) },
+        { 1, typeof(DepsSerializerWrapper2<,,>) },
+        { 2, typeof(DepsSerializerWrapper3<,,>) },
+        { 3, typeof(DepsSerializerWrapper4<,,>) },
+        { 4, typeof(DepsSerializerWrapper5<,,>) },
+        { 5, typeof(DepsSerializerWrapper6<,,>) },
+        { 6, typeof(DepsSerializerWrapper7<,,>) },
+        { 7, typeof(DepsSerializerWrapper8<,,>) },
+    };
+    
+    public static Dictionary<int, Type> DepsSeqSerReceiverWraps { get; } = new()
+    {
+        { 0, typeof(DepsSeqSerializerReceiverWrapper1<,,>) },
+        { 1, typeof(DepsSeqSerializerReceiverWrapper2<,,>) },
+        { 2, typeof(DepsSeqSerializerReceiverWrapper3<,,>) },
+        { 3, typeof(DepsSeqSerializerReceiverWrapper4<,,>) },
+        { 4, typeof(DepsSeqSerializerReceiverWrapper5<,,>) },
+        { 5, typeof(DepsSeqSerializerReceiverWrapper6<,,>) },
+        { 6, typeof(DepsSeqSerializerReceiverWrapper7<,,>) },
+        { 7, typeof(DepsSeqSerializerReceiverWrapper8<,,>) },
     };
 
     public static HashSet<Type> ValueTuples { get; } = new()
@@ -165,24 +190,24 @@ internal static class ReflectionUtils
 
     public static Dictionary<int, Type> ValueTupleSerImpls { get; } = new()
     {
-        { 1, typeof(ValueTupleSerializeDepsImpl<,,>) },
-        { 2, typeof(ValueTupleSerializeDepsImpl<,,,,>) },
-        { 3, typeof(ValueTupleSerializeDepsImpl<,,,,,,>) },
-        { 4, typeof(ValueTupleSerializeDepsImpl<,,,,,,,,>) },
-        { 5, typeof(ValueTupleSerializeDepsImpl<,,,,,,,,,,>) },
-        { 6, typeof(ValueTupleSerializeDepsImpl<,,,,,,,,,,,,>) },
-        { 7, typeof(ValueTupleSerializeDepsImpl<,,,,,,,,,,,,,,>) },
+        { 1, typeof(ValueTupleSerializeImpl<,>) },
+        { 2, typeof(ValueTupleSerializeImpl<,,,>) },
+        { 3, typeof(ValueTupleSerializeImpl<,,,,,>) },
+        { 4, typeof(ValueTupleSerializeImpl<,,,,,,,>) },
+        { 5, typeof(ValueTupleSerializeImpl<,,,,,,,,,>) },
+        { 6, typeof(ValueTupleSerializeImpl<,,,,,,,,,,,>) },
+        { 7, typeof(ValueTupleSerializeImpl<,,,,,,,,,,,,,>) },
     };
 
     public static Dictionary<int, Type> ClassTupleSerImpls { get; } = new()
     {
-        { 1, typeof(TupleSerializeDepsImpl<,,>) },
-        { 2, typeof(TupleSerializeDepsImpl<,,,,>) },
-        { 3, typeof(TupleSerializeDepsImpl<,,,,,,>) },
-        { 4, typeof(TupleSerializeDepsImpl<,,,,,,,,>) },
-        { 5, typeof(TupleSerializeDepsImpl<,,,,,,,,,,>) },
-        { 6, typeof(TupleSerializeDepsImpl<,,,,,,,,,,,,>) },
-        { 7, typeof(TupleSerializeDepsImpl<,,,,,,,,,,,,,,>) },
+        { 1, typeof(TupleSerializeImpl<,>) },
+        { 2, typeof(TupleSerializeImpl<,,,>) },
+        { 3, typeof(TupleSerializeImpl<,,,,,>) },
+        { 4, typeof(TupleSerializeImpl<,,,,,,,>) },
+        { 5, typeof(TupleSerializeImpl<,,,,,,,,,>) },
+        { 6, typeof(TupleSerializeImpl<,,,,,,,,,,,>) },
+        { 7, typeof(TupleSerializeImpl<,,,,,,,,,,,,,>) },
     };
 
     public static Dictionary<int, Type> ValueTupleSerBaseImpls { get; } = new()

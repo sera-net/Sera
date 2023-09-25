@@ -47,11 +47,11 @@ internal partial class EmitSerializeProvider
             })
             .DistinctBy(m => (m.Type, m.null_meta, m.ref_nullable))
             .Select((m, i) => (i, m.Type, m.null_meta, m.ref_nullable))
-            .ToDictionary(a => (a.Type, a.null_meta, a.ref_nullable), a => $"_ser_impl_{a.i}");
+            .ToDictionary(a => (a.Type, a.null_meta, a.ref_nullable), a => (a.i, $"_ser_impl_{a.i}"));
 
         var ser_deps = new Dictionary<Type, CacheStubDeps>();
 
-        foreach (var ((value_type, null_meta, ref_nullable), field_name) in ser_impl_field_names)
+        foreach (var ((value_type, null_meta, ref_nullable), (index, field_name)) in ser_impl_field_names)
         {
             var type_meta = TypeMetas.GetTypeMeta(value_type, null_meta);
             var (impl_type, impl_cell, impl) = GetSerImpl(type_meta, current_thread);
@@ -71,7 +71,7 @@ internal partial class EmitSerializeProvider
                 FieldAttributes.Public | FieldAttributes.Static);
             ser_deps.Add(
                 value_type,
-                new(
+                new(index, new[] { index },
                     field, null,
                     impl_type, raw_impl_type, value_type, impl_cell, impl, ref_nullable,
                     boxed_type, boxed
