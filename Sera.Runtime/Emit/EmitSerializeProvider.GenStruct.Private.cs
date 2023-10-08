@@ -239,7 +239,7 @@ internal partial class EmitSerializeProvider
                     #region load dep
 
                     var dep_field = dep_container_type.GetField(
-                        dep.Field!.Name,
+                        dep.Place.Field!.Name,
                         BindingFlags.Static | BindingFlags.Public
                     )!;
                     ilg.Emit(OpCodes.Ldsfld, dep_field);

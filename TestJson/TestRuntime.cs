@@ -131,6 +131,61 @@ public class TestRuntime
 
     #endregion
 
+    #region Struct5
+
+    [SeraIncludeField]
+    public struct Struct5
+    {
+        public Struct5B Member1 { get; set; }
+    }
+
+    [SeraIncludeField]
+    public struct Struct5B { }
+    
+    [Test]
+    public void TestStruct5()
+    {
+        var obj = new Struct5();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"Member1\":{}}"));
+    }
+
+    #endregion
+    
+    #region Struct6
+
+    [SeraIncludeField]
+    public class Struct6
+    {
+        public Struct6B? Member1 { get; set; } = new();
+    }
+
+    [SeraIncludeField]
+    public class Struct6B
+    {
+        public Struct6? Member1 { get; set; } = null;
+    }
+    
+    [Test]
+    public void TestStruct6()
+    {
+        var obj = new Struct6();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"Member1\":{\"Member1\":null}}"));
+    }
+
+    #endregion
+
     #region StructCircularReference1
 
     public class StructCircularReference1
@@ -1983,6 +2038,45 @@ public class TestRuntime
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"Member1\":[1,{\"Member1\":[1,null,3]},3]}"));
+    }
+
+    #endregion
+
+    #region Array1
+
+    [Test]
+    public void TestArray1()
+    {
+        var obj = new[] { 1, 2, 3 };
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,2,3]"));
+    }
+
+    #endregion
+
+    #region Array2
+
+    public class StructTestArray2
+    {
+        public StructTestArray2?[] A { get; set; } = { null };
+    }
+
+    [Test]
+    public void TestArray2()
+    {
+        var obj = new[] { new StructTestArray2() };
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[]"));
     }
 
     #endregion

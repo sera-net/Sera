@@ -48,15 +48,13 @@ internal partial class EmitSerializeProvider
         stub.ProvideDeps(the_dep);
 
         var wraps = ParallelEnumerable.Range(0, dep_count).AsOrdered().Select(the_dep.GetSerWarp).ToArray();
-        var wrapTypes = wraps.Select(a => a.type).ToArray();
-        var wrapInsts = wraps.Select(a => a.inst).ToArray();
 
         #endregion
 
         #region ready type
 
         var type_args = generics.RawTypes
-            .Concat(wrapTypes)
+            .Concat(wraps)
             .ToArray();
         var type = (is_value_tuple
                 ? ReflectionUtils.ValueTupleSerImpls[generics.Length]
@@ -70,9 +68,9 @@ internal partial class EmitSerializeProvider
 
         var ctor = type.GetConstructor(
             BindingFlags.Public | BindingFlags.Instance,
-            wrapTypes
+            wraps
         )!;
-        var inst = ctor.Invoke(wrapInsts);
+        var inst = ctor.Invoke(Enumerable.Repeat<object?>(null, wraps.Length).ToArray());
         stub.ProvideInst(inst);
 
         #endregion
@@ -104,17 +102,15 @@ internal partial class EmitSerializeProvider
         stub.ProvideDeps(the_dep);
 
         var wraps = ParallelEnumerable.Range(0, dep_count - 1).AsOrdered().Select(the_dep.GetSerWarp).ToArray();
-        var wrapTypes = wraps.Select(a => a.type).ToArray();
-        var wrapInsts = wraps.Select(a => a.inst).ToArray();
 
-        var (seq_wrap_type, seq_wrap_inst) = the_dep.GetSeqSerReceiverWarp(7);
+        var seq_wrap_type = the_dep.GetSeqSerReceiverWarp(7);
 
         #endregion
 
         #region ready type
 
         var type_args = generics.RawTypes
-            .Concat(wrapTypes)
+            .Concat(wraps)
             .Append(seq_wrap_type)
             .ToArray();
         var type = (is_value_tuple
@@ -129,9 +125,9 @@ internal partial class EmitSerializeProvider
 
         var inst_ctor = type.GetConstructor(
             BindingFlags.Public | BindingFlags.Instance,
-            wrapTypes.Append(seq_wrap_type).Append(typeof(nuint)).ToArray()
+            wraps.Append(seq_wrap_type).Append(typeof(nuint)).ToArray()
         )!;
-        var inst = inst_ctor.Invoke(wrapInsts.Append(seq_wrap_inst).Append((nuint)size).ToArray());
+        var inst = inst_ctor.Invoke(Enumerable.Repeat<object?>(null, wraps.Length + 1).Append((nuint)size).ToArray());
         stub.ProvideInst(inst);
 
         #endregion

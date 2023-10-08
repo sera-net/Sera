@@ -24,7 +24,7 @@ internal partial class EmitSerializeProvider
         }
     }
 
-    /// <returns>CacheStubDeps.Field is not null</returns>
+    /// <returns>CacheStubDeps.Place is Field</returns>
     private Dictionary<Type, CacheStubDeps> GetSerDeps(
         StructMember[] members, TypeBuilder dep_container_type_builder, Thread current_thread
     )
@@ -72,7 +72,7 @@ internal partial class EmitSerializeProvider
             ser_deps.Add(
                 value_type,
                 new(index, new[] { index },
-                    field, null,
+                    DepPlace.MakeField(field), 
                     impl_type, raw_impl_type, value_type, impl_cell, impl, ref_nullable,
                     boxed_type, boxed
                 )

@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using Sera.Core.Impls;
 using Sera.Runtime.Utils;
@@ -33,11 +34,14 @@ internal partial class EmitSerializeProvider
         private volatile CreateState state = CreateState.Idle;
         public Thread CreateThread { get; }
 
+        // todo ManualResetEvent => Task
         private readonly ManualResetEvent WaitType = new(false);
+        private readonly ManualResetEvent WaitReady = new(false);
         private readonly ManualResetEvent WaitCreate = new(false);
 
         private Type? ser_type;
         private object? ser_inst;
+        private Func<object>? late_inst;
 
         public Type SerType => ser_type!;
         public object SerInst => ser_inst!;
@@ -66,9 +70,24 @@ internal partial class EmitSerializeProvider
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void WaitInstReady()
+        {
+            WaitReady.WaitOne();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void WaitInstProvided()
         {
-            WaitType.WaitOne();
+            WaitInstReady();
+            if (state != CreateState.Created)
+            {
+                // todo lock
+                if (late_inst == null) throw new Exception("internal state error");
+                ser_inst = late_inst.Invoke();
+                MarkInstProvided();
+                return;
+            }
+            WaitCreate.WaitOne();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -90,6 +109,13 @@ internal partial class EmitSerializeProvider
         public void MarkInstProvided()
         {
             state = CreateState.Created;
+            WaitReady.Set();
+            WaitCreate.Set();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void MarkInstReady()
+        {
             WaitCreate.Set();
         }
 
@@ -105,6 +131,13 @@ internal partial class EmitSerializeProvider
         {
             ser_inst = inst;
             MarkInstProvided();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void ProvideLateInst(Func<object> init)
+        {
+            late_inst = init;
+            WaitReady.Set();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -143,6 +176,53 @@ internal partial class EmitSerializeProvider
         }
     }
 
+    internal enum DepPlaceKind : byte
+    {
+        Field,
+        Property,
+        LateField,
+        LateProperty,
+    }
+
+    internal record struct DepPlace
+    {
+        private _union_ _union;
+        public DepPlaceKind Kind { get; }
+
+        public FieldInfo Field => _union._field;
+        public PropertyInfo Property => _union._property;
+        public string Name => _union._name;
+
+        [StructLayout(LayoutKind.Explicit)]
+        private struct _union_
+        {
+            [FieldOffset(0)]
+            public FieldInfo _field;
+            [FieldOffset(0)]
+            public PropertyInfo _property;
+            [FieldOffset(0)]
+            public string _name;
+        }
+
+        private DepPlace(DepPlaceKind kind, _union_ union)
+        {
+            Kind = kind;
+            _union = union;
+        }
+
+        public static DepPlace MakeField(FieldInfo field) =>
+            new(DepPlaceKind.Field, new _union_ { _field = field });
+
+        public static DepPlace MakeProperty(PropertyInfo property) =>
+            new(DepPlaceKind.Property, new _union_ { _property = property });
+
+        public static DepPlace MakeLateField(string FieldName) => new(DepPlaceKind.LateField,
+            new _union_ { _name = FieldName });
+
+        public static DepPlace MakeLateProperty(string PropertyName) => new(DepPlaceKind.LateProperty,
+            new _union_ { _name = PropertyName });
+    }
+
     /// <summary>
     /// Nesting order
     /// <list type="number">
@@ -155,12 +235,11 @@ internal partial class EmitSerializeProvider
     /// <param name="Boxed">Whether the type is nested within a <see cref="Box{T}"/></param>
     internal record CacheStubDeps(
         int index, int[] rawIndexes,
-        FieldInfo? Field, PropertyInfo? Property, Type ImplType, Type RawImplType, Type ValueType,
+        DepPlace Place, Type ImplType, Type RawImplType, Type ValueType,
         CacheStub? ImplStub, object? ImplInst, bool RefNullable, Type? BoxedType, bool Boxed
     )
     {
-        public FieldInfo? Field { get; set; } = Field;
-        public PropertyInfo? Property { get; set; } = Property;
+        public DepPlace Place { get; set; } = Place;
         public Type ImplType { get; set; } = ImplType;
         public Type? BoxedType { get; set; } = BoxedType;
         public Type RawImplType { get; set; } = RawImplType;
@@ -168,6 +247,8 @@ internal partial class EmitSerializeProvider
 
         private CacheStub? ImplStub { get; set; } = ImplStub;
         private object? ImplInst { get; set; } = ImplInst;
+
+        public Type RuntimeImplType => ImplStub?.SerType ?? ImplType;
 
         /// <summary>
         /// If <c>true</c>
@@ -181,20 +262,35 @@ internal partial class EmitSerializeProvider
         {
             var inst = Ready();
 
-            if (Field != null)
+            if (Place.Kind == DepPlaceKind.Field)
             {
-                var field_name = Field.Name;
-                var field = dep_container_type.GetField(field_name)!;
+                var name = Place.Field.Name;
+                var field = dep_container_type.GetField(name)!;
 
                 field.SetValue(null, inst);
             }
-            else
+            else if (Place.Kind == DepPlaceKind.Property)
             {
-                var property_name = Property!.Name;
-                var property = dep_container_type.GetProperty(property_name)!;
+                var name = Place!.Property.Name;
+                var property = dep_container_type.GetProperty(name)!;
 
                 property.SetValue(null, inst);
             }
+            else if (Place.Kind == DepPlaceKind.LateField)
+            {
+                var name = Place!.Name;
+                var field = dep_container_type.GetField(name)!;
+
+                field.SetValue(null, inst);
+            }
+            else if (Place.Kind == DepPlaceKind.LateProperty)
+            {
+                var name = Place!.Name;
+                var property = dep_container_type.GetProperty(name)!;
+
+                property.SetValue(null, inst);
+            }
+            else throw new ArgumentOutOfRangeException();
         }
 
         private object? Ready()
@@ -268,7 +364,7 @@ internal partial class EmitSerializeProvider
             {
                 GenArray(target, stub);
             }
-            if (target.IsEnum)
+            else if (target.IsEnum)
             {
                 GenEnum(target, stub);
             }
@@ -281,17 +377,9 @@ internal partial class EmitSerializeProvider
                 GenStruct(target, stub);
             }
         }
-        // catch
-        // {
-        //     var type = typeof(UnitImpl<>).MakeGenericType(target.Type);
-        //     stub.ProvideType(type);
-        //     var inst = Activator.CreateInstance(type)!;
-        //     stub.ProvideInst(inst);
-        //     throw;
-        // }
         finally
         {
-            stub.MarkInstProvided();
+            stub.MarkInstReady();
         }
     }
 }

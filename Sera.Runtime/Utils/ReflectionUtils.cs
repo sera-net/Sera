@@ -8,6 +8,7 @@ using Sera.Core;
 using Sera.Core.Impls.Deps;
 using Sera.Core.Impls.Tuples;
 using Sera.Core.Ser;
+using Sera.Runtime.Emit;
 
 namespace Sera.Runtime.Utils;
 
@@ -54,7 +55,7 @@ internal static class ReflectionUtils
             && m.GetParameters() is { Length: 4 } p && p[0].ParameterType == typeof(string)
         );
 
-    public static string GetAsmName(string name) => $"{nameof(Sera)}.{nameof(Runtime)}.{nameof(Emit)}.Impls.{name}";
+    public static string GetAsmName(string name) => $"{nameof(Sera)}.{nameof(Runtime)}.{nameof(Emit)}.Runtime.{name}";
 
     public static ModuleBuilder CreateAssembly(string name)
     {
@@ -98,7 +99,7 @@ internal static class ReflectionUtils
         { 6, typeof(DepsSerializerWrapper7<,,>) },
         { 7, typeof(DepsSerializerWrapper8<,,>) },
     };
-    
+
     public static Dictionary<int, Type> DepsSeqSerReceiverWraps { get; } = new()
     {
         { 0, typeof(DepsSeqSerializerReceiverWrapper1<,,>) },
@@ -168,6 +169,9 @@ internal static class ReflectionUtils
         }
     }
 
+    public static bool IsValueTuple(this EmitMeta target)
+        => IsValueTuple(target.Type);
+
     public static bool IsValueTuple(this TypeMeta target)
         => IsValueTuple(target.Type);
 
@@ -177,6 +181,9 @@ internal static class ReflectionUtils
         var t = target.GetGenericTypeDefinition();
         return ValueTuples.Contains(t);
     }
+
+    public static bool IsClassTuple(this EmitMeta target)
+        => IsClassTuple(target.Type);
 
     public static bool IsClassTuple(this TypeMeta target)
         => IsClassTuple(target.Type);

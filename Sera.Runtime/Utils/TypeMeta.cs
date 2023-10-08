@@ -13,17 +13,27 @@ namespace Sera.Runtime.Utils;
 
 internal record struct TypeMeta(Type Type, GenericMeta? Generics, NullabilityMeta? Nullability)
 {
+    [Obsolete]
     public bool KeepRaw { get; set; }
+    [Obsolete]
+    public bool IsValueType => Type.IsValueType;
 
+    [Obsolete]
     public bool IsEnum => Type.IsEnum;
 
+    [Obsolete]
     public bool IsArray => Type.IsArray;
+    [Obsolete]
     public bool IsSZArray => Type.IsSZArray;
 }
 
 internal record struct GenericMeta(
     Type[] RawTypes, TypeMeta[] Metas, NullabilityMeta[]? Nullabilities, int Length
-);
+)
+{
+    public static GenericMeta Create(params Type[] types) => new(types,
+        types.Select(t => TypeMetas.GetTypeMeta(t)).ToArray(), null, types.Length);
+}
 
 internal record NullabilityMeta
 {
@@ -83,8 +93,6 @@ internal record NullabilityMeta
 
 internal static class TypeMetas
 {
-    public static NullabilityInfoContext NullabilityInfoContext { get; } = new();
-
     #region Caches
 
     #region FieldInfoToNullabilityCache
@@ -93,7 +101,7 @@ internal static class TypeMetas
         FieldInfoToNullabilityCache = new();
 
     private static NullabilityInfo GetCache(FieldInfo info)
-        => FieldInfoToNullabilityCache.GetValue(info, NullabilityInfoContext.Create);
+        => FieldInfoToNullabilityCache.GetValue(info, i => new NullabilityInfoContext().Create(i));
 
     #endregion
 
@@ -103,7 +111,7 @@ internal static class TypeMetas
         PropertyInfoToNullabilityCache = new();
 
     private static NullabilityInfo GetCache(PropertyInfo info)
-        => PropertyInfoToNullabilityCache.GetValue(info, NullabilityInfoContext.Create);
+        => PropertyInfoToNullabilityCache.GetValue(info, i => new NullabilityInfoContext().Create(i));
 
     #endregion
 
@@ -113,7 +121,7 @@ internal static class TypeMetas
         ParameterInfoToNullabilityCache = new();
 
     private static NullabilityInfo GetCache(ParameterInfo info)
-        => ParameterInfoToNullabilityCache.GetValue(info, NullabilityInfoContext.Create);
+        => ParameterInfoToNullabilityCache.GetValue(info, i => new NullabilityInfoContext().Create(i));
 
     #endregion
 
@@ -123,7 +131,7 @@ internal static class TypeMetas
         EventInfoToNullabilityCache = new();
 
     private static NullabilityInfo GetCache(EventInfo info)
-        => EventInfoToNullabilityCache.GetValue(info, NullabilityInfoContext.Create);
+        => EventInfoToNullabilityCache.GetValue(info, i => new NullabilityInfoContext().Create(i));
 
     #endregion
 

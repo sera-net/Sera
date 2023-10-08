@@ -16,7 +16,7 @@ internal partial class EmitSerializeProvider
     internal record struct DepInfo(Type impl_type, CacheStub? stub, object? impl);
 
     internal record TheDep(Type dep_container_type, CacheStubDeps[] deps);
-    
+
     internal record TheStaticDep(Type dep_container_type, CacheStubDeps[] deps) : TheDep(dep_container_type, deps)
     {
         public Dictionary<int, (int index, CacheStubDeps deps)> IndexMap { get; } = deps
@@ -24,28 +24,22 @@ internal partial class EmitSerializeProvider
             .DistinctBy(a => a.i)
             .ToDictionary(a => a.i, a => (a.index, a.a));
 
-        private readonly ConcurrentDictionary<int, TypeInstPair> SerWarpCache = new();
-        private readonly ConcurrentDictionary<int, TypeInstPair> SeqSerReceiverWarpCache = new();
 
-        public TypeInstPair GetSerWarp(int i)
-            => SerWarpCache.GetOrAdd(i, static (i, a) =>
-            {
-                var (mapped, dep) = a.IndexMap[i];
-                var type = ReflectionUtils.DepsSerWraps[mapped]
-                    .MakeGenericType(dep.ValueType, dep.ImplType, a.dep_container_type);
-                var inst = Activator.CreateInstance(type)!;
-                return new(type, inst);
-            }, (IndexMap, dep_container_type));
+        public Type GetSerWarp(int i)
+        {
+            var (mapped, dep) = IndexMap[i];
+            var type = ReflectionUtils.DepsSerWraps[mapped]
+                .MakeGenericType(dep.ValueType, dep.ImplType, dep_container_type);
+            return type;
+        }
 
-        public TypeInstPair GetSeqSerReceiverWarp(int i)
-            => SeqSerReceiverWarpCache.GetOrAdd(i, static (i, a) =>
-            {
-                var (mapped, dep) = a.IndexMap[i];
-                var type = ReflectionUtils.DepsSeqSerReceiverWraps[mapped]
-                    .MakeGenericType(dep.ValueType, dep.ImplType, a.dep_container_type);
-                var inst = Activator.CreateInstance(type)!;
-                return new(type, inst);
-            }, (IndexMap, dep_container_type));
+        public Type GetSeqSerReceiverWarp(int i)
+        {
+            var (mapped, dep) = IndexMap[i];
+            var type = ReflectionUtils.DepsSeqSerReceiverWraps[mapped]
+                .MakeGenericType(dep.ValueType, dep.ImplType, dep_container_type);
+            return type;
+        }
     }
 
     private DepInfo GetSerImpl(TypeMeta target, Thread thread)
@@ -123,8 +117,9 @@ internal partial class EmitSerializeProvider
             .Select((a, i) =>
             {
                 var ((impl_type, impl_cell, impl), value_type, ref_nullable, raw_impl_type, indexes) = a;
-                var prop = deps_type.GetProperty($"Impl{i + 1}", BindingFlags.Public | BindingFlags.Static);
-                return new CacheStubDeps(i, indexes, null, prop, impl_type, raw_impl_type, value_type, impl_cell, impl,
+                return new CacheStubDeps(i, indexes,
+                    DepPlace.MakeLateProperty($"Impl{i + 1}"),
+                    impl_type, raw_impl_type, value_type, impl_cell, impl,
                     ref_nullable, null, false);
             })
             .ToArray();

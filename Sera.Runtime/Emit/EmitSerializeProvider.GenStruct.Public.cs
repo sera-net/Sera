@@ -276,7 +276,7 @@ internal partial class EmitSerializeProvider
 
                 #region load dep
 
-                ilg.Emit(OpCodes.Ldsfld, dep.Field!);
+                ilg.Emit(OpCodes.Ldsfld, dep.Place.Field!);
                 if (dep.Boxed)
                 {
                     var get_method = Box.GetMethodInfo.MakeGenericMethod(dep.ImplType);

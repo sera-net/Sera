@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
@@ -56,4 +57,39 @@ public static class PrimitiveImpls
     public static PrimitiveImpl<Index> Index => PrimitiveImpl<Index>.Default;
     public static PrimitiveImpl<char> Char => PrimitiveImpl<char>.Default;
     public static PrimitiveImpl<Rune> Rune => PrimitiveImpl<Rune>.Default;
+
+    private static readonly HashSet<Type> PrimitiveTypes = new()
+    {
+        typeof(bool),
+        typeof(sbyte),
+        typeof(short),
+        typeof(int),
+        typeof(long),
+        typeof(Int128),
+        typeof(byte),
+        typeof(ushort),
+        typeof(uint),
+        typeof(ulong),
+        typeof(UInt128),
+        typeof(nint),
+        typeof(nuint),
+        typeof(Half),
+        typeof(float),
+        typeof(double),
+        typeof(decimal),
+        typeof(BigInteger),
+        typeof(Complex),
+        typeof(TimeSpan),
+        typeof(DateOnly),
+        typeof(TimeOnly),
+        typeof(DateTime),
+        typeof(DateTimeOffset),
+        typeof(Guid),
+        typeof(Range),
+        typeof(Index),
+        typeof(char),
+        typeof(Rune),
+    };
+
+    public static bool IsPrimitiveType(Type type) => PrimitiveTypes.Contains(type);
 }
