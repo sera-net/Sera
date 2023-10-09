@@ -31,13 +31,14 @@ internal class SerializeEmitProvider : AEmitProvider
 
     public ISerialize<T> GetSerialize<T>()
     {
-        var stub = Emit(new(TypeMetas.GetTypeMeta(typeof(T)), null));
+        var stub = Emit(new(TypeMetas.GetTypeMeta(typeof(T)), EmitData.Default));
         return (ISerialize<T>)stub.GetResult()!;
     }
 
     protected override EmitJob CreateJob(EmitMeta target)
     {
-        if (PrimitiveImpls.IsPrimitiveType(target.Type)) return CreatePrimitiveJob(target);
+        if (PrimitiveImpls.IsPrimitiveType(target.Type)) return new EmitPrimitiveSerJob();
+        if (TryGetStaticImpl(target.Type, out var inst)) return new EmitStaticSerJob(inst!.GetType(), inst);
         // todo other type
         return CreateStructJob(target);
     }
@@ -52,12 +53,7 @@ internal class SerializeEmitProvider : AEmitProvider
         }
         else
         {
-            throw new NotImplementedException();
+            return new EmitPrivateStructSerJob(members);
         }
-    }
-
-    private EmitJob CreatePrimitiveJob(EmitMeta target)
-    {
-        return new EmitPrimitiveSerJob();
     }
 }
