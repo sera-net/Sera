@@ -5,14 +5,14 @@ using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Emit.Transform;
 using System.Reflection;
 
-namespace Sera.Runtime.Emit.Ser;
+namespace Sera.Runtime.Emit.Ser.Jobs;
 
-internal record EmitPrimitiveSerJob : EmitSerJob
+internal record _Primitive : _Base
 {
     private Type Type = null!;
     private SerializerPrimitiveHint? Hint;
 
-    public override bool EmitTypeIsTypeBuilder => false;
+    public override bool? EmitTypeIsTypeBuilder => false;
 
     public override void Init(EmitStub stub, EmitMeta target)
     {

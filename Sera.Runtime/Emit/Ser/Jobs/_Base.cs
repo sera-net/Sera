@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace Sera.Runtime.Emit.Ser;
+namespace Sera.Runtime.Emit.Ser.Jobs;
 
-internal abstract record EmitSerJob : EmitJob
+internal abstract record _Base : EmitJob
 {
     public override Type GetEmitPlaceholderType(EmitStub stub, EmitMeta target)
     {

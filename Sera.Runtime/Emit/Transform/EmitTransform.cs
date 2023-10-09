@@ -11,7 +11,7 @@ internal abstract record EmitTransform
     public abstract object TransformInst(EmitMeta target, Type type, Type prevType, object prevInst);
 }
 
-internal record ReferenceTypeWrapperSerializeImplEmitTransform : EmitTransform
+internal record EmitTransformReferenceTypeWrapperSerializeImpl : EmitTransform
 {
     public override Type TransformType(EmitMeta target, Type prevType)
     {
@@ -25,7 +25,7 @@ internal record ReferenceTypeWrapperSerializeImplEmitTransform : EmitTransform
     }
 }
 
-internal record NullableReferenceTypeImplEmitTransform : EmitTransform
+internal record EmitTransformNullableReferenceTypeImpl : EmitTransform
 {
     public override Type TransformType(EmitMeta target, Type prevType)
     {

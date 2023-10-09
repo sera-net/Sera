@@ -8,9 +8,9 @@ using Sera.Core.Ser;
 using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Utils;
 
-namespace Sera.Runtime.Emit.Ser;
+namespace Sera.Runtime.Emit.Ser.Jobs;
 
-internal sealed record EmitPublicStructSerJob(StructMember[] Members) : EmitStructSerJob(Members)
+internal sealed record _Struct_Public(StructMember[] Members) : _Struct(Members)
 {
     public TypeBuilder TypeBuilder { get; set; } = null!;
     public Type RuntimeType { get; set; } = null!;
@@ -19,7 +19,7 @@ internal sealed record EmitPublicStructSerJob(StructMember[] Members) : EmitStru
 
     private MethodInfo StartStruct { get; set; } = null!;
 
-    public override bool EmitTypeIsTypeBuilder => true;
+    public override bool? EmitTypeIsTypeBuilder => true;
 
     public override void Init(EmitStub stub, EmitMeta target)
     {
@@ -29,25 +29,13 @@ internal sealed record EmitPublicStructSerJob(StructMember[] Members) : EmitStru
             .MakeGenericMethod(target.Type, target.Type, TypeBuilder);
     }
 
-    public override Type GetEmitPlaceholderType(EmitStub stub, EmitMeta target)
-    {
-        return TypeBuilder;
-    }
+    public override Type GetEmitPlaceholderType(EmitStub stub, EmitMeta target) => TypeBuilder;
 
-    public override Type GetRuntimePlaceholderType(EmitStub stub, EmitMeta target)
-    {
-        return RuntimeType;
-    }
+    public override Type GetRuntimePlaceholderType(EmitStub stub, EmitMeta target) => RuntimeType;
 
-    public override Type GetEmitType(EmitStub stub, EmitMeta target, DepItem[] deps)
-    {
-        return TypeBuilder;
-    }
+    public override Type GetEmitType(EmitStub stub, EmitMeta target, DepItem[] deps)  => TypeBuilder;
 
-    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, DepItem[] deps)
-    {
-        return RuntimeType;
-    }
+    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, DepItem[] deps) => RuntimeType;
 
     public override void Emit(EmitStub stub, EmitMeta target, EmitDeps deps)
     {

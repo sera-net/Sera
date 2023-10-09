@@ -36,6 +36,7 @@ internal class DepItem(EmitStub Stub, DepMeta Meta)
 
     #region Forward
 
+    public bool? RawEmitTypeIsTypeBuilder => Stub.RawEmitTypeIsTypeBuilder;
     public bool EmitTypeIsTypeBuilder => Stub.EmitTypeIsTypeBuilder;
 
     #endregion

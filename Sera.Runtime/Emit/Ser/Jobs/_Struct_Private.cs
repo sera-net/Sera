@@ -2,88 +2,71 @@
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using Sera.Core;
+using System.Runtime.CompilerServices;
 using Sera.Core.Ser;
 using Sera.Runtime.Emit.Deps;
+using Sera.Runtime.Emit.Ser.Internal;
 using Sera.Runtime.Utils;
 
-namespace Sera.Runtime.Emit.Ser;
+namespace Sera.Runtime.Emit.Ser.Jobs;
 
-internal record EmitPrivateStructSerJob(StructMember[] Members) : EmitStructSerJob(Members)
+internal record _Struct_Private(StructMember[] Members) : _Struct(Members)
 {
-    public override bool EmitTypeIsTypeBuilder => false;
-    private Type type = null!;
+    private Type ImplType = null!;
+
+    public override bool? EmitTypeIsTypeBuilder => false;
 
     public override void Init(EmitStub stub, EmitMeta target)
     {
-        type = typeof(PrivateStructSerializeImpl<>).MakeGenericType(target.Type);
+        ImplType = typeof(PrivateStructSerializeImpl<>).MakeGenericType(target.Type);
     }
 
     public override Type GetEmitType(EmitStub stub, EmitMeta target, DepItem[] deps)
-        => type;
+        => ImplType;
 
     public override Type GetRuntimeType(EmitStub stub, EmitMeta target, DepItem[] deps)
-        => type;
+        => ImplType;
 
     public override Type GetEmitPlaceholderType(EmitStub stub, EmitMeta target)
-        => type;
+        => ImplType;
 
     public override Type GetRuntimePlaceholderType(EmitStub stub, EmitMeta target)
-        => type;
+        => ImplType;
 
-    public override void Emit(EmitStub stub, EmitMeta target, EmitDeps deps)
-    {
-        var members_field = type.GetField(nameof(PrivateStructSerializeImpl<object>.members),
-            BindingFlags.Static | BindingFlags.NonPublic)!;
-        members_field.SetValue(null, Members);
-    }
+    public override void Emit(EmitStub stub, EmitMeta target, EmitDeps deps) { }
 
     public override object CreateInst(EmitStub stub, EmitMeta target, RuntimeDeps deps)
     {
-        var deps_field = type.GetField(nameof(PrivateStructSerializeImpl<object>.deps),
-            BindingFlags.Static | BindingFlags.NonPublic)!;
-        deps_field.SetValue(null, deps);
+        var key = new object();
+        var meta = new MetaData(Members, deps);
+        Metas.Add(key, meta);
 
-        var ctor = type.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance,
-            new[] { typeof(string), typeof(nuint) })!;
-        return ctor.Invoke(new object[] { target.Type.Name, (nuint)Members.Length });
-    }
-}
-
-public class PrivateStructSerializeImpl<T> : ISerialize<T>, IStructSerializerReceiver<T>
-{
-#pragma warning disable CS0414
-    // ReSharper disable once StaticMemberInGenericType
-    internal static StructMember[] members = null!;
-    // ReSharper disable once StaticMemberInGenericType
-    internal static RuntimeDeps deps = null!;
-#pragma warning restore CS0414
-
-    internal readonly string name;
-    internal readonly nuint field_count;
-
-    internal PrivateStructSerializeImpl(string name, nuint field_count)
-    {
-        this.name = name;
-        this.field_count = field_count;
+        var ctor = ImplType.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance,
+            new[] { typeof(object), typeof(string), typeof(nuint) })!;
+        return ctor.Invoke(new[] { key, target.Type.Name, (nuint)Members.Length });
     }
 
-    public void Write<S>(S serializer, T value, ISeraOptions options) where S : ISerializer
-    {
-        if (!typeof(T).IsValueType && value == null) throw new NullReferenceException();
-        serializer.StartStruct(name, field_count, value, this);
-    }
+    private record MetaData(StructMember[] Members, RuntimeDeps Deps);
 
-    public void Receive<S>(T value, S serializer) where S : IStructSerializer
-    {
-        ReceiveImpl<S>.Delegate.Value.Invoke(value, serializer);
-    }
+    private static readonly ConditionalWeakTable<object, MetaData> Metas = new();
 
-    private static class ReceiveImpl<S> where S : IStructSerializer
+    internal static class ReceiveImpl<T, S> where S : IStructSerializer
     {
-        public static readonly Lazy<Action<T, S>> Delegate = new(Create);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Receive(object meta_key, T value, S serializer)
+        {
+            GetDelegate(meta_key).Invoke(value, serializer);
+        }
 
-        private static Action<T, S> Create()
+        private static readonly ConditionalWeakTable<object, Action<T, S>> Delegates = new();
+
+        private static Action<T, S> GetDelegate(object meta_key) => Delegates.GetValue(meta_key, static key =>
+        {
+            if (Metas.TryGetValue(key, out var meta)) return Create(meta);
+            throw new NullReferenceException();
+        });
+        
+        private static Action<T, S> Create(MetaData meta)
         {
             var target = typeof(T);
 
@@ -101,7 +84,7 @@ public class PrivateStructSerializeImpl<T> : ISerialize<T>, IStructSerializerRec
             #region def local_int_key_null
 
             LocalBuilder? local_int_key_null = null;
-            if (members.Any(m => !m.IntKey.HasValue))
+            if (meta.Members.Any(m => !m.IntKey.HasValue))
             {
                 local_int_key_null = ilg.DeclareLocal(typeof(long?));
                 ilg.Emit(OpCodes.Ldloca_S, local_int_key_null);
@@ -112,9 +95,9 @@ public class PrivateStructSerializeImpl<T> : ISerialize<T>, IStructSerializerRec
 
             #region write members
 
-            foreach (var (member, index) in members.Select((a, b) => (a, b)))
+            foreach (var (member, index) in meta.Members.Select((a, b) => (a, b)))
             {
-                var dep = deps.Get(index);
+                var dep = meta.Deps.Get(index);
 
                 var write_field = ReflectionUtils.IStructSerializer_WriteField_2generic_3arg_string_t_s
                     .MakeGenericMethod(member.Type, dep.TransformedType);

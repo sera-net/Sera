@@ -5,12 +5,12 @@ using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Emit.Transform;
 using Sera.Runtime.Utils;
 
-namespace Sera.Runtime.Emit.Ser;
+namespace Sera.Runtime.Emit.Ser.Jobs;
 
-internal abstract record EmitStructSerJob(StructMember[] Members) : EmitSerJob
+internal abstract record _Struct(StructMember[] Members) : _Base
 {
     private readonly EmitTransform[] ReferenceTypeTransforms =
-        { new ReferenceTypeWrapperSerializeImplEmitTransform() };
+        { new EmitTransformReferenceTypeWrapperSerializeImpl() };
 
     public override EmitTransform[] CollectTransforms(EmitStub stub, EmitMeta target)
     {

@@ -105,11 +105,13 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
     private EmitDeps? emitDeps;
     private RuntimeDeps? runtimeDeps;
 
+    public bool EmitTypeIsTypeBuilder { get; private set; }
+
     public Exception? Exception { get; private set; }
-    
+
     #region Forward
 
-    public bool EmitTypeIsTypeBuilder => Job.EmitTypeIsTypeBuilder;
+    public bool? RawEmitTypeIsTypeBuilder => Job.EmitTypeIsTypeBuilder;
 
     #endregion
 
@@ -240,6 +242,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
                 ReadyChildDeps(ctx);
                 CheckDepsCircular();
                 BuildEmitType(false);
+                CheckEmitTypeIsTypeBuilder(ctx);
                 SetState(EmitStubState.DepsReady);
             }
             catch (Exception e)
@@ -318,6 +321,24 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
             }
         }
     }
+
+    private void CheckEmitTypeIsTypeBuilder(EmitCtx ctx)
+    {
+        if (Job.EmitTypeIsTypeBuilder is { } v)
+        {
+            EmitTypeIsTypeBuilder = v;
+        }
+        else
+        {
+            EmitTypeIsTypeBuilder = GetDepsEmitTypeIsTypeBuilder(ctx);
+        }
+    }
+
+    private bool GetEmitTypeIsTypeBuilder(EmitCtx ctx) =>
+        ctx.CurrentThread.ManagedThreadId == currentThread && GetDepsEmitTypeIsTypeBuilder(ctx);
+
+    private bool GetDepsEmitTypeIsTypeBuilder(EmitCtx ctx) =>
+        Deps.AsParallel().Any(a => a.Stub.GetEmitTypeIsTypeBuilder(ctx));
 
     #endregion
 
@@ -533,8 +554,8 @@ internal abstract record EmitJob
             TypeAttributes.Public | TypeAttributes.Sealed
         );
     }
-    
-    public abstract bool EmitTypeIsTypeBuilder { get; }
+
+    public abstract bool? EmitTypeIsTypeBuilder { get; }
 
     /// <summary>Initialize miscellaneous data</summary>
     public abstract void Init(EmitStub stub, EmitMeta target);
