@@ -64,7 +64,17 @@ internal class SerializeEmitProvider : AEmitProvider
         var flags = target.Type.GetCustomAttribute<FlagsAttribute>() != null;
         if (flags)
         {
-            throw new NotImplementedException();
+            var flags_attr = target.Type.GetCustomAttribute<SeraFlagsAttribute>();
+            var mode = flags_attr?.Mode ?? SeraFlagsMode.Array;
+            return mode switch
+            {
+                SeraFlagsMode.Array => new Jobs._Enum_Flags_Array(underlying_type,
+                    EnumUtils.GetEnumInfo(target.Type, underlying_type, distinct: false)),
+                SeraFlagsMode.Number => new Jobs._Enum_Flags_Number(underlying_type),
+                SeraFlagsMode.String => new Jobs._Enum_Flags_String(underlying_type),
+                SeraFlagsMode.StringSplit => new Jobs._Enum_Flags_StringSplit(underlying_type),
+                _ => throw new ArgumentOutOfRangeException()
+            };
         }
         else
         {
