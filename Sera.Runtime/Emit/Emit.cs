@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Sera.Core.Ser;
@@ -108,7 +109,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
 
     public bool EmitTypeIsTypeBuilder { get; private set; }
 
-    public Exception? Exception { get; private set; }
+    public ExceptionDispatchInfo? Exception { get; private set; }
 
     #region Forward
 
@@ -153,11 +154,11 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
     public void WaitState(EmitStubState target)
     {
         SpinWait(target);
-        if (Exception != null) throw Exception;
+        if (Exception != null) Exception!.Throw();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void MarkError(Exception e)
+    private void MarkError(ExceptionDispatchInfo e)
     {
         Exception = e;
         state = EmitStubState.Error;
@@ -178,7 +179,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
             }
             catch (Exception e)
             {
-                MarkError(e);
+                MarkError(ExceptionDispatchInfo.Capture(e));
             }
         }
         else
@@ -248,7 +249,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
             }
             catch (Exception e)
             {
-                MarkError(e);
+                MarkError(ExceptionDispatchInfo.Capture(e));
             }
         }
         else
@@ -357,7 +358,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
             }
             catch (Exception e)
             {
-                MarkError(e);
+                MarkError(ExceptionDispatchInfo.Capture(e));
             }
         }
         else
@@ -399,7 +400,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
             }
             catch (Exception e)
             {
-                MarkError(e);
+                MarkError(ExceptionDispatchInfo.Capture(e));
             }
         }
         else
@@ -459,7 +460,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
             }
             catch (Exception e)
             {
-                MarkError(e);
+                MarkError(ExceptionDispatchInfo.Capture(e));
             }
         }
         else
@@ -501,7 +502,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
             }
             catch (Exception e)
             {
-                MarkError(e);
+                MarkError(ExceptionDispatchInfo.Capture(e));
             }
         }
         else

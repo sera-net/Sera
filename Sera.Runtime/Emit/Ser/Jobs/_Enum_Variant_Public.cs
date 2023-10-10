@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -16,11 +17,11 @@ internal record _Enum_Variant_Public
     : _Base
 {
     public const int MaxIfNums = 16;
-    
+
 
     public SeraEnumAttribute? EnumAttr { get; private set; } = EnumAttr;
     public SerializerVariantHint? RootHint { get; } = EnumAttr?.SerHint;
-    
+
     public TypeBuilder TypeBuilder { get; private set; } = null!;
     public Type RuntimeType { get; set; } = null!;
     public MethodInfo WriteVariantUnit { get; private set; } = null!;
@@ -49,6 +50,7 @@ internal record _Enum_Variant_Public
         )!;
 
     private Type? MetasType;
+    private Type? MetasDictType;
     private FieldBuilder? MetasField;
 
     public override bool? EmitTypeIsTypeBuilder => true;
@@ -89,8 +91,8 @@ internal record _Enum_Variant_Public
         if (MetasField != null)
         {
             var metas_field2 = RuntimeType.GetField(MetasField.Name, BindingFlags.Public | BindingFlags.Static)!;
-            var metas_inst = Activator.CreateInstance(MetasType!);
-            var add = MetasType!.GetMethod(
+            var metas_inst = Activator.CreateInstance(MetasDictType!);
+            var add = MetasDictType!.GetMethod(
                 nameof(Dictionary<int, string>.Add),
                 BindingFlags.Public | BindingFlags.Instance,
                 new[] { UnderlyingType, VariantMetaType }
@@ -101,6 +103,10 @@ internal record _Enum_Variant_Public
                 (string name, SerializerVariantHint? hint) meta = (item.Name, item_hint);
                 add.Invoke(metas_inst, new[] { item.Tag.ToObject(), meta });
             }
+            var to_frozen = ReflectionUtils
+                .ToFrozenDictionary_2generic_2arg__IEnumerable_KeyValuePair__IEqualityComparer
+                .MakeGenericMethod(UnderlyingType, VariantMetaType);
+            metas_inst = to_frozen.Invoke(null, new[] { metas_inst, null });
             metas_field2.SetValue(null, metas_inst);
         }
     }
@@ -338,14 +344,15 @@ internal record _Enum_Variant_Public
             else
             {
                 var meta_loc = ilg.DeclareLocal(VariantMetaType);
-                MetasType = typeof(Dictionary<,>).MakeGenericType(UnderlyingType, VariantMetaType);
+                MetasType = typeof(FrozenDictionary<,>).MakeGenericType(UnderlyingType, VariantMetaType);
+                MetasDictType = typeof(Dictionary<,>).MakeGenericType(UnderlyingType, VariantMetaType);
                 MetasField = TypeBuilder.DefineField(
                     "_metas", MetasType,
                     FieldAttributes.Public | FieldAttributes.Static
                 );
 
                 var try_gey_meta = MetasType.GetMethod(
-                    "TryGetValue", BindingFlags.Public | BindingFlags.Instance,
+                    nameof(FrozenDictionary<int, int>.TryGetValue), BindingFlags.Public | BindingFlags.Instance,
                     new[] { UnderlyingType, VariantMetaType.MakeByRefType() }
                 )!;
 

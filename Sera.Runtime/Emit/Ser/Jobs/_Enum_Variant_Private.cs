@@ -23,7 +23,6 @@ internal record _Enum_Variant_Private
 
     private Type ImplType = null!;
     private Type ToTagType = null!;
-    private Type MetaType = null!;
     private Type MetasDictType = null!;
     private Type MetasType = null!;
 
@@ -41,12 +40,11 @@ internal record _Enum_Variant_Private
         ImplType = typeof(PrivateEnumSerializeImpl<>).MakeGenericType(target.Type);
         ToTagType = typeof(Func<,>).MakeGenericType(target.Type, typeof(VariantTag));
 
-        MetaType = typeof((string name, SerializerVariantHint? hint));
-        MetasDictType = typeof(Dictionary<,>).MakeGenericType(target.Type, MetaType);
-        MetasType = typeof(FrozenDictionary<,>).MakeGenericType(target.Type, MetaType);
+        MetasDictType = typeof(Dictionary<,>).MakeGenericType(target.Type, VariantMetaType);
+        MetasType = typeof(FrozenDictionary<,>).MakeGenericType(target.Type, VariantMetaType);
 
         ToFrozen = ReflectionUtils.ToFrozenDictionary_2generic_2arg__IEnumerable_KeyValuePair__IEqualityComparer
-            .MakeGenericMethod(target.Type, MetaType);
+            .MakeGenericMethod(target.Type, VariantMetaType);
 
         MetasDictAdd = MetasDictType.GetMethod(
             nameof(Dictionary<int, string>.Add),
