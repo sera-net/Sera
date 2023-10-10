@@ -13,12 +13,12 @@ public class Struct1
     public string? Field2;
 }
 
-public class Struct1Impl : ISerialize<Struct1>, IStructSerializerReceiver<Struct1>
+public struct Struct1Impl : ISerialize<Struct1>, IStructSerializerReceiver<Struct1>
 {
     public static PrimitiveImpl<int> _impl_Int32 = PrimitiveImpls.Int32;
     public static StringImpl _impl_String = StringImpl.Instance;
 
-    public void Write<S>(S serializer, Struct1 value, ISeraOptions options) where S : ISerializer
+    public readonly void Write<S>(S serializer, Struct1 value, ISeraOptions options) where S : ISerializer
     {
         serializer.StartStruct<Struct1, Struct1, Struct1Impl>(nameof(Struct1), 6, value, this);
     }

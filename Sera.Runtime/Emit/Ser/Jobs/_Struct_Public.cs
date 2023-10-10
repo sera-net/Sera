@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using Sera.Core;
 using Sera.Core.Ser;
 using Sera.Runtime.Emit.Deps;
@@ -23,8 +24,8 @@ internal sealed record _Struct_Public(StructMember[] Members) : _Struct(Members)
 
     public override void Init(EmitStub stub, EmitMeta target)
     {
-        TypeBuilder = CreateTypeBuilder($"Ser_{target.Type.Name}");
-
+        TypeBuilder = CreateTypeBuilderStruct($"Ser_{target.Type.Name}");
+        TypeBuilder.MarkReadonly();
         StartStruct = ReflectionUtils.ISerializer_StartStruct_3generic
             .MakeGenericMethod(target.Type, target.Type, TypeBuilder);
     }
@@ -33,7 +34,7 @@ internal sealed record _Struct_Public(StructMember[] Members) : _Struct(Members)
 
     public override Type GetRuntimePlaceholderType(EmitStub stub, EmitMeta target) => RuntimeType;
 
-    public override Type GetEmitType(EmitStub stub, EmitMeta target, DepItem[] deps)  => TypeBuilder;
+    public override Type GetEmitType(EmitStub stub, EmitMeta target, DepItem[] deps) => TypeBuilder;
 
     public override Type GetRuntimeType(EmitStub stub, EmitMeta target, DepItem[] deps) => RuntimeType;
 
@@ -66,7 +67,7 @@ internal sealed record _Struct_Public(StructMember[] Members) : _Struct(Members)
     private void EmitWrite(EmitMeta target)
     {
         var write_method = TypeBuilder.DefineMethod(nameof(ISerialize<object>.Write),
-            MethodAttributes.Public | MethodAttributes.Virtual);
+            MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.NewSlot);
         var generic_parameters = write_method.DefineGenericParameters("S");
         var TS = generic_parameters[0];
         TS.SetInterfaceConstraints(typeof(ISerializer));
@@ -100,6 +101,7 @@ internal sealed record _Struct_Public(StructMember[] Members) : _Struct(Members)
         ilg.Emit(OpCodes.Conv_I);
         ilg.Emit(OpCodes.Ldarg_2);
         ilg.Emit(OpCodes.Ldarg_0);
+        ilg.Emit(OpCodes.Ldobj, TypeBuilder);
         ilg.Emit(OpCodes.Constrained, TS);
         ilg.Emit(OpCodes.Callvirt, StartStruct);
 
@@ -121,7 +123,7 @@ internal sealed record _Struct_Public(StructMember[] Members) : _Struct(Members)
     {
         var receive_method =
             TypeBuilder.DefineMethod(nameof(IStructSerializerReceiver<object>.Receive),
-                MethodAttributes.Public | MethodAttributes.Virtual);
+                MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.NewSlot);
         var generic_parameters = receive_method.DefineGenericParameters("S");
         var TS = generic_parameters[0];
         TS.SetInterfaceConstraints(typeof(IStructSerializer));

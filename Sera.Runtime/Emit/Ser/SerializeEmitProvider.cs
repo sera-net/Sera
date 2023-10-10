@@ -70,14 +70,14 @@ internal class SerializeEmitProvider : AEmitProvider
         {
             var enum_attr = target.Type.GetCustomAttribute<SeraEnumAttribute>();
             var items = EnumUtils.GetEnumInfo(target.Type, underlying_type, distinct: true);
-            var jump_table = EnumUtils.TryMakeJumpTable(underlying_type, items);
             if (target.Type.IsVisible)
             {
+                var jump_table = EnumUtils.TryMakeJumpTable(underlying_type, items);
                 return new Jobs._Enum_Variant_Public(underlying_type, items, jump_table, enum_attr);
             }
             else
             {
-                return new Jobs._Enum_Variant_Private(underlying_type, items, jump_table, enum_attr);
+                return new Jobs._Enum_Variant_Private(underlying_type, items, enum_attr);
             }
         }
     }

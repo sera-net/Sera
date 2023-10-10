@@ -13,7 +13,7 @@ public struct Struct2
     public string? Field2;
 }
 
-public class Struct2Impl : ISerialize<Struct2>, IStructSerializerReceiver<Struct2>
+public struct Struct2Impl : ISerialize<Struct2>, IStructSerializerReceiver<Struct2>
 {
     public static PrimitiveImpl<int> _impl_Int32 = PrimitiveImpls.Int32;
     public static StringImpl _impl_String = StringImpl.Instance;

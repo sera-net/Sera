@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using Sera.Core;
 using Sera.Core.Impls.Deps;
 using Sera.Core.Impls.Tuples;
@@ -54,6 +56,27 @@ internal static class ReflectionUtils
             && m.GetGenericArguments() is { Length: 2 }
             && m.GetParameters() is { Length: 4 } p && p[0].ParameterType == typeof(string)
         );
+
+    public static readonly ConstructorInfo IsReadOnlyAttributeCtor =
+        typeof(IsReadOnlyAttribute).GetConstructor(BindingFlags.Instance | BindingFlags.Public, Array.Empty<Type>())!;
+
+    public static void MarkReadonly(this MethodBuilder builder) =>
+        builder.SetCustomAttribute(new CustomAttributeBuilder(IsReadOnlyAttributeCtor, Array.Empty<object>()));
+
+    public static void MarkReadonly(this TypeBuilder builder) =>
+        builder.SetCustomAttribute(new CustomAttributeBuilder(IsReadOnlyAttributeCtor, Array.Empty<object>()));
+
+    public static readonly MethodInfo ToFrozenDictionary_2generic_2arg__IEnumerable_KeyValuePair__IEqualityComparer =
+        typeof(FrozenDictionary)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Single(static a =>
+                a is { Name: nameof(FrozenDictionary.ToFrozenDictionary), IsGenericMethod: true } &&
+                a.GetGenericArguments() is { Length: 2 } && a.GetParameters() is [var arg1, var arg2]
+                && arg1.ParameterType.GetGenericTypeDefinition() == typeof(IEnumerable<>)
+                && arg1.ParameterType.GetGenericArguments() is [var arg1_g1]
+                && arg1_g1.GetGenericTypeDefinition() == typeof(KeyValuePair<,>)
+                && arg2.ParameterType.GetGenericTypeDefinition() == typeof(IEqualityComparer<>)
+            );
 
     public static string GetAsmName(string name) => $"{nameof(Sera)}.{nameof(Runtime)}.{nameof(Emit)}.Runtime.{name}";
 

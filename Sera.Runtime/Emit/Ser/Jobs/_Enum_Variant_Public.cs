@@ -55,7 +55,8 @@ internal record _Enum_Variant_Public
 
     public override void Init(EmitStub stub, EmitMeta target)
     {
-        TypeBuilder = CreateTypeBuilder($"Ser_{target.Type.Name}");
+        TypeBuilder = CreateTypeBuilderStruct($"Ser_{target.Type.Name}");
+        TypeBuilder.MarkReadonly();
 
         WriteVariantUnit = ReflectionUtils.ISerializer_WriteVariantUnit_1generic
             .MakeGenericMethod(target.Type);

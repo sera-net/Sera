@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Sera.Core.Ser;
 using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Emit.Transform;
@@ -552,6 +553,16 @@ internal abstract record EmitJob
         return module.DefineType(
             $"{module.Assembly.GetName().Name}.{name}",
             TypeAttributes.Public | TypeAttributes.Sealed
+        );
+    }
+
+    protected TypeBuilder CreateTypeBuilderStruct(string name)
+    {
+        var module = ReflectionUtils.CreateAssembly($"_{Guid:N}_");
+        return module.DefineType(
+            $"{module.Assembly.GetName().Name}.{name}",
+            TypeAttributes.Public | TypeAttributes.Sealed,
+            typeof(ValueType)
         );
     }
 
