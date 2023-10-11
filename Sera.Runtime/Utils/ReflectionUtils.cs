@@ -34,6 +34,14 @@ internal static class ReflectionUtils
             && m.GetGenericArguments() is { Length: 3 }
         );
 
+    public static MethodInfo ISerializer_WriteArray_2generic_array { get; } = ISerializerMethods
+        .AsParallel()
+        .Single(m =>
+            m is { Name: nameof(ISerializer.WriteArray), IsGenericMethod: true }
+            && m.GetGenericArguments() is { Length: 2 }
+            && m.GetParameters()[0].ParameterType.IsSZArray
+        );
+
     public static MethodInfo ISerializer_WriteVariantUnit_1generic { get; } = ISerializerMethods
         .AsParallel()
         .Single(m =>

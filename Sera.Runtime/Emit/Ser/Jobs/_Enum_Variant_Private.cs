@@ -12,15 +12,10 @@ using Sera.Runtime.Utils;
 
 namespace Sera.Runtime.Emit.Ser.Jobs;
 
-internal record _Enum_Variant_Private
+internal class _Enum_Variant_Private
     (Type UnderlyingType, EnumInfo[] Items, SeraEnumAttribute? EnumAttr)
-    : _Base
+    : _Enum_Variant(UnderlyingType, Items, EnumAttr)
 {
-    public SeraEnumAttribute? EnumAttr { get; private set; } = EnumAttr;
-    public SerializerVariantHint? RootHint { get; } = EnumAttr?.SerHint;
-
-    private static readonly Type VariantMetaType = typeof((string name, SerializerVariantHint? hint));
-
     private Type ImplType = null!;
     private Type ToTagType = null!;
     private Type MetasDictType = null!;

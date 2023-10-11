@@ -10,7 +10,7 @@ using Sera.Runtime.Utils;
 
 namespace Sera.Runtime.Emit.Ser.Jobs;
 
-internal record _Struct_Private(StructMember[] Members) : _Struct(Members)
+internal class _Struct_Private(StructMember[] Members) : _Struct(Members)
 {
     private Type ImplType = null!;
 

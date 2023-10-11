@@ -7,7 +7,7 @@ using Sera.Runtime.Utils;
 
 namespace Sera.Runtime.Emit.Ser.Jobs;
 
-internal abstract record _Struct(StructMember[] Members) : _Base
+internal abstract class _Struct(StructMember[] Members) : _Base
 {
     private readonly EmitTransform[] ReferenceTypeTransforms =
         { new EmitTransformReferenceTypeWrapperSerializeImpl() };
@@ -33,6 +33,7 @@ internal abstract record _Struct(StructMember[] Members) : _Base
                     { NullabilityInfo.ReadState: NullabilityState.NotNull }
                     ? SerializeEmitProvider.NullableReferenceTypeTransforms
                     : EmitTransform.EmptyTransforms;
+                // todo EmitData from attr
                 return new DepMeta(new(TypeMetas.GetTypeMeta(m.Type, null_meta), EmitData.Default), transforms);
             }).ToArray();
     }

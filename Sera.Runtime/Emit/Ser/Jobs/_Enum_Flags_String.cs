@@ -5,7 +5,7 @@ using Sera.Runtime.Emit.Deps;
 
 namespace Sera.Runtime.Emit.Ser.Jobs;
 
-internal record _Enum_Flags_String(Type UnderlyingType) : _Enum_Flags(UnderlyingType)
+internal class _Enum_Flags_String(Type UnderlyingType) : _Enum_Flags(UnderlyingType)
 {
     public override void Init(EmitStub stub, EmitMeta target)
     {

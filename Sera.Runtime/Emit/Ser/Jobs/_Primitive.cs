@@ -7,7 +7,7 @@ using System.Reflection;
 
 namespace Sera.Runtime.Emit.Ser.Jobs;
 
-internal record _Primitive : _Base
+internal class _Primitive : _Base
 {
     private Type Type = null!;
     private SerializerPrimitiveHint? Hint;

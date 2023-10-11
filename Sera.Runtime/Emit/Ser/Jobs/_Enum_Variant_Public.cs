@@ -12,26 +12,16 @@ using Sera.Runtime.Utils;
 
 namespace Sera.Runtime.Emit.Ser.Jobs;
 
-internal record _Enum_Variant_Public
+internal class _Enum_Variant_Public
     (Type UnderlyingType, EnumInfo[] Items, EnumJumpTables? JumpTable, SeraEnumAttribute? EnumAttr)
-    : _Base
+    : _Enum_Variant(UnderlyingType, Items, EnumAttr)
 {
     public const int MaxIfNums = 16;
-
-
-    public SeraEnumAttribute? EnumAttr { get; private set; } = EnumAttr;
-    public SerializerVariantHint? RootHint { get; } = EnumAttr?.SerHint;
 
     public TypeBuilder TypeBuilder { get; private set; } = null!;
     public Type RuntimeType { get; set; } = null!;
     public MethodInfo WriteVariantUnit { get; private set; } = null!;
     public MethodInfo CreateVariantTag { get; private set; } = null!;
-
-    private static readonly Type VariantMetaType = typeof((string name, SerializerVariantHint? hint));
-    private static readonly FieldInfo VariantMetaFieldName =
-        VariantMetaType.GetField(nameof(ValueTuple<int, int>.Item1), BindingFlags.Public | BindingFlags.Instance)!;
-    private static readonly FieldInfo VariantMetaFieldHint =
-        VariantMetaType.GetField(nameof(ValueTuple<int, int>.Item2), BindingFlags.Public | BindingFlags.Instance)!;
 
     public static ConstructorInfo HintNullableCtor { get; } = typeof(SerializerVariantHint?)
         .GetConstructor(
@@ -128,6 +118,7 @@ internal record _Enum_Variant_Public
         write_method.DefineParameter(1, ParameterAttributes.None, "serializer");
         write_method.DefineParameter(2, ParameterAttributes.None, "value");
         write_method.DefineParameter(3, ParameterAttributes.None, "options");
+        write_method.SetImplementationFlags(MethodImplAttributes.AggressiveInlining);
 
         var ilg = write_method.GetILGenerator();
 

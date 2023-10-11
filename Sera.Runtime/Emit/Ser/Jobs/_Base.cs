@@ -2,7 +2,7 @@
 
 namespace Sera.Runtime.Emit.Ser.Jobs;
 
-internal abstract record _Base : EmitJob
+internal abstract class _Base : EmitJob
 {
     public override Type GetEmitPlaceholderType(EmitStub stub, EmitMeta target)
     {

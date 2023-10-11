@@ -40,6 +40,7 @@ internal class SerializeEmitProvider : AEmitProvider
     {
         if (PrimitiveImpls.IsPrimitiveType(target.Type)) return new Jobs._Primitive();
         if (TryGetStaticImpl(target.Type, out var inst)) return new Jobs._Static(inst!.GetType(), inst);
+        if (target.IsArray) return CreateArrayJob(target);
         if (target.IsEnum) return CreateEnumJob(target);
         // todo other type
         return CreateStructJob(target);
@@ -90,5 +91,12 @@ internal class SerializeEmitProvider : AEmitProvider
                 return new Jobs._Enum_Variant_Private(underlying_type, items, enum_attr);
             }
         }
+    }
+
+    private EmitJob CreateArrayJob(EmitMeta target)
+    {
+        var item_type = target.Type.GetElementType()!;
+        if (target.IsSZArray) return new Jobs._Array_SZ(item_type);
+        throw new NotSupportedException("Multidimensional and non-zero lower bound arrays are not supported");
     }
 }

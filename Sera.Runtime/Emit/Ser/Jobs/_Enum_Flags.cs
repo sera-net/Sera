@@ -4,7 +4,7 @@ using Sera.Runtime.Emit.Transform;
 
 namespace Sera.Runtime.Emit.Ser.Jobs;
 
-internal abstract record _Enum_Flags(Type UnderlyingType) : _Base
+internal abstract class _Enum_Flags(Type UnderlyingType) : _Base
 {
     public override bool? EmitTypeIsTypeBuilder => false;
 

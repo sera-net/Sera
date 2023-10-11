@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
 using Sera.Core;
 using Sera.Core.Ser;
 using Sera.Runtime.Emit.Deps;
@@ -11,7 +10,7 @@ using Sera.Runtime.Utils;
 
 namespace Sera.Runtime.Emit.Ser.Jobs;
 
-internal sealed record _Struct_Public(StructMember[] Members) : _Struct(Members)
+internal sealed class _Struct_Public(StructMember[] Members) : _Struct(Members)
 {
     public TypeBuilder TypeBuilder { get; set; } = null!;
     public Type RuntimeType { get; set; } = null!;
@@ -75,6 +74,7 @@ internal sealed record _Struct_Public(StructMember[] Members) : _Struct(Members)
         write_method.DefineParameter(1, ParameterAttributes.None, "serializer");
         write_method.DefineParameter(2, ParameterAttributes.None, "value");
         write_method.DefineParameter(3, ParameterAttributes.None, "options");
+        write_method.SetImplementationFlags(MethodImplAttributes.AggressiveInlining);
 
         var ilg = write_method.GetILGenerator();
 
@@ -130,6 +130,7 @@ internal sealed record _Struct_Public(StructMember[] Members) : _Struct(Members)
         receive_method.SetParameters(target.Type, TS);
         receive_method.DefineParameter(1, ParameterAttributes.None, "value");
         receive_method.DefineParameter(2, ParameterAttributes.None, "serializer");
+        receive_method.SetImplementationFlags(MethodImplAttributes.AggressiveInlining);
 
         var ilg = receive_method.GetILGenerator();
 

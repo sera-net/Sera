@@ -543,7 +543,7 @@ internal enum EmitStubState : uint
     Error = uint.MaxValue,
 }
 
-internal abstract record EmitJob
+internal abstract class EmitJob
 {
     public Guid Guid { get; } = Guid.NewGuid();
 

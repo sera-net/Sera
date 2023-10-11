@@ -2076,7 +2076,7 @@ public class TestRuntime
             .Serialize(obj);
 
         Console.WriteLine(str);
-        Assert.That(str, Is.EqualTo("[]"));
+        Assert.That(str, Is.EqualTo("[{\"A\":[null]}]"));
     }
 
     #endregion

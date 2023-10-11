@@ -6,7 +6,7 @@ using Sera.Runtime.Utils;
 
 namespace Sera.Runtime.Emit.Ser.Jobs;
 
-internal record _Enum_Flags_Array(Type UnderlyingType, EnumInfo[] Items) : _Enum_Flags(UnderlyingType)
+internal class _Enum_Flags_Array(Type UnderlyingType, EnumInfo[] Items) : _Enum_Flags(UnderlyingType)
 {
     private Type InfoType = null!;
     private Array Infos = null!;

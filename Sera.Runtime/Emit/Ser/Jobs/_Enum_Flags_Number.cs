@@ -7,7 +7,7 @@ using Sera.Runtime.Emit.Ser.Internal;
 
 namespace Sera.Runtime.Emit.Ser.Jobs;
 
-internal record _Enum_Flags_Number(Type UnderlyingType)  : _Enum_Flags(UnderlyingType)
+internal class _Enum_Flags_Number(Type UnderlyingType)  : _Enum_Flags(UnderlyingType)
 {
     private Type NumberImplType = null!;
 
