@@ -23,9 +23,8 @@ internal record EmitData(
     public static EmitData Default { get; } = new();
 }
 
-internal record struct EmitMeta(TypeMeta TypeMeta, EmitData Data)
+internal readonly record struct EmitMeta(TypeMeta TypeMeta, EmitData Data)
 {
-    public bool KeepRaw { get; set; }
     public Type Type => TypeMeta.Type;
 
     public bool IsValueType => Type.IsValueType;

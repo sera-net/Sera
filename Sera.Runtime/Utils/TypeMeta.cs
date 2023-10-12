@@ -11,21 +11,7 @@ using Sera.Core;
 
 namespace Sera.Runtime.Utils;
 
-internal record struct TypeMeta(Type Type, GenericMeta? Generics, NullabilityMeta? Nullability)
-{
-    [Obsolete]
-    public bool KeepRaw { get; set; }
-    [Obsolete]
-    public bool IsValueType => Type.IsValueType;
-
-    [Obsolete]
-    public bool IsEnum => Type.IsEnum;
-
-    [Obsolete]
-    public bool IsArray => Type.IsArray;
-    [Obsolete]
-    public bool IsSZArray => Type.IsSZArray;
-}
+internal record struct TypeMeta(Type Type, GenericMeta? Generics, NullabilityMeta? Nullability);
 
 internal record struct GenericMeta(
     Type[] RawTypes, TypeMeta[] Metas, NullabilityMeta[]? Nullabilities, int Length

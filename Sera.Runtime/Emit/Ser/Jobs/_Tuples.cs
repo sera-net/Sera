@@ -35,15 +35,15 @@ internal class _Tuples(bool IsValueTuple) : _Base
 
     public override DepMeta[] CollectDeps(EmitStub stub, EmitMeta target)
     {
-        var nullable = target.TypeMeta.Nullability?.NullabilityInfo?.GenericTypeArguments;
+        var nullable = target.TypeMeta.Generics?.Nullabilities;
         return target.Type.GetGenericArguments().Select((t, i) =>
         {
             var item_nullable = nullable?[i];
             var transforms = !t.IsValueType && item_nullable is not
-                { ReadState: NullabilityState.NotNull }
+                { NullabilityInfo.ReadState: NullabilityState.NotNull }
                 ? SerializeEmitProvider.NullableReferenceTypeTransforms
                 : EmitTransform.EmptyTransforms;
-            return new DepMeta(new(TypeMetas.GetTypeMeta(t, new(item_nullable)), EmitData.Default),
+            return new DepMeta(new(TypeMetas.GetTypeMeta(t, item_nullable), EmitData.Default),
                 transforms, KeepRaw: i == 7);
         }).ToArray();
     }
