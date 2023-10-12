@@ -15,7 +15,7 @@ internal readonly record struct DepPlace(
 {
     public MethodInfo MakeBoxGetMethodInfo() => Box.GetMethodInfo.MakeGenericMethod(TransformedType);
     
-    public Type MakeWrapper(Type target) => (Boxed ? typeof(BoxedDepsWrapper<,,>) : typeof(DepsWrapper<,,>))
+    public Type MakeWrapper(Type target) => (Boxed ? typeof(BoxedDepsSerializeWrapper<,,>) : typeof(DepsSerializeWrapper<,,>))
         .MakeGenericType(target, TransformedType, ContainerType);
 }
 

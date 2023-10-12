@@ -6,7 +6,7 @@ using Sera.Runtime.Utils;
 
 namespace Sera.Runtime.Emit.Ser.Internal;
 
-public readonly struct DepsWrapper<T, ST, D> : ISerialize<T>
+public readonly struct DepsSerializeWrapper<T, ST, D> : ISerialize<T>
     where ST : ISerialize<T>
     where D : IDepsContainer<ST>
 {
@@ -15,7 +15,7 @@ public readonly struct DepsWrapper<T, ST, D> : ISerialize<T>
         => D.Impl1!.Write(serializer, value, options);
 }
 
-public readonly struct BoxedDepsWrapper<T, ST, D> : ISerialize<T>
+public readonly struct BoxedDepsSerializeWrapper<T, ST, D> : ISerialize<T>
     where ST : ISerialize<T>
     where D : IDepsContainer<Box<ST>>
 {
