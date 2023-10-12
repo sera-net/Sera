@@ -4,7 +4,7 @@ using Sera.Core.Ser;
 
 namespace Sera.Core.Impls;
 
-public class FlagsToStringSplitSerializeImpl<T> :
+public struct FlagsToStringSplitSerializeImpl<T> :
     ISerialize<T>, ISeqSerializerReceiver<string[]>, IAsyncSerialize<T>, IAsyncSeqSerializerReceiver<string[]>
     where T : Enum
 {

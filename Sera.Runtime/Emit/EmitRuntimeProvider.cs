@@ -1,5 +1,6 @@
 ﻿using System;
 using Sera.Core;
+using Sera.Runtime.Emit.Ser;
 
 namespace Sera.Runtime.Emit;
 
@@ -8,9 +9,9 @@ public class EmitRuntimeProvider : IRuntimeProvider
     public static EmitRuntimeProvider Instance { get; } = new();
 
     #region Serialize
-
-    private readonly EmitSerializeProvider serializeProvider = new();
-
+    
+    internal readonly SerializeEmitProvider serializeEmitProvider = new();
+    
     public ISerialize<object?> GetRuntimeSerialize()
     {
         throw new NotImplementedException("todo");
@@ -25,7 +26,8 @@ public class EmitRuntimeProvider : IRuntimeProvider
     public ISerialize<T> GetSerialize<T>()
     {
         if (StaticRuntimeProvider.Instance.TryGetSerialize<T>(out var ser)) return ser;
-        return serializeProvider.GetSerialize<T>();
+        return serializeEmitProvider.GetSerialize<T>();
+        // return serializeProvider.GetSerialize<T>();
     }
 
     public bool TryGetSerialize<T>(out ISerialize<T> serialize)

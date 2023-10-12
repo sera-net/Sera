@@ -86,7 +86,7 @@ public abstract record AJsonWriter(SeraJsonOptions Options, AJsonFormatter Forma
             {
                 if (n > 0) Write(str[..n]);
                 Write("\\");
-                Write(new ReadOnlySpan<char>(in esc));
+                Write(new ReadOnlySpan<char>(ref esc));
                 str = str[(n + len)..];
                 n = 0;
             }
@@ -128,7 +128,7 @@ public abstract record AJsonWriter(SeraJsonOptions Options, AJsonFormatter Forma
             {
                 if (n > 0) WriteEncoded(str[..n], Encoding.UTF8);
                 Write("\\");
-                Write(new ReadOnlySpan<char>(in esc));
+                Write(new ReadOnlySpan<char>(ref esc));
                 str = str[(n + len)..];
                 n = 0;
             }

@@ -4,45 +4,27 @@ using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using Sera.Core;
-using Sera.Runtime.Utils;
 
-namespace Sera.Runtime.Emit;
+namespace Sera.Runtime.Utils;
 
-internal partial class EmitSerializeProvider
+internal record EnumInfo(string Name, VariantTag Tag, FieldInfo Field, SeraEnumAttribute? EnumAttr);
+
+internal record struct EnumJumpTable(int Index, EnumInfo Info);
+
+internal record EnumJumpTables(int Offset, EnumJumpTable[] Table);
+
+internal static class EnumUtils
 {
-    private void GenEnum(TypeMeta target, CacheStub stub)
-    {
-        var underlying_type = target.Type.GetEnumUnderlyingType();
-        var flags = target.Type.GetCustomAttribute<FlagsAttribute>() != null;
-        if (flags)
-        {
-            GenEnumFlags(target.Type, underlying_type, stub);
-        }
-        else
-        {
-            var items = GetEnumInfo(target.Type, underlying_type, distinct: true);
-            var jump_table = TryMakeJumpTable(underlying_type, items);
-            if (target.Type.IsVisible)
-            {
-                GenEnumVariantPublic(target.Type, underlying_type, items, jump_table, stub);
-            }
-            else
-            {
-                GenEnumVariantPrivate(target.Type, underlying_type, items, jump_table, stub);
-            }
-        }
-    }
-
-    private EnumInfo[] GetEnumInfo(Type target, Type underlying_type, bool distinct)
+    public static EnumInfo[] GetEnumInfo(Type target, Type underlying_type, bool distinct)
     {
         var method = _GetEnumInfo_MethodInfo.MakeGenericMethod(underlying_type);
-        return (EnumInfo[])method.Invoke(this, new object?[] { target, distinct })!;
+        return (EnumInfo[])method.Invoke(null, new object?[] { target, distinct })!;
     }
 
-    private static readonly MethodInfo _GetEnumInfo_MethodInfo = typeof(EmitSerializeProvider)
-        .GetMethod(nameof(_GetEnumInfo), BindingFlags.Instance | BindingFlags.NonPublic)!;
+    private static readonly MethodInfo _GetEnumInfo_MethodInfo = typeof(EnumUtils)
+        .GetMethod(nameof(_GetEnumInfo), BindingFlags.Static | BindingFlags.NonPublic)!;
 
-    private EnumInfo[] _GetEnumInfo<V>(Type target, bool distinct)
+    private static EnumInfo[] _GetEnumInfo<V>(Type target, bool distinct)
     {
         var names_set = target.GetEnumNames().ToHashSet();
         var fields = target.GetFields(BindingFlags.Static | BindingFlags.Public)
@@ -66,22 +48,20 @@ internal partial class EmitSerializeProvider
                 .ToArray();
         else return q.ToArray();
     }
-
-    private record EnumInfo(string Name, VariantTag Tag, FieldInfo Field, SeraEnumAttribute? enum_attr);
-
-    private EnumJumpTables? TryMakeJumpTable(Type underlying_type, EnumInfo[] items)
+    
+    public static EnumJumpTables? TryMakeJumpTable(Type underlying_type, EnumInfo[] items)
     {
         if (items.Length == 0) return null;
         var method = _TryMakeJumpTable_MethodInfo.MakeGenericMethod(underlying_type);
-        return (EnumJumpTables?)method.Invoke(this, new object?[] { items });
+        return (EnumJumpTables?)method.Invoke(null, new object?[] { items });
     }
 
-    private static readonly MethodInfo _TryMakeJumpTable_MethodInfo = typeof(EmitSerializeProvider)
-        .GetMethod(nameof(_TryMakeJumpTable), BindingFlags.Instance | BindingFlags.NonPublic)!;
+    private static readonly MethodInfo _TryMakeJumpTable_MethodInfo = typeof(EnumUtils)
+        .GetMethod(nameof(_TryMakeJumpTable), BindingFlags.Static | BindingFlags.NonPublic)!;
 
     private const int MaxJumpTableSizeAllowed = 255;
 
-    private EnumJumpTables? _TryMakeJumpTable<V>(EnumInfo[] items)
+    private static EnumJumpTables? _TryMakeJumpTable<V>(EnumInfo[] items)
         where V : unmanaged, INumber<V>
     {
         if (items.Length <= 1) return null;
@@ -109,8 +89,4 @@ internal partial class EmitSerializeProvider
 
         return new EnumJumpTables((int)offset, tables.ToArray());
     }
-
-    private record struct EnumJumpTable(int Index, EnumInfo Info);
-
-    private record EnumJumpTables(int Offset, EnumJumpTable[] Table);
 }

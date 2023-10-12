@@ -1,13 +1,16 @@
 ﻿using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using Sera.Core;
 using Sera.Core.Impls.Deps;
 using Sera.Core.Impls.Tuples;
 using Sera.Core.Ser;
+using Sera.Runtime.Emit;
 
 namespace Sera.Runtime.Utils;
 
@@ -18,6 +21,7 @@ internal static class ReflectionUtils
             Array.Empty<Type>())!;
 
     public static ConstructorInfo Nullable_UInt64_ctor { get; } = typeof(long?).GetConstructor(new[] { typeof(long) })!;
+    public static ConstructorInfo Nullable_UIntPtr_ctor { get; } = typeof(nuint?).GetConstructor(new[] { typeof(nuint) })!;
 
     public static MethodInfo StaticRuntimeProvider_TryGetSerialize { get; } =
         typeof(StaticRuntimeProvider).GetMethod(nameof(StaticRuntimeProvider.TryGetSerialize))!;
@@ -31,6 +35,21 @@ internal static class ReflectionUtils
             && m.GetGenericArguments() is { Length: 3 }
         );
 
+    public static MethodInfo ISerializer_WriteArray_2generic_array { get; } = ISerializerMethods
+        .AsParallel()
+        .Single(m =>
+            m is { Name: nameof(ISerializer.WriteArray), IsGenericMethod: true }
+            && m.GetGenericArguments() is { Length: 2 }
+            && m.GetParameters()[0].ParameterType.IsSZArray
+        );
+
+    public static MethodInfo ISerializer_StartSeq_2generic { get; } = ISerializerMethods
+        .AsParallel()
+        .Single(m =>
+            m is { Name: nameof(ISerializer.StartSeq), IsGenericMethod: true }
+            && m.GetGenericArguments() is { Length: 2 }
+        );
+    
     public static MethodInfo ISerializer_WriteVariantUnit_1generic { get; } = ISerializerMethods
         .AsParallel()
         .Single(m =>
@@ -53,8 +72,37 @@ internal static class ReflectionUtils
             && m.GetGenericArguments() is { Length: 2 }
             && m.GetParameters() is { Length: 4 } p && p[0].ParameterType == typeof(string)
         );
+    
+    public static MethodInfo[] ISeqSerializerMethods { get; } = typeof(ISeqSerializer).GetMethods();
+    
+    public static MethodInfo ISeqSerializer_WriteElement_2generic { get; } = ISeqSerializerMethods
+        .Single(m =>
+            m is { Name: nameof(ISeqSerializer.WriteElement), IsGenericMethod: true }
+            && m.GetGenericArguments() is { Length: 2 }
+        );
 
-    public static string GetAsmName(string name) => $"{nameof(Sera)}.{nameof(Runtime)}.{nameof(Emit)}.Impls.{name}";
+    public static readonly ConstructorInfo IsReadOnlyAttributeCtor =
+        typeof(IsReadOnlyAttribute).GetConstructor(BindingFlags.Instance | BindingFlags.Public, Array.Empty<Type>())!;
+
+    public static void MarkReadonly(this MethodBuilder builder) =>
+        builder.SetCustomAttribute(new CustomAttributeBuilder(IsReadOnlyAttributeCtor, Array.Empty<object>()));
+
+    public static void MarkReadonly(this TypeBuilder builder) =>
+        builder.SetCustomAttribute(new CustomAttributeBuilder(IsReadOnlyAttributeCtor, Array.Empty<object>()));
+
+    public static readonly MethodInfo ToFrozenDictionary_2generic_2arg__IEnumerable_KeyValuePair__IEqualityComparer =
+        typeof(FrozenDictionary)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Single(static a =>
+                a is { Name: nameof(FrozenDictionary.ToFrozenDictionary), IsGenericMethod: true } &&
+                a.GetGenericArguments() is { Length: 2 } && a.GetParameters() is [var arg1, var arg2]
+                && arg1.ParameterType.GetGenericTypeDefinition() == typeof(IEnumerable<>)
+                && arg1.ParameterType.GetGenericArguments() is [var arg1_g1]
+                && arg1_g1.GetGenericTypeDefinition() == typeof(KeyValuePair<,>)
+                && arg2.ParameterType.GetGenericTypeDefinition() == typeof(IEqualityComparer<>)
+            );
+
+    public static string GetAsmName(string name) => $"{nameof(Sera)}.{nameof(Runtime)}.{nameof(Emit)}.Runtime.{name}";
 
     public static ModuleBuilder CreateAssembly(string name)
     {
@@ -98,7 +146,7 @@ internal static class ReflectionUtils
         { 6, typeof(DepsSerializerWrapper7<,,>) },
         { 7, typeof(DepsSerializerWrapper8<,,>) },
     };
-    
+
     public static Dictionary<int, Type> DepsSeqSerReceiverWraps { get; } = new()
     {
         { 0, typeof(DepsSeqSerializerReceiverWrapper1<,,>) },
@@ -135,6 +183,12 @@ internal static class ReflectionUtils
         typeof(Tuple<,,,,,,,>),
     };
 
+    public static bool IsTuple(this EmitMeta target)
+        => IsTuple(target.Type, out _);
+
+    public static bool IsTuple(this EmitMeta target, out bool is_value_tuple)
+        => IsTuple(target.Type, out is_value_tuple);
+    
     public static bool IsTuple(this TypeMeta target)
         => IsTuple(target.Type, out _);
 
@@ -168,6 +222,9 @@ internal static class ReflectionUtils
         }
     }
 
+    public static bool IsValueTuple(this EmitMeta target)
+        => IsValueTuple(target.Type);
+
     public static bool IsValueTuple(this TypeMeta target)
         => IsValueTuple(target.Type);
 
@@ -177,6 +234,9 @@ internal static class ReflectionUtils
         var t = target.GetGenericTypeDefinition();
         return ValueTuples.Contains(t);
     }
+
+    public static bool IsClassTuple(this EmitMeta target)
+        => IsClassTuple(target.Type);
 
     public static bool IsClassTuple(this TypeMeta target)
         => IsClassTuple(target.Type);
