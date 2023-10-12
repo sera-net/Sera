@@ -13,9 +13,7 @@ namespace Sera.Runtime.Emit.Ser.Jobs;
 internal class _Struct_Private(StructMember[] Members) : _Struct(Members)
 {
     private Type ImplType = null!;
-
-    public override bool? EmitTypeIsTypeBuilder => false;
-
+    
     public override void Init(EmitStub stub, EmitMeta target)
     {
         ImplType = typeof(PrivateStructSerializeImpl<>).MakeGenericType(target.Type);

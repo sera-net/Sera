@@ -12,8 +12,6 @@ internal class _Primitive : _Base
     private Type Type = null!;
     private SerializerPrimitiveHint? Hint;
 
-    public override bool? EmitTypeIsTypeBuilder => false;
-
     public override void Init(EmitStub stub, EmitMeta target)
     {
         Type = typeof(PrimitiveImpl<>).MakeGenericType(target.Type);

@@ -8,10 +8,8 @@ using Sera.Runtime.Utils;
 
 namespace Sera.Runtime.Emit.Ser.Jobs;
 
-internal class _Array_SZ(Type ItemType) : _Array(ItemType)
+internal class _Array_SZ_Public(Type ItemType) : _Array(ItemType)
 {
-    public override bool? EmitTypeIsTypeBuilder => true;
-
     public TypeBuilder TypeBuilder { get; set; } = null!;
     public Type RuntimeType { get; set; } = null!;
 

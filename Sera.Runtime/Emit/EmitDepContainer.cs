@@ -3,6 +3,7 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using Sera.Core.Impls.Deps;
+using Sera.Runtime.Emit.Ser.Internal;
 using Sera.Runtime.Utils;
 
 namespace Sera.Runtime.Emit.Deps;
@@ -13,6 +14,9 @@ internal readonly record struct DepPlace(
 )
 {
     public MethodInfo MakeBoxGetMethodInfo() => Box.GetMethodInfo.MakeGenericMethod(TransformedType);
+    
+    public Type MakeWrapper(Type target) => (Boxed ? typeof(BoxedDepsWrapper<,,>) : typeof(DepsWrapper<,,>))
+        .MakeGenericType(target, TransformedType, ContainerType);
 }
 
 internal abstract record BaseDeps(EmitStub Stub, DepPlace[] Deps)

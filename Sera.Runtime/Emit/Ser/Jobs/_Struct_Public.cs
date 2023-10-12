@@ -18,9 +18,7 @@ internal sealed class _Struct_Public(StructMember[] Members) : _Struct(Members)
     private readonly List<(Delegate del, string name)> Accesses = new();
 
     private MethodInfo StartStruct { get; set; } = null!;
-
-    public override bool? EmitTypeIsTypeBuilder => true;
-
+    
     public override void Init(EmitStub stub, EmitMeta target)
     {
         TypeBuilder = CreateTypeBuilderStruct($"Ser_{target.Type.Name}");

@@ -27,9 +27,7 @@ internal class _Enum_Variant_Private
 
     private Delegate ToTag = null!;
     private object Metas = null!;
-
-    public override bool? EmitTypeIsTypeBuilder => false;
-
+    
     public override void Init(EmitStub stub, EmitMeta target)
     {
         ImplType = typeof(PrivateEnumSerializeImpl<>).MakeGenericType(target.Type);

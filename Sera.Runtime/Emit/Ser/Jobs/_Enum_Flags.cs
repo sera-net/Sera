@@ -6,8 +6,6 @@ namespace Sera.Runtime.Emit.Ser.Jobs;
 
 internal abstract class _Enum_Flags(Type UnderlyingType) : _Base
 {
-    public override bool? EmitTypeIsTypeBuilder => false;
-
     public override EmitTransform[] CollectTransforms(EmitStub stub, EmitMeta target)
         => EmitTransform.EmptyTransforms;
 

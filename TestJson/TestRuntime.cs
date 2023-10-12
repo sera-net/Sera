@@ -143,7 +143,7 @@ public class TestRuntime
 
     [SeraIncludeField]
     public struct Struct5B { }
-    
+
     [Test]
     public void TestStruct5()
     {
@@ -158,7 +158,7 @@ public class TestRuntime
     }
 
     #endregion
-    
+
     #region Struct6
 
     [SeraIncludeField]
@@ -172,7 +172,7 @@ public class TestRuntime
     {
         public Struct6? Member1 { get; set; } = null;
     }
-    
+
     [Test]
     public void TestStruct6()
     {
@@ -2082,5 +2082,67 @@ public class TestRuntime
     }
 
     #endregion
+
+    #region Array3
+
+    private class StructTestArray3  {  }
+
+    [Test]
+    public void TestArray3()
+    {
+        var obj = new[] { new StructTestArray3() };
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[{}]"));
+    }
+
+    #endregion
     
+    #region Array4
+
+    private class StructTestArray4
+    {
+        public StructTestArray4[]? A { get; set; } = null;
+    }
+
+    [Test]
+    public void TestArray4()
+    {
+        var obj = new[] { new StructTestArray4() };
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[{\"A\":null}]"));
+    }
+
+    #endregion
+    
+    #region Array5
+
+    private class StructTestArray5
+    {
+        public StructTestArray5?[] A { get; set; } = { null };
+    }
+
+    [Test]
+    public void TestArray5()
+    {
+        var obj = new[] { new StructTestArray5() };
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[{\"A\":[null]}]"));
+    }
+
+    #endregion
 }

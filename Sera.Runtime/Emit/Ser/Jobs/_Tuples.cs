@@ -12,8 +12,6 @@ namespace Sera.Runtime.Emit.Ser.Jobs;
 
 internal class _Tuples(bool IsValueTuple) : _Base
 {
-    public override bool? EmitTypeIsTypeBuilder => true;
-
     public int TupleSize { get; set; }
     public MethodInfo StartSeq { get; set; } = null!;
     public TypeBuilder TypeBuilder { get; set; } = null!;

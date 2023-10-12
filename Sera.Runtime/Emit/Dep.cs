@@ -35,13 +35,9 @@ internal class DepItem(EmitStub Stub, DepMeta Meta)
     public bool UsePlaceholder { get; set; }
 
     public bool KeepRaw => Meta.KeepRaw;
-
-    #region Forward
-
-    public bool? RawEmitTypeIsTypeBuilder => Stub.RawEmitTypeIsTypeBuilder;
+    
     public bool EmitTypeIsTypeBuilder => Stub.EmitTypeIsTypeBuilder;
 
-    #endregion
 
     #region Raw
 

@@ -110,12 +110,6 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
 
     public ExceptionDispatchInfo? Exception { get; private set; }
 
-    #region Forward
-
-    public bool? RawEmitTypeIsTypeBuilder => Job.EmitTypeIsTypeBuilder;
-
-    #endregion
-
     public object? GetResult()
     {
         WaitState(EmitStubState.Created);
@@ -243,7 +237,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
                 ReadyChildDeps(ctx);
                 CheckDepsCircular();
                 BuildEmitType(false);
-                CheckEmitTypeIsTypeBuilder(ctx);
+                CheckEmitTypeIsTypeBuilder();
                 SetState(EmitStubState.DepsReady);
             }
             catch (Exception e)
@@ -323,24 +317,15 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
         }
     }
 
-    private void CheckEmitTypeIsTypeBuilder(EmitCtx ctx)
+    private void CheckEmitTypeIsTypeBuilder()
     {
-        if (Job.EmitTypeIsTypeBuilder is { } v)
-        {
-            EmitTypeIsTypeBuilder = v;
-        }
-        else
-        {
-            EmitTypeIsTypeBuilder = GetDepsEmitTypeIsTypeBuilder(ctx);
-        }
+        EmitTypeIsTypeBuilder = IsTypeBuilder(RawEmitType!);
     }
 
-    private bool GetEmitTypeIsTypeBuilder(EmitCtx ctx) =>
-        ctx.CurrentThread.ManagedThreadId == currentThread && GetDepsEmitTypeIsTypeBuilder(ctx);
-
-    private bool GetDepsEmitTypeIsTypeBuilder(EmitCtx ctx) =>
-        Deps.AsParallel().Any(a => a.Stub.GetEmitTypeIsTypeBuilder(ctx));
-
+    private bool IsTypeBuilder(Type type) =>
+        type is TypeBuilder ||
+        type is { IsGenericType: true } && type.GetGenericArguments().AsParallel().Any(IsTypeBuilder);
+    
     #endregion
 
     #region Emit
@@ -565,8 +550,6 @@ internal abstract class EmitJob
             typeof(ValueType)
         );
     }
-
-    public abstract bool? EmitTypeIsTypeBuilder { get; }
 
     /// <summary>Initialize miscellaneous data</summary>
     public abstract void Init(EmitStub stub, EmitMeta target);

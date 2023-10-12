@@ -42,9 +42,7 @@ internal class _Enum_Variant_Public
     private Type? MetasType;
     private Type? MetasDictType;
     private FieldBuilder? MetasField;
-
-    public override bool? EmitTypeIsTypeBuilder => true;
-
+    
     public override void Init(EmitStub stub, EmitMeta target)
     {
         TypeBuilder = CreateTypeBuilderStruct($"Ser_{target.Type.Name}");
