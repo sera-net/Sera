@@ -5,7 +5,7 @@ using Sera.Runtime.Emit.Transform;
 
 namespace Sera.Runtime.Emit.Deps;
 
-internal readonly record struct DepMeta(EmitMeta Meta, EmitTransform[] Transforms)
+internal readonly record struct DepMeta(EmitMeta Meta, EmitTransform[] Transforms, bool KeepRaw = false)
 {
     public bool Equals(DepMeta other)
     {
@@ -34,6 +34,8 @@ internal class DepItem(EmitStub Stub, DepMeta Meta)
 
     public bool UsePlaceholder { get; set; }
 
+    public bool KeepRaw => Meta.KeepRaw;
+
     #region Forward
 
     public bool? RawEmitTypeIsTypeBuilder => Stub.RawEmitTypeIsTypeBuilder;
@@ -52,10 +54,11 @@ internal class DepItem(EmitStub Stub, DepMeta Meta)
 
     #region Transforms
 
-    private EmitTransform[] Transforms => Meta.Transforms;
-    private int TransformsCount => Stub.Transforms.Length + Transforms.Length;
-    private bool HasTransforms => Stub.Transforms.Length > 0 || Transforms.Length > 0;
-    private IEnumerable<EmitTransform> AllTransforms => Stub.Transforms.Concat(Transforms);
+    private EmitTransform[] Transforms => KeepRaw ? EmitTransform.EmptyTransforms : Meta.Transforms;
+    private int TransformsCount => KeepRaw ? 0 : Stub.Transforms.Length + Transforms.Length;
+    private bool HasTransforms => !KeepRaw && (Stub.Transforms.Length > 0 || Transforms.Length > 0);
+    private IEnumerable<EmitTransform> AllTransforms =>
+        KeepRaw ? Enumerable.Empty<EmitTransform>() : Stub.Transforms.Concat(Transforms);
 
     public Type[] TransformedEmitType { get; private set; } = Array.Empty<Type>();
     public Type[] TransformedRuntimeType { get; private set; } = Array.Empty<Type>();

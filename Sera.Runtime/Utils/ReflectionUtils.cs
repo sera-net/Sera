@@ -21,6 +21,7 @@ internal static class ReflectionUtils
             Array.Empty<Type>())!;
 
     public static ConstructorInfo Nullable_UInt64_ctor { get; } = typeof(long?).GetConstructor(new[] { typeof(long) })!;
+    public static ConstructorInfo Nullable_UIntPtr_ctor { get; } = typeof(nuint?).GetConstructor(new[] { typeof(nuint) })!;
 
     public static MethodInfo StaticRuntimeProvider_TryGetSerialize { get; } =
         typeof(StaticRuntimeProvider).GetMethod(nameof(StaticRuntimeProvider.TryGetSerialize))!;
@@ -42,6 +43,13 @@ internal static class ReflectionUtils
             && m.GetParameters()[0].ParameterType.IsSZArray
         );
 
+    public static MethodInfo ISerializer_StartSeq_2generic { get; } = ISerializerMethods
+        .AsParallel()
+        .Single(m =>
+            m is { Name: nameof(ISerializer.StartSeq), IsGenericMethod: true }
+            && m.GetGenericArguments() is { Length: 2 }
+        );
+    
     public static MethodInfo ISerializer_WriteVariantUnit_1generic { get; } = ISerializerMethods
         .AsParallel()
         .Single(m =>
@@ -63,6 +71,14 @@ internal static class ReflectionUtils
             m is { Name: nameof(IStructSerializer.WriteField), IsGenericMethod: true }
             && m.GetGenericArguments() is { Length: 2 }
             && m.GetParameters() is { Length: 4 } p && p[0].ParameterType == typeof(string)
+        );
+    
+    public static MethodInfo[] ISeqSerializerMethods { get; } = typeof(ISeqSerializer).GetMethods();
+    
+    public static MethodInfo ISeqSerializer_WriteElement_2generic { get; } = ISeqSerializerMethods
+        .Single(m =>
+            m is { Name: nameof(ISeqSerializer.WriteElement), IsGenericMethod: true }
+            && m.GetGenericArguments() is { Length: 2 }
         );
 
     public static readonly ConstructorInfo IsReadOnlyAttributeCtor =
@@ -167,6 +183,12 @@ internal static class ReflectionUtils
         typeof(Tuple<,,,,,,,>),
     };
 
+    public static bool IsTuple(this EmitMeta target)
+        => IsTuple(target.Type, out _);
+
+    public static bool IsTuple(this EmitMeta target, out bool is_value_tuple)
+        => IsTuple(target.Type, out is_value_tuple);
+    
     public static bool IsTuple(this TypeMeta target)
         => IsTuple(target.Type, out _);
 

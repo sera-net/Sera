@@ -276,7 +276,7 @@ internal sealed class _Struct_Public(StructMember[] Members) : _Struct(Members)
 
             #endregion
 
-            #region serializer.WriteField<V, VImpl>(nameof member, member_value, Self._impl_n);
+            #region serializer.WriteField<V, VImpl>(nameof member, member_value, Dep.Impl);
 
             ilg.Emit(OpCodes.Constrained, TS);
             ilg.Emit(OpCodes.Callvirt, write_field);

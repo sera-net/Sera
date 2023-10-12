@@ -16,6 +16,9 @@ internal class SerializeEmitProvider : AEmitProvider
     public static readonly EmitTransform[] NullableReferenceTypeTransforms =
         { new EmitTransformNullableReferenceTypeImpl() };
 
+    public static readonly EmitTransform[] ReferenceTypeTransforms =
+        { new EmitTransformReferenceTypeWrapperSerializeImpl() };
+
     protected override DepMeta MakeRootDep(EmitMeta target)
         => new(target, target.IsValueType ? EmitTransform.EmptyTransforms : NullableReferenceTypeTransforms);
 
@@ -42,6 +45,7 @@ internal class SerializeEmitProvider : AEmitProvider
         if (TryGetStaticImpl(target.Type, out var inst)) return new Jobs._Static(inst!.GetType(), inst);
         if (target.IsArray) return CreateArrayJob(target);
         if (target.IsEnum) return CreateEnumJob(target);
+        if (target.IsTuple(out var is_value_tuple)) return new Jobs._Tuples(is_value_tuple);
         // todo other type
         return CreateStructJob(target);
     }

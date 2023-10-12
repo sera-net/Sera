@@ -9,13 +9,10 @@ namespace Sera.Runtime.Emit.Ser.Jobs;
 
 internal abstract class _Struct(StructMember[] Members) : _Base
 {
-    private readonly EmitTransform[] ReferenceTypeTransforms =
-        { new EmitTransformReferenceTypeWrapperSerializeImpl() };
-
     public override EmitTransform[] CollectTransforms(EmitStub stub, EmitMeta target)
     {
         if (target.IsValueType) return Array.Empty<EmitTransform>();
-        else return ReferenceTypeTransforms;
+        else return SerializeEmitProvider.ReferenceTypeTransforms;
     }
 
     public override DepMeta[] CollectDeps(EmitStub stub, EmitMeta target)
