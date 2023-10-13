@@ -10,7 +10,7 @@ using Sera.Runtime.Utils;
 
 namespace Sera.Runtime.Emit.Ser.Jobs;
 
-internal class _Tuples(bool IsValueTuple) : _Base
+internal class _Tuples_Public(bool IsValueTuple) : _Base
 {
     public int TupleSize { get; set; }
     public MethodInfo StartSeq { get; set; } = null!;
@@ -243,13 +243,15 @@ internal class _Tuples(bool IsValueTuple) : _Base
                 ilg.Emit(OpCodes.Call, dep.GetDepMethodInfo);
                 if (dep.Boxed)
                 {
-                    var get_method = dep.MakeBoxGetMethodInfo();
-                    ilg.Emit(OpCodes.Call, get_method);
+                    var get_ref_method = dep.MakeBoxGetRefMethodInfo();
+                    ilg.Emit(OpCodes.Call, get_ref_method);
                 }
-
-                var tmp = ilg.DeclareLocal(dep.RawType);
-                ilg.Emit(OpCodes.Stloc, tmp);
-                ilg.Emit(OpCodes.Ldloca, tmp);
+                else
+                {
+                    var tmp = ilg.DeclareLocal(dep.RawType);
+                    ilg.Emit(OpCodes.Stloc, tmp);
+                    ilg.Emit(OpCodes.Ldloca, tmp);
+                }
 
                 #endregion
 

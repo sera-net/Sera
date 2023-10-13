@@ -10,8 +10,16 @@ namespace Sera.Core.Impls;
 
 #region Sync
 
+public readonly struct ArraySerializeImplWrapper<T>(ArraySerializeImplBase<T> Serialize) : ISerialize<T[]>
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Write<S>(S serializer, T[] value, ISeraOptions options) where S : ISerializer
+        => Serialize.Write(serializer, value, options);
+}
+
 public abstract record ArraySerializeImplBase<T> : ISerialize<T[]>
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public abstract void Write<S>(S serializer, T[] value, ISeraOptions options) where S : ISerializer;
 }
 
@@ -27,14 +35,23 @@ public sealed record ArraySerializeImpl<T, ST>(ST Serialize) : ArraySerializeImp
 
 #region Async
 
+public readonly struct AsyncArraySerializeImplWrapper<T>(AsyncArraySerializeImplBase<T> Serialize) : IAsyncSerialize<T[]>
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ValueTask WriteAsync<S>(S serializer, T[] value, ISeraOptions options) where S : IAsyncSerializer
+        => Serialize.WriteAsync(serializer, value, options);
+}
+
 public abstract record AsyncArraySerializeImplBase<T> : IAsyncSerialize<T[]>
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public abstract ValueTask WriteAsync<S>(S serializer, T[] value, ISeraOptions options) where S : IAsyncSerializer;
 }
 
 public record AsyncArraySerializeImpl<T, ST>(ST Serialize) : AsyncArraySerializeImplBase<T>
     where ST : IAsyncSerialize<T>
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override ValueTask WriteAsync<S>(S serializer, T[] value, ISeraOptions options)
         => serializer.WriteArrayAsync(value, Serialize);
 }

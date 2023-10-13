@@ -3,7 +3,7 @@ using Sera.Core.Impls;
 
 namespace Sera.Runtime.Emit.Transform;
 
-internal abstract record EmitTransform
+internal abstract class EmitTransform
 {
     public static EmitTransform[] EmptyTransforms { get; } = Array.Empty<EmitTransform>();
     
@@ -11,7 +11,7 @@ internal abstract record EmitTransform
     public abstract object TransformInst(EmitMeta target, Type type, Type prevType, object prevInst);
 }
 
-internal record EmitTransformReferenceTypeWrapperSerializeImpl : EmitTransform
+internal class EmitTransformReferenceTypeWrapperSerializeImpl : EmitTransform
 {
     public override Type TransformType(EmitMeta target, Type prevType)
     {
@@ -25,7 +25,7 @@ internal record EmitTransformReferenceTypeWrapperSerializeImpl : EmitTransform
     }
 }
 
-internal record EmitTransformNullableReferenceTypeImpl : EmitTransform
+internal class EmitTransformNullableReferenceTypeImpl : EmitTransform
 {
     public override Type TransformType(EmitMeta target, Type prevType)
     {

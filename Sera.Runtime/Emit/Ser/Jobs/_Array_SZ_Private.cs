@@ -1,18 +1,28 @@
 ﻿using System;
 using Sera.Core.Impls;
 using Sera.Runtime.Emit.Deps;
+using Sera.Runtime.Emit.Transform;
 using BindingFlags = System.Reflection.BindingFlags;
 
 namespace Sera.Runtime.Emit.Ser.Jobs;
 
 internal class _Array_SZ_Private(Type ItemType) : _Array(ItemType)
 {
+    public static readonly EmitTransform[] Transforms =
+    {
+        new EmitTransformArraySerializeImplWrapper(),
+        new EmitTransformReferenceTypeWrapperSerializeImpl(),
+    };
+
     public Type BaseType { get; set; } = null!;
 
     public override void Init(EmitStub stub, EmitMeta target)
     {
         BaseType = typeof(ArraySerializeImplBase<>).MakeGenericType(ItemType);
     }
+
+    public override EmitTransform[] CollectTransforms(EmitStub stub, EmitMeta target)
+        => Transforms;
 
     public override Type GetEmitPlaceholderType(EmitStub stub, EmitMeta target)
         => BaseType;

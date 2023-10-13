@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -54,9 +55,7 @@ internal abstract class AEmitProvider
     }
 
     protected abstract EmitJob CreateJob(EmitMeta target);
-
-    protected abstract DepMeta MakeRootDep(EmitMeta target);
-
+    
     #region Emit
 
     protected EmitStub Emit(EmitMeta target)
@@ -98,10 +97,9 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
     private readonly object MakeRawRuntimePlaceholderTypeLock = new();
 
     public EmitTransform[] Transforms { get; private set; } = Array.Empty<EmitTransform>();
-    public DepMeta[] RequestedDeps { get; private set; } = Array.Empty<DepMeta>();
-    public DepMetaGroup[] DepsGroups { get; private set; } = Array.Empty<DepMetaGroup>();
-    public ReadOnlyDictionary<int, int> DepsIndexMap { get; private set; } = new(new Dictionary<int, int>());
-    public DepItem[] Deps { get; private set; } = Array.Empty<DepItem>();
+    private DepMetaGroup[] DepsGroups { get; set; } = Array.Empty<DepMetaGroup>();
+    public FrozenDictionary<int, int> DepsIndexMap { get; private set; } = FrozenDictionary<int, int>.Empty;
+    private DepItem[] Deps { get; set; } = Array.Empty<DepItem>();
     private EmitDeps? emitDeps;
     private RuntimeDeps? runtimeDeps;
 
@@ -184,7 +182,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
     {
         Job.Init(this, Target);
         Transforms = Job.CollectTransforms(this, Target);
-        RequestedDeps = Job.CollectDeps(this, Target);
+        var RequestedDeps = Job.CollectDeps(this, Target);
 
         if (RequestedDeps.Length != 0)
         {
@@ -196,7 +194,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
             DepsIndexMap = DepsGroups
                 .SelectMany((a, n) => a.RawIndexes.Select(i => (i, n)))
                 .ToDictionary(a => a.i, a => a.n)
-                .AsReadOnly();
+                .ToFrozenDictionary();
         }
     }
 
@@ -324,7 +322,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
     private bool IsTypeBuilder(Type type) =>
         type is TypeBuilder ||
         type is { IsGenericType: true } && type.GetGenericArguments().AsParallel().Any(IsTypeBuilder);
-    
+
     #endregion
 
     #region Emit
@@ -481,6 +479,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
             try
             {
                 SetDepsInst(ctx);
+                Clear();
                 SetState(EmitStubState.Created);
             }
             catch (Exception e)
@@ -504,6 +503,18 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
         {
             dep.Stub.EnsureDepsInstSet(ctx); //
         });
+    }
+
+    #endregion
+
+    #region Clear
+
+    private void Clear()
+    {
+        DepsGroups = null!;
+        
+        emitDeps = null!;
+        runtimeDeps = null!;
     }
 
     #endregion
