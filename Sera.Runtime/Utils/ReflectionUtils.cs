@@ -11,6 +11,7 @@ using Sera.Core.Impls.Deps;
 using Sera.Core.Impls.Tuples;
 using Sera.Core.Ser;
 using Sera.Runtime.Emit;
+using Sera.Runtime.Emit.Transform;
 
 namespace Sera.Runtime.Utils;
 
@@ -21,7 +22,8 @@ internal static class ReflectionUtils
             Array.Empty<Type>())!;
 
     public static ConstructorInfo Nullable_UInt64_ctor { get; } = typeof(long?).GetConstructor(new[] { typeof(long) })!;
-    public static ConstructorInfo Nullable_UIntPtr_ctor { get; } = typeof(nuint?).GetConstructor(new[] { typeof(nuint) })!;
+    public static ConstructorInfo Nullable_UIntPtr_ctor { get; } =
+        typeof(nuint?).GetConstructor(new[] { typeof(nuint) })!;
 
     public static MethodInfo StaticRuntimeProvider_TryGetSerialize { get; } =
         typeof(StaticRuntimeProvider).GetMethod(nameof(StaticRuntimeProvider.TryGetSerialize))!;
@@ -49,7 +51,7 @@ internal static class ReflectionUtils
             m is { Name: nameof(ISerializer.StartSeq), IsGenericMethod: true }
             && m.GetGenericArguments() is { Length: 2 }
         );
-    
+
     public static MethodInfo ISerializer_WriteVariantUnit_1generic { get; } = ISerializerMethods
         .AsParallel()
         .Single(m =>
@@ -72,9 +74,9 @@ internal static class ReflectionUtils
             && m.GetGenericArguments() is { Length: 2 }
             && m.GetParameters() is { Length: 4 } p && p[0].ParameterType == typeof(string)
         );
-    
+
     public static MethodInfo[] ISeqSerializerMethods { get; } = typeof(ISeqSerializer).GetMethods();
-    
+
     public static MethodInfo ISeqSerializer_WriteElement_2generic { get; } = ISeqSerializerMethods
         .Single(m =>
             m is { Name: nameof(ISeqSerializer.WriteElement), IsGenericMethod: true }
@@ -188,7 +190,7 @@ internal static class ReflectionUtils
 
     public static bool IsTuple(this EmitMeta target, out bool is_value_tuple)
         => IsTuple(target.Type, out is_value_tuple);
-    
+
     public static bool IsTuple(this TypeMeta target)
         => IsTuple(target.Type, out _);
 
@@ -290,5 +292,29 @@ internal static class ReflectionUtils
         { 5, typeof(TupleSerializeImplBase<,,,,>) },
         { 6, typeof(TupleSerializeImplBase<,,,,,>) },
         { 7, typeof(TupleSerializeImplBase<,,,,,,>) },
+    };
+
+    public static Dictionary<int, EmitTransformTupleSerializeImplWrapper> ValueTupleSerImplWrappers { get; } = new()
+    {
+        { 1, new(typeof(ValueTupleSerializeImplWrapper<>), typeof(ValueTupleSerializeImplBase<>)) },
+        { 2, new(typeof(ValueTupleSerializeImplWrapper<,>), typeof(ValueTupleSerializeImplBase<,>)) },
+        { 3, new(typeof(ValueTupleSerializeImplWrapper<,,>), typeof(ValueTupleSerializeImplBase<,,>)) },
+        { 4, new(typeof(ValueTupleSerializeImplWrapper<,,,>), typeof(ValueTupleSerializeImplBase<,,,>)) },
+        { 5, new(typeof(ValueTupleSerializeImplWrapper<,,,,>), typeof(ValueTupleSerializeImplBase<,,,,>)) },
+        { 6, new(typeof(ValueTupleSerializeImplWrapper<,,,,,>), typeof(ValueTupleSerializeImplBase<,,,,,>)) },
+        { 7, new(typeof(ValueTupleSerializeImplWrapper<,,,,,,>), typeof(ValueTupleSerializeImplBase<,,,,,,>)) },
+        { 8, new(typeof(ValueTupleSerializeImplWrapper<,,,,,,,>), typeof(ValueTupleRestSerializeImplBase<,,,,,,,>)) },
+    };
+
+    public static Dictionary<int, EmitTransformTupleSerializeImplWrapper> ClassTupleSerImplWrappers { get; } = new()
+    {
+        { 1, new(typeof(TupleSerializeImplWrapper<>), typeof(TupleSerializeImplBase<>)) },
+        { 2, new(typeof(TupleSerializeImplWrapper<,>), typeof(TupleSerializeImplBase<,>)) },
+        { 3, new(typeof(TupleSerializeImplWrapper<,,>), typeof(TupleSerializeImplBase<,,>)) },
+        { 4, new(typeof(TupleSerializeImplWrapper<,,,>), typeof(TupleSerializeImplBase<,,,>)) },
+        { 5, new(typeof(TupleSerializeImplWrapper<,,,,>), typeof(TupleSerializeImplBase<,,,,>)) },
+        { 6, new(typeof(TupleSerializeImplWrapper<,,,,,>), typeof(TupleSerializeImplBase<,,,,,>)) },
+        { 7, new(typeof(TupleSerializeImplWrapper<,,,,,,>), typeof(TupleSerializeImplBase<,,,,,,>)) },
+        { 8, new(typeof(TupleSerializeImplWrapper<,,,,,,,>), typeof(TupleRestSerializeImplBase<,,,,,,,>)) },
     };
 }

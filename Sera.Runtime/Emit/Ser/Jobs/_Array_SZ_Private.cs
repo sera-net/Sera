@@ -41,7 +41,7 @@ internal class _Array_SZ_Private(Type ItemType) : _Array(ItemType)
     public override object CreateInst(EmitStub stub, EmitMeta target, RuntimeDeps deps)
     {
         var dep = deps.Get(0);
-        var wrapper = dep.MakeWrapper(ItemType);
+        var wrapper = dep.MakeSerializeWrapper(ItemType);
         var inst_type = typeof(ArraySerializeImpl<,>).MakeGenericType(ItemType, wrapper);
         var ctor = inst_type.GetConstructor(BindingFlags.Public | BindingFlags.Instance, new[] { wrapper })!;
         var inst = ctor.Invoke(new object?[] { null });

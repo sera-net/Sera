@@ -1808,6 +1808,16 @@ public class TestRuntime
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[1,2,3,4,5,6,7,8]"));
         }
+        {
+            var obj = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[1,2,3,4,5,6,7,8,9,10,11]"));
+        }
     }
 
     #endregion
@@ -1951,6 +1961,17 @@ public class TestRuntime
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[1,2,3,4,5,6,7,8]"));
         }
+        {
+            var obj = new Tuple<int, int, int, int, int, int, int, Tuple<int, int, int, int>>(1, 2, 3, 4, 5, 6, 7,
+                new(8, 9, 10, 11));
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[1,2,3,4,5,6,7,8,9,10,11]"));
+        }
     }
 
     #endregion
@@ -2044,6 +2065,216 @@ public class TestRuntime
 
     #endregion
 
+    #region PrivateValueTuple1
+
+    private class PrivateValueTuple1 { }
+
+    [Test]
+    public void TestPrivateValueTuple1()
+    {
+        var a = new PrivateValueTuple1();
+        {
+            var obj = ValueTuple.Create(a);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[{}]"));
+        }
+        {
+            var obj = ValueTuple.Create(a, a);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[{},{}]"));
+        }
+        {
+            var obj = ValueTuple.Create(a, a, a);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[{},{},{}]"));
+        }
+        {
+            var obj = ValueTuple.Create(a, a, a, a);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[{},{},{},{}]"));
+        }
+        {
+            var obj = ValueTuple.Create(a, a, a, a, a);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[{},{},{},{},{}]"));
+        }
+        {
+            var obj = ValueTuple.Create(a, a, a, a, a, a);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[{},{},{},{},{},{}]"));
+        }
+        {
+            var obj = ValueTuple.Create(a, a, a, a, a, a, a);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[{},{},{},{},{},{},{}]"));
+        }
+        {
+            var obj = ValueTuple.Create(a, a, a, a, a, a, a, a);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[{},{},{},{},{},{},{},{}]"));
+        }
+        {
+            var obj =
+                new Tuple<PrivateValueTuple1, PrivateValueTuple1, PrivateValueTuple1, PrivateValueTuple1,
+                    PrivateValueTuple1, PrivateValueTuple1, PrivateValueTuple1, Tuple<PrivateValueTuple1,
+                        PrivateValueTuple1, PrivateValueTuple1, PrivateValueTuple1>>(
+                    a, a, a, a, a, a, a,
+                    new(a, a, a, a));
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[{},{},{},{},{},{},{},{},{},{},{}]"));
+        }
+    }
+
+    #endregion
+
+
+    #region PrivateTuple1
+
+    private class PrivateTuple1 { }
+
+    [Test]
+    public void TestPrivateTuple1()
+    {
+        var a = new PrivateTuple1();
+        {
+            var obj = Tuple.Create(a);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[{}]"));
+        }
+        {
+            var obj = Tuple.Create(a, a);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[{},{}]"));
+        }
+        {
+            var obj = Tuple.Create(a, a, a);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[{},{},{}]"));
+        }
+        {
+            var obj = Tuple.Create(a, a, a, a);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[{},{},{},{}]"));
+        }
+        {
+            var obj = Tuple.Create(a, a, a, a, a);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[{},{},{},{},{}]"));
+        }
+        {
+            var obj = Tuple.Create(a, a, a, a, a, a);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[{},{},{},{},{},{}]"));
+        }
+        {
+            var obj = Tuple.Create(a, a, a, a, a, a, a);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[{},{},{},{},{},{},{}]"));
+        }
+        {
+            var obj = Tuple.Create(a, a, a, a, a, a, a, a);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[{},{},{},{},{},{},{},{}]"));
+        }
+        {
+            var obj = (a, a, a, a, a, a, a, a, a, a, a);
+
+            var str = SeraJson.Serializer
+                .ToString()
+                .Serialize(obj);
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("[{},{},{},{},{},{},{},{},{},{},{}]"));
+        }
+    }
+
+    #endregion
+
     #region Array1
 
     [Test]
@@ -2085,7 +2316,7 @@ public class TestRuntime
 
     #region Array3
 
-    private class StructTestArray3  {  }
+    private class StructTestArray3 { }
 
     [Test]
     public void TestArray3()
@@ -2101,18 +2332,18 @@ public class TestRuntime
     }
 
     #endregion
-    
-    #region Array4
 
-    private class StructTestArray4
+    #region PrivateArray1
+
+    private class StructPrivateArray1
     {
-        public StructTestArray4[]? A { get; set; } = null;
+        public StructPrivateArray1[]? A { get; set; } = null;
     }
 
     [Test]
-    public void TestArray4()
+    public void TestPrivateArray1()
     {
-        var obj = new[] { new StructTestArray4() };
+        var obj = new[] { new StructPrivateArray1() };
 
         var str = SeraJson.Serializer
             .ToString()
@@ -2123,18 +2354,18 @@ public class TestRuntime
     }
 
     #endregion
-    
-    #region Array5
 
-    private class StructTestArray5
+    #region PrivateArray2
+
+    private class StructPrivateArray2
     {
-        public StructTestArray5?[] A { get; set; } = { null };
+        public StructPrivateArray2?[] A { get; set; } = { null };
     }
 
     [Test]
-    public void TestArray5()
+    public void TestPrivateArray2()
     {
-        var obj = new[] { new StructTestArray5() };
+        var obj = new[] { new StructPrivateArray2() };
 
         var str = SeraJson.Serializer
             .ToString()

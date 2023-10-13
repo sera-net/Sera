@@ -1,8 +1,116 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Sera.Core.Ser;
 
 namespace Sera.Core.Impls.Tuples;
+
+#region SyncBaseWrapper
+
+public readonly struct TupleSerializeImplWrapper<T1>(TupleSerializeImplBase<T1> Serialize) :
+    ISerialize<Tuple<T1>>, ISeqSerializerReceiver<Tuple<T1>>
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Write<S>(S serializer, Tuple<T1> value, ISeraOptions options) where S : ISerializer
+        => Serialize.Write(serializer, value, options);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Receive<S>(Tuple<T1> value, S serializer) where S : ISeqSerializer
+        => Serialize.Receive(value, serializer);
+}
+
+public readonly struct TupleSerializeImplWrapper<T1, T2>(TupleSerializeImplBase<T1, T2> Serialize) :
+    ISerialize<Tuple<T1, T2>>, ISeqSerializerReceiver<Tuple<T1, T2>>
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Write<S>(S serializer, Tuple<T1, T2> value, ISeraOptions options) where S : ISerializer
+        => Serialize.Write(serializer, value, options);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Receive<S>(Tuple<T1, T2> value, S serializer) where S : ISeqSerializer
+        => Serialize.Receive(value, serializer);
+}
+
+public readonly struct TupleSerializeImplWrapper<T1, T2, T3>(TupleSerializeImplBase<T1, T2, T3> Serialize) :
+    ISerialize<Tuple<T1, T2, T3>>, ISeqSerializerReceiver<Tuple<T1, T2, T3>>
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Write<S>(S serializer, Tuple<T1, T2, T3> value, ISeraOptions options) where S : ISerializer
+        => Serialize.Write(serializer, value, options);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Receive<S>(Tuple<T1, T2, T3> value, S serializer) where S : ISeqSerializer
+        => Serialize.Receive(value, serializer);
+}
+
+public readonly struct TupleSerializeImplWrapper<T1, T2, T3, T4>(TupleSerializeImplBase<T1, T2, T3, T4> Serialize) :
+    ISerialize<Tuple<T1, T2, T3, T4>>, ISeqSerializerReceiver<Tuple<T1, T2, T3, T4>>
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Write<S>(S serializer, Tuple<T1, T2, T3, T4> value, ISeraOptions options) where S : ISerializer
+        => Serialize.Write(serializer, value, options);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Receive<S>(Tuple<T1, T2, T3, T4> value, S serializer) where S : ISeqSerializer
+        => Serialize.Receive(value, serializer);
+}
+
+public readonly struct TupleSerializeImplWrapper<T1, T2, T3, T4, T5>(
+    TupleSerializeImplBase<T1, T2, T3, T4, T5> Serialize) :
+    ISerialize<Tuple<T1, T2, T3, T4, T5>>, ISeqSerializerReceiver<Tuple<T1, T2, T3, T4, T5>>
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Write<S>(S serializer, Tuple<T1, T2, T3, T4, T5> value, ISeraOptions options) where S : ISerializer
+        => Serialize.Write(serializer, value, options);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Receive<S>(Tuple<T1, T2, T3, T4, T5> value, S serializer) where S : ISeqSerializer
+        => Serialize.Receive(value, serializer);
+}
+
+public readonly struct TupleSerializeImplWrapper<T1, T2, T3, T4, T5, T6>(
+    TupleSerializeImplBase<T1, T2, T3, T4, T5, T6> Serialize) :
+    ISerialize<Tuple<T1, T2, T3, T4, T5, T6>>, ISeqSerializerReceiver<Tuple<T1, T2, T3, T4, T5, T6>>
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Write<S>(S serializer, Tuple<T1, T2, T3, T4, T5, T6> value, ISeraOptions options) where S : ISerializer
+        => Serialize.Write(serializer, value, options);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Receive<S>(Tuple<T1, T2, T3, T4, T5, T6> value, S serializer) where S : ISeqSerializer
+        => Serialize.Receive(value, serializer);
+}
+
+public readonly struct TupleSerializeImplWrapper<T1, T2, T3, T4, T5, T6, T7>(
+    TupleSerializeImplBase<T1, T2, T3, T4, T5, T6, T7> Serialize) :
+    ISerialize<Tuple<T1, T2, T3, T4, T5, T6, T7>>, ISeqSerializerReceiver<Tuple<T1, T2, T3, T4, T5, T6, T7>>
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Write<S>(S serializer, Tuple<T1, T2, T3, T4, T5, T6, T7> value, ISeraOptions options)
+        where S : ISerializer
+        => Serialize.Write(serializer, value, options);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Receive<S>(Tuple<T1, T2, T3, T4, T5, T6, T7> value, S serializer) where S : ISeqSerializer
+        => Serialize.Receive(value, serializer);
+}
+
+public readonly struct TupleSerializeImplWrapper<T1, T2, T3, T4, T5, T6, T7, TR>(
+    TupleRestSerializeImplBase<T1, T2, T3, T4, T5, T6, T7, TR> Serialize) :
+    ISerialize<Tuple<T1, T2, T3, T4, T5, T6, T7, TR>>, ISeqSerializerReceiver<Tuple<T1, T2, T3, T4, T5, T6, T7, TR>>
+    where TR : notnull
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Write<S>(S serializer, Tuple<T1, T2, T3, T4, T5, T6, T7, TR> value, ISeraOptions options)
+        where S : ISerializer
+        => Serialize.Write(serializer, value, options);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Receive<S>(Tuple<T1, T2, T3, T4, T5, T6, T7, TR> value, S serializer) where S : ISeqSerializer
+        => Serialize.Receive(value, serializer);
+}
+
+#endregion
 
 #region SyncBase
 

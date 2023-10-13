@@ -18,7 +18,7 @@ internal class SerializeEmitProvider : AEmitProvider
 
     public static readonly EmitTransform[] ReferenceTypeTransforms =
         { new EmitTransformReferenceTypeWrapperSerializeImpl() };
-    
+
     private bool TryGetStaticImpl(Type type, out object? impl)
     {
         var method = ReflectionUtils.StaticRuntimeProvider_TryGetSerialize.MakeGenericMethod(type);
@@ -42,7 +42,7 @@ internal class SerializeEmitProvider : AEmitProvider
         if (TryGetStaticImpl(target.Type, out var inst)) return new Jobs._Static(inst!.GetType(), inst);
         if (target.IsArray) return CreateArrayJob(target);
         if (target.IsEnum) return CreateEnumJob(target);
-        if (target.IsTuple(out var is_value_tuple)) return new Jobs._Tuples_Public(is_value_tuple);
+        if (target.IsTuple(out var is_value_tuple)) return CreateTupleJob(target, is_value_tuple);
         // todo other type
         return CreateStructJob(target);
     }
@@ -103,5 +103,18 @@ internal class SerializeEmitProvider : AEmitProvider
             else return new Jobs._Array_SZ_Private(item_type);
         }
         throw new NotSupportedException("Multidimensional and non-zero lower bound arrays are not supported");
+    }
+
+    private EmitJob CreateTupleJob(EmitMeta target, bool is_value_tuple)
+    {
+        var item_types = target.Type.GetGenericArguments();
+        if (item_types.All(t => t.IsVisible))
+        {
+            return new Jobs._Tuples_Public(is_value_tuple, item_types);
+        }
+        else
+        {
+            return new Jobs._Tuples_Private(is_value_tuple, item_types);
+        }
     }
 }

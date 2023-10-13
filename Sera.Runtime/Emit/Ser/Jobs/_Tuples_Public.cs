@@ -10,44 +10,29 @@ using Sera.Runtime.Utils;
 
 namespace Sera.Runtime.Emit.Ser.Jobs;
 
-internal class _Tuples_Public(bool IsValueTuple) : _Base
+internal class _Tuples_Public(bool IsValueTuple, Type[] ItemTypes) : _Tuples(IsValueTuple, ItemTypes)
 {
-    public int TupleSize { get; set; }
     public MethodInfo StartSeq { get; set; } = null!;
     public TypeBuilder TypeBuilder { get; set; } = null!;
     public Type RuntimeType { get; set; } = null!;
 
     public override void Init(EmitStub stub, EmitMeta target)
     {
+        base.Init(stub, target);
+
         TypeBuilder = CreateTypeBuilderStruct($"Ser_{target.Type.Name}");
         TypeBuilder.MarkReadonly();
 
-        TupleSize = GetTupleSize(target.Type);
         StartSeq = ReflectionUtils.ISerializer_StartSeq_2generic
             .MakeGenericMethod(target.Type, TypeBuilder);
     }
 
     public override EmitTransform[] CollectTransforms(EmitStub stub, EmitMeta target)
     {
-        if (target.IsValueType) return Array.Empty<EmitTransform>();
+        if (target.IsValueType || Size == 8) return EmitTransform.EmptyTransforms;
         else return SerializeEmitProvider.ReferenceTypeTransforms;
     }
-
-    public override DepMeta[] CollectDeps(EmitStub stub, EmitMeta target)
-    {
-        var nullable = target.TypeMeta.Generics?.Nullabilities;
-        return target.Type.GetGenericArguments().Select((t, i) =>
-        {
-            var item_nullable = nullable?[i];
-            var transforms = !t.IsValueType && item_nullable is not
-                { NullabilityInfo.ReadState: NullabilityState.NotNull }
-                ? SerializeEmitProvider.NullableReferenceTypeTransforms
-                : EmitTransform.EmptyTransforms;
-            return new DepMeta(new(TypeMetas.GetTypeMeta(t, item_nullable), EmitData.Default),
-                transforms, KeepRaw: i == 7);
-        }).ToArray();
-    }
-
+    
     public override Type GetEmitType(EmitStub stub, EmitMeta target, DepItem[] deps)
         => TypeBuilder;
 
@@ -70,21 +55,6 @@ internal class _Tuples_Public(bool IsValueTuple) : _Base
     public override object CreateInst(EmitStub stub, EmitMeta target, RuntimeDeps deps)
     {
         return Activator.CreateInstance(RuntimeType)!;
-    }
-
-    private int GetTupleSize(Type target, int size = 0)
-    {
-        for (;;)
-        {
-            if (!target.IsGenericType) return size;
-            var generics = target.GenericTypeArguments;
-            if (generics.Length < 8) return generics.Length + size;
-            target = generics[7];
-            if (!(IsValueTuple ? ReflectionUtils.ValueTuples : ReflectionUtils.ClassTuples).Contains(
-                    target.GetGenericTypeDefinition()))
-                return generics.Length + size;
-            size += 7;
-        }
     }
 
     private void EmitWrite(EmitMeta target)
@@ -160,11 +130,9 @@ internal class _Tuples_Public(bool IsValueTuple) : _Base
 
         #region write items
 
-        var items = target.Type.GetGenericArguments();
-
-        for (var i = 0; i < items.Length; i++)
+        for (var i = 0; i < ItemTypes.Length; i++)
         {
-            var item = items[i];
+            var item = ItemTypes[i];
             var dep = deps.Get(i);
 
             if (i > 7) throw new ArgumentOutOfRangeException();
