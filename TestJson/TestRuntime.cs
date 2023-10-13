@@ -188,6 +188,84 @@ public class TestRuntime
 
     #endregion
 
+    #region Struct7
+
+    public class Struct7Base
+    {
+        public int A { get; set; } = 123456;
+    }
+
+    public class Struct7 : Struct7Base { }
+
+    [Test]
+    public void TestStruct7()
+    {
+        var obj = new Struct7();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"A\":123456}"));
+    }
+
+    #endregion
+
+    #region Struct8
+
+    public interface IStruct8
+    {
+        public int A { get; set; }
+    }
+
+    public class Struct8 : IStruct8
+    {
+        public int A { get; set; } = 123456;
+    }
+
+    [Test]
+    public void TestStruct8()
+    {
+        var obj = new Struct8();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"A\":123456}"));
+    }
+
+    #endregion
+
+    #region Struct9
+
+    public interface IStruct9
+    {
+        public int A { get; set; }
+    }
+
+    public class Struct9 : IStruct9
+    {
+        public int A { get; set; } = 123456;
+    }
+
+    [Test]
+    public void TestStruct9()
+    {
+        IStruct9 obj = new Struct9();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"A\":123456}"));
+    }
+
+    #endregion
+
     #region StructCircularReference1
 
     public class StructCircularReference1
