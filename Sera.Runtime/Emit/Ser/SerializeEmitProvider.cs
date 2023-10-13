@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Sera.Core;
@@ -43,6 +44,7 @@ internal class SerializeEmitProvider : AEmitProvider
         if (target.IsArray) return CreateArrayJob(target);
         if (target.IsEnum) return CreateEnumJob(target);
         if (target.IsTuple(out var is_value_tuple)) return CreateTupleJob(target, is_value_tuple);
+        if (target.Type.IsAssignableTo2(typeof(List<>))) return CreateListJob(target);
         // todo other type
         return CreateStructJob(target);
     }
@@ -94,17 +96,6 @@ internal class SerializeEmitProvider : AEmitProvider
         }
     }
 
-    private EmitJob CreateArrayJob(EmitMeta target)
-    {
-        var item_type = target.Type.GetElementType()!;
-        if (target.IsSZArray)
-        {
-            if (item_type.IsVisible) return new Jobs._Array_SZ_Public(item_type);
-            else return new Jobs._Array_SZ_Private(item_type);
-        }
-        throw new NotSupportedException("Multidimensional and non-zero lower bound arrays are not supported");
-    }
-
     private EmitJob CreateTupleJob(EmitMeta target, bool is_value_tuple)
     {
         var item_types = target.Type.GetGenericArguments();
@@ -116,5 +107,23 @@ internal class SerializeEmitProvider : AEmitProvider
         {
             return new Jobs._Tuples_Private(is_value_tuple, item_types);
         }
+    }
+
+    private EmitJob CreateArrayJob(EmitMeta target)
+    {
+        var item_type = target.Type.GetElementType()!;
+        if (target.IsSZArray)
+        {
+            if (item_type.IsVisible) return new Jobs._Array_SZ_Public(item_type);
+            else return new Jobs._Array_SZ_Private(item_type);
+        }
+        throw new NotSupportedException("Multidimensional and non-zero lower bound arrays are not supported");
+    }
+
+    private EmitJob CreateListJob(EmitMeta target)
+    {
+        var item_type = target.Type.GetGenericArguments()[0];
+        if (item_type.IsVisible) return new Jobs._Array_List_Public(item_type);
+        return new Jobs._Array_List_Private(item_type);
     }
 }

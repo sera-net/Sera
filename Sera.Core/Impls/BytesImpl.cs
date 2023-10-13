@@ -7,7 +7,7 @@ using Sera.Core.Ser;
 
 namespace Sera.Core.Impls;
 
-public struct BytesImpl :
+public readonly struct BytesImpl :
     ISerialize<byte[]>, IDeserialize<byte[]>,
     IAsyncSerialize<byte[]>, IAsyncDeserialize<byte[]>
 {
@@ -26,7 +26,7 @@ public struct BytesImpl :
         => deserializer.ReadBytesAsync();
 }
 
-public struct BytesMemoryImpl :
+public readonly struct BytesMemoryImpl :
     ISerialize<Memory<byte>>, IDeserialize<Memory<byte>>,
     IAsyncSerialize<Memory<byte>>, IAsyncDeserialize<Memory<byte>>
 {
@@ -45,7 +45,7 @@ public struct BytesMemoryImpl :
         => deserializer.ReadBytesAsync<Memory<byte>, IdentityBytesMemoryVisitor>(new());
 }
 
-public struct BytesReadOnlyMemoryImpl :
+public readonly struct BytesReadOnlyMemoryImpl :
     ISerialize<ReadOnlyMemory<byte>>, IDeserialize<ReadOnlyMemory<byte>>,
     IAsyncSerialize<ReadOnlyMemory<byte>>, IAsyncDeserialize<ReadOnlyMemory<byte>>
 {
@@ -66,7 +66,7 @@ public struct BytesReadOnlyMemoryImpl :
         => deserializer.ReadBytesAsync<ReadOnlyMemory<byte>, IdentityBytesReadOnlyMemoryVisitor>(new());
 }
 
-public struct BytesListImpl :
+public readonly struct BytesListImpl :
     ISerialize<List<byte>>, IDeserialize<List<byte>>,
     IAsyncSerialize<List<byte>>, IAsyncDeserialize<List<byte>>
 {
@@ -85,7 +85,7 @@ public struct BytesListImpl :
         => await deserializer.ReadBytesAsync<List<byte>, IdentityBytesListVisitor>(new());
 }
 
-public struct BytesReadOnlySequenceImpl :
+public readonly struct BytesReadOnlySequenceImpl :
     ISerialize<ReadOnlySequence<byte>>, IDeserialize<ReadOnlySequence<byte>>,
     IAsyncSerialize<ReadOnlySequence<byte>>, IAsyncDeserialize<ReadOnlySequence<byte>>
 {

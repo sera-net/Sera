@@ -3,7 +3,7 @@ using Sera.Core.De;
 
 namespace Sera.Core.Impls;
 
-public readonly record struct EmptyStructVisitor<R>(R v) : IStructDeserializerVisitor<R>, IAsyncStructDeserializerVisitor<R>
+public readonly struct EmptyStructVisitor<R>(R v) : IStructDeserializerVisitor<R>, IAsyncStructDeserializerVisitor<R>
 {
     public R VisitStructSeq<A>(A access) where A : IStructSeqAccess
         => v;

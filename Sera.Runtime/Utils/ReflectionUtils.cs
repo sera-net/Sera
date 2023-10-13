@@ -18,53 +18,67 @@ namespace Sera.Runtime.Utils;
 internal static class ReflectionUtils
 {
     public static ConstructorInfo NullReferenceException_ctor { get; } =
-        typeof(NullReferenceException).GetConstructor(BindingFlags.Public | BindingFlags.Instance,
-            Array.Empty<Type>())!;
+        typeof(NullReferenceException).GetConstructor(
+            BindingFlags.Public | BindingFlags.Instance,
+            Array.Empty<Type>()
+        )!;
 
-    public static ConstructorInfo Nullable_UInt64_ctor { get; } = typeof(long?).GetConstructor(new[] { typeof(long) })!;
+    public static ConstructorInfo Nullable_UInt64_ctor { get; } =
+        typeof(long?).GetConstructor(new[] { typeof(long) })!;
     public static ConstructorInfo Nullable_UIntPtr_ctor { get; } =
         typeof(nuint?).GetConstructor(new[] { typeof(nuint) })!;
 
     public static MethodInfo StaticRuntimeProvider_TryGetSerialize { get; } =
         typeof(StaticRuntimeProvider).GetMethod(nameof(StaticRuntimeProvider.TryGetSerialize))!;
 
-    public static MethodInfo[] ISerializerMethods { get; } = typeof(ISerializer).GetMethods();
+    public static Dictionary<string, MethodInfo[]> ISerializerMethods { get; } =
+        typeof(ISerializer).GetMethods().GroupBy(a => a.Name)
+            .ToDictionary(g => g.Key, g => g.ToArray());
 
-    public static MethodInfo ISerializer_StartStruct_3generic { get; } = ISerializerMethods
-        .AsParallel()
-        .Single(m =>
-            m is { Name: nameof(ISerializer.StartStruct), IsGenericMethod: true }
-            && m.GetGenericArguments() is { Length: 3 }
-        );
+    public static MethodInfo ISerializer_StartStruct_3generic { get; } =
+        ISerializerMethods[nameof(ISerializer.StartStruct)]
+            .Single(m =>
+                m is { IsGenericMethod: true }
+                && m.GetGenericArguments() is { Length: 3 }
+            );
 
-    public static MethodInfo ISerializer_WriteArray_2generic_array { get; } = ISerializerMethods
-        .AsParallel()
-        .Single(m =>
-            m is { Name: nameof(ISerializer.WriteArray), IsGenericMethod: true }
-            && m.GetGenericArguments() is { Length: 2 }
-            && m.GetParameters()[0].ParameterType.IsSZArray
-        );
+    public static MethodInfo ISerializer_WriteArray_2generic_array { get; } =
+        ISerializerMethods[nameof(ISerializer.WriteArray)]
+            .Single(m =>
+                m is { IsGenericMethod: true }
+                && m.GetGenericArguments() is { Length: 2 }
+                && m.GetParameters()[0].ParameterType.IsSZArray
+            );
 
-    public static MethodInfo ISerializer_StartSeq_2generic { get; } = ISerializerMethods
-        .AsParallel()
-        .Single(m =>
-            m is { Name: nameof(ISerializer.StartSeq), IsGenericMethod: true }
-            && m.GetGenericArguments() is { Length: 2 }
-        );
+    public static MethodInfo ISerializer_WriteArray_2generic_list { get; } =
+        ISerializerMethods[nameof(ISerializer.WriteArray)]
+            .Single(m =>
+                m is { IsGenericMethod: true }
+                && m.GetGenericArguments() is { Length: 2 }
+                && m.GetParameters()[0].ParameterType is { IsGenericType: true } p0
+                && p0.GetGenericTypeDefinition() == typeof(List<>)
+            );
 
-    public static MethodInfo ISerializer_WriteVariantUnit_1generic { get; } = ISerializerMethods
-        .AsParallel()
-        .Single(m =>
-            m is { Name: nameof(ISerializer.WriteVariantUnit), IsGenericMethod: true }
-            && m.GetGenericArguments() is { Length: 1 }
-        );
+    public static MethodInfo ISerializer_StartSeq_2generic { get; } =
+        ISerializerMethods[nameof(ISerializer.StartSeq)]
+            .Single(m =>
+                m is { IsGenericMethod: true }
+                && m.GetGenericArguments() is { Length: 2 }
+            );
 
-    public static MethodInfo ISerializer_WriteEmptyUnion_1generic { get; } = ISerializerMethods
-        .AsParallel()
-        .Single(m =>
-            m is { Name: nameof(ISerializer.WriteEmptyUnion), IsGenericMethod: true }
-            && m.GetGenericArguments() is { Length: 1 }
-        );
+    public static MethodInfo ISerializer_WriteVariantUnit_1generic { get; } =
+        ISerializerMethods[nameof(ISerializer.WriteVariantUnit)]
+            .Single(m =>
+                m is { IsGenericMethod: true }
+                && m.GetGenericArguments() is { Length: 1 }
+            );
+
+    public static MethodInfo ISerializer_WriteEmptyUnion_1generic { get; } =
+        ISerializerMethods[nameof(ISerializer.WriteEmptyUnion)]
+            .Single(m =>
+                m is { IsGenericMethod: true }
+                && m.GetGenericArguments() is { Length: 1 }
+            );
 
     public static MethodInfo[] IStructSerializerMethods { get; } = typeof(IStructSerializer).GetMethods();
 
@@ -317,4 +331,23 @@ internal static class ReflectionUtils
         { 7, new(typeof(TupleSerializeImplWrapper<,,,,,,>), typeof(TupleSerializeImplBase<,,,,,,>)) },
         { 8, new(typeof(TupleSerializeImplWrapper<,,,,,,,>), typeof(TupleRestSerializeImplBase<,,,,,,,>)) },
     };
+
+    public static bool IsAssignableTo2(this Type type, Type target)
+    {
+        if (type == target) return true;
+        if (!type.IsGenericTypeDefinition && !target.IsGenericTypeDefinition) return type.IsAssignableTo(target);
+        for (;;)
+        {
+            var l = type.IsGenericType ? type.GetGenericTypeDefinition() : type;
+            var r = target.IsGenericType ? target.GetGenericTypeDefinition() : target;
+
+            if (l == r) return true;
+
+            var base_type = type.BaseType;
+            if (base_type == null) return false;
+            if (base_type == target) return true;
+
+            type = base_type;
+        }
+    }
 }

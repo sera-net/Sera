@@ -8,7 +8,7 @@ using Sera.Core.Ser;
 
 namespace Sera.Core.Impls;
 
-public record AnyImpl :
+public class AnyImpl :
     ISerialize<SeraAny>, IAsyncSerialize<SeraAny>,
     IDeserialize<SeraAny>, IAsyncDeserialize<SeraAny>,
     ISeqSerializerReceiver<List<SeraAny>>,

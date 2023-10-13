@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Sera.Core.De;
 using Sera.Core.Ser;
@@ -7,36 +8,49 @@ namespace Sera.Core.Impls;
 
 #region Serialize
 
-public record ListSerializeImpl<L, T, ST>(ST Serialize) : ISerialize<L>, ISeqSerializerReceiver<L>
-    where L : List<T> where ST : ISerialize<T>
+public readonly struct ListSerializeImplWrapper<L, T>(ListSerializeImplBase<L, T> Serialize) : ISerialize<L>
+    where L : List<T>
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Write<S>(S serializer, L value, ISeraOptions options) where S : ISerializer
-    {
-        serializer.StartSeq<T, L, ListSerializeImpl<L, T, ST>>((nuint)value.Count, value, this);
-    }
-
-    public void Receive<S>(L value, S serializer) where S : ISeqSerializer
-    {
-        foreach (var item in value)
-        {
-            serializer.WriteElement(item, Serialize);
-        }
-    }
+        => Serialize.Write(serializer, value, options);
 }
 
-public record AsyncListSerializeImpl<L, T, ST>(ST Serialize) : IAsyncSerialize<L>, IAsyncSeqSerializerReceiver<L>
+public abstract class ListSerializeImplBase<L, T> : ISerialize<L> where L : List<T>
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public abstract void Write<S>(S serializer, L value, ISeraOptions options) where S : ISerializer;
+}
+
+public sealed class ListSerializeImpl<L, T, ST>(ST Serialize) : ListSerializeImplBase<L, T>
+    where L : List<T> where ST : ISerialize<T>
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public override void Write<S>(S serializer, L value, ISeraOptions options)
+        => serializer.WriteArray(value, Serialize);
+}
+
+public readonly struct AsyncListSerializeImplWrapper<L, T>(AsyncListSerializeImplBase<L, T> Serialize)
+    : IAsyncSerialize<L>
+    where L : List<T>
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ValueTask WriteAsync<S>(S serializer, L value, ISeraOptions options) where S : IAsyncSerializer
+        => Serialize.WriteAsync(serializer, value, options);
+}
+
+public abstract class AsyncListSerializeImplBase<L, T> : IAsyncSerialize<L> where L : List<T>
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public abstract ValueTask WriteAsync<S>(S serializer, L value, ISeraOptions options) where S : IAsyncSerializer;
+}
+
+public sealed class AsyncListSerializeImpl<L, T, ST>(ST Serialize) : AsyncListSerializeImplBase<L, T>
     where L : List<T> where ST : IAsyncSerialize<T>
 {
-    public ValueTask WriteAsync<S>(S serializer, L value, ISeraOptions options) where S : IAsyncSerializer
-        => serializer.StartSeqAsync<T, L, AsyncListSerializeImpl<L, T, ST>>((nuint)value.Count, value, this);
-
-    public async ValueTask ReceiveAsync<S>(L value, S serializer) where S : IAsyncSeqSerializer
-    {
-        foreach (var item in value)
-        {
-            await serializer.WriteElementAsync(item, Serialize);
-        }
-    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public override ValueTask WriteAsync<S>(S serializer, L value, ISeraOptions options)
+        => serializer.WriteArrayAsync(value, Serialize);
 }
 
 #endregion

@@ -1,6 +1,4 @@
-﻿using System.Reflection;
-using System.Reflection.Emit;
-using JetBrains.Annotations;
+﻿using JetBrains.Annotations;
 using Sera;
 using Sera.Json;
 using Sera.Json.Runtime;
@@ -2451,6 +2449,44 @@ public class TestRuntime
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[{\"A\":[null]}]"));
+    }
+
+    #endregion
+
+    #region List1
+
+    [Test]
+    public void TestList1()
+    {
+        var obj = new List<int> { 1, 2, 3 };
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,2,3]"));
+    }
+
+    #endregion
+
+
+    #region PrivateList1
+
+    private class PrivateList1 { }
+
+    [Test]
+    public void TestPrivateList1()
+    {
+        var a = new PrivateList1();
+        var obj = new List<PrivateList1> { a, a, a };
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[{},{},{}]"));
     }
 
     #endregion
