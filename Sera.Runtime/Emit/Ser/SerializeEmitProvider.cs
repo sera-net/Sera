@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -39,12 +40,16 @@ internal class SerializeEmitProvider : AEmitProvider
 
     protected override EmitJob CreateJob(EmitMeta target)
     {
+        // todo support span or custom impl
+        if (target.Type.IsByRefLike || target.Type.IsByRef)
+            throw new ArgumentException($"ByRefType is not support; {target.Type}");
         if (PrimitiveImpls.IsPrimitiveType(target.Type)) return new Jobs._Primitive();
         if (TryGetStaticImpl(target.Type, out var inst)) return new Jobs._Static(inst!.GetType(), inst);
         if (target.IsArray) return CreateArrayJob(target);
         if (target.IsEnum) return CreateEnumJob(target);
         if (target.IsTuple(out var is_value_tuple)) return CreateTupleJob(target, is_value_tuple);
         if (target.Type.IsAssignableTo2(typeof(List<>))) return CreateListJob(target);
+        if (target.Type.IsAssignableTo2(typeof(ReadOnlySequence<>))) return CreateReadOnlySequenceJob(target);
         // todo other type
         return CreateStructJob(target);
     }
@@ -125,5 +130,12 @@ internal class SerializeEmitProvider : AEmitProvider
         var item_type = target.Type.GetGenericArguments()[0];
         if (item_type.IsVisible) return new Jobs._Array_List_Public(item_type);
         return new Jobs._Array_List_Private(item_type);
+    }
+
+    private EmitJob CreateReadOnlySequenceJob(EmitMeta target)
+    {
+        var item_type = target.Type.GetGenericArguments()[0];
+        if (item_type.IsVisible) return new Jobs._Array_ReadOnlySequence_Public(item_type);
+        return new Jobs._Array_ReadOnlySequence_Private(item_type);
     }
 }

@@ -20,7 +20,7 @@ internal abstract class _Array_Public(Type ItemType) : _Array(ItemType)
         TypeBuilder = CreateTypeBuilderStruct($"Ser_{target.Type.Name}");
         TypeBuilder.MarkReadonly();
     }
-    
+
     public override Type GetEmitPlaceholderType(EmitStub stub, EmitMeta target)
         => TypeBuilder;
 
@@ -61,14 +61,17 @@ internal abstract class _Array_Public(Type ItemType) : _Array(ItemType)
 
         var not_null_label = ilg.DefineLabel();
 
-        #region if (value == null) throw new NullReferenceException();
+        if (!target.Type.IsValueType)
+        {
+            #region if (value == null) throw new NullReferenceException();
 
-        ilg.Emit(OpCodes.Ldarg_2);
-        ilg.Emit(OpCodes.Brtrue_S, not_null_label);
-        ilg.Emit(OpCodes.Newobj, ReflectionUtils.NullReferenceException_ctor);
-        ilg.Emit(OpCodes.Throw);
+            ilg.Emit(OpCodes.Ldarg_2);
+            ilg.Emit(OpCodes.Brtrue_S, not_null_label);
+            ilg.Emit(OpCodes.Newobj, ReflectionUtils.NullReferenceException_ctor);
+            ilg.Emit(OpCodes.Throw);
 
-        #endregion
+            #endregion
+        }
 
         #region serializer.WriteArray<T, S>(value, Serialize);
 

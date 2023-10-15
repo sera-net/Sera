@@ -17,13 +17,13 @@ public readonly struct ArraySerializeImplWrapper<T>(ArraySerializeImplBase<T> Se
         => Serialize.Write(serializer, value, options);
 }
 
-public abstract record ArraySerializeImplBase<T> : ISerialize<T[]>
+public abstract class ArraySerializeImplBase<T> : ISerialize<T[]>
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public abstract void Write<S>(S serializer, T[] value, ISeraOptions options) where S : ISerializer;
 }
 
-public sealed record ArraySerializeImpl<T, ST>(ST Serialize) : ArraySerializeImplBase<T>
+public sealed class ArraySerializeImpl<T, ST>(ST Serialize) : ArraySerializeImplBase<T>
     where ST : ISerialize<T>
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

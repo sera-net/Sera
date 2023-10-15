@@ -1,4 +1,5 @@
-﻿using JetBrains.Annotations;
+﻿using System.Buffers;
+using JetBrains.Annotations;
 using Sera;
 using Sera.Json;
 using Sera.Json.Runtime;
@@ -2470,7 +2471,6 @@ public class TestRuntime
 
     #endregion
 
-
     #region PrivateList1
 
     private class PrivateList1 { }
@@ -2480,6 +2480,44 @@ public class TestRuntime
     {
         var a = new PrivateList1();
         var obj = new List<PrivateList1> { a, a, a };
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[{},{},{}]"));
+    }
+
+    #endregion
+
+    #region ReadOnlySequence1
+
+    [Test]
+    public void TestReadOnlySequence1()
+    {
+        var obj = new ReadOnlySequence<int>(new[] { 1, 2, 3 });
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,2,3]"));
+    }
+
+    #endregion
+
+
+    #region PrivateReadOnlySequence1
+
+    private class PrivateReadOnlySequence1 { }
+    
+    [Test]
+    public void TestPrivateReadOnlySequence1()
+    {
+        var a = new PrivateReadOnlySequence1();
+        var obj = new ReadOnlySequence<PrivateReadOnlySequence1>(new[] { a, a, a });
 
         var str = SeraJson.Serializer
             .ToString()

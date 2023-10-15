@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -57,6 +58,15 @@ internal static class ReflectionUtils
                 && m.GetGenericArguments() is { Length: 2 }
                 && m.GetParameters()[0].ParameterType is { IsGenericType: true } p0
                 && p0.GetGenericTypeDefinition() == typeof(List<>)
+            );
+    
+    public static MethodInfo ISerializer_WriteArray_2generic_ReadOnlySequence { get; } =
+        ISerializerMethods[nameof(ISerializer.WriteArray)]
+            .Single(m =>
+                m is { IsGenericMethod: true }
+                && m.GetGenericArguments() is { Length: 2 }
+                && m.GetParameters()[0].ParameterType is { IsGenericType: true } p0
+                && p0.GetGenericTypeDefinition() == typeof(ReadOnlySequence<>)
             );
 
     public static MethodInfo ISerializer_StartSeq_2generic { get; } =
