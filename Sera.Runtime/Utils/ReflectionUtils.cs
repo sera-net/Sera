@@ -29,6 +29,19 @@ internal static class ReflectionUtils
     public static ConstructorInfo Nullable_UIntPtr_ctor { get; } =
         typeof(nuint?).GetConstructor(new[] { typeof(nuint) })!;
 
+    private static readonly ConditionalWeakTable<Type, MethodInfo> _Memory_to_ReadOnlyMemory = new();
+
+    public static MethodInfo Get_Memory_to_ReadOnlyMemory(Type itemType) =>
+        _Memory_to_ReadOnlyMemory.GetValue(typeof(Memory<>).MakeGenericType(itemType), static t => t
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Single(a =>
+                a is { Name: "op_Implicit" }
+                && a.GetParameters() is [{ ParameterType : { IsGenericType: true } p1 }]
+                && p1.GetGenericTypeDefinition() == typeof(Memory<>)
+                && a.ReturnType is { IsGenericType: true } r
+                && r.GetGenericTypeDefinition() == typeof(ReadOnlyMemory<>)
+            ));
+
     public static MethodInfo StaticRuntimeProvider_TryGetSerialize { get; } =
         typeof(StaticRuntimeProvider).GetMethod(nameof(StaticRuntimeProvider.TryGetSerialize))!;
 
@@ -59,7 +72,7 @@ internal static class ReflectionUtils
                 && m.GetParameters()[0].ParameterType is { IsGenericType: true } p0
                 && p0.GetGenericTypeDefinition() == typeof(List<>)
             );
-    
+
     public static MethodInfo ISerializer_WriteArray_2generic_ReadOnlySequence { get; } =
         ISerializerMethods[nameof(ISerializer.WriteArray)]
             .Single(m =>
@@ -67,6 +80,15 @@ internal static class ReflectionUtils
                 && m.GetGenericArguments() is { Length: 2 }
                 && m.GetParameters()[0].ParameterType is { IsGenericType: true } p0
                 && p0.GetGenericTypeDefinition() == typeof(ReadOnlySequence<>)
+            );
+
+    public static MethodInfo ISerializer_WriteArray_2generic_ReadOnlyMemory { get; } =
+        ISerializerMethods[nameof(ISerializer.WriteArray)]
+            .Single(m =>
+                m is { IsGenericMethod: true }
+                && m.GetGenericArguments() is { Length: 2 }
+                && m.GetParameters()[0].ParameterType is { IsGenericType: true } p0
+                && p0.GetGenericTypeDefinition() == typeof(ReadOnlyMemory<>)
             );
 
     public static MethodInfo ISerializer_StartSeq_2generic { get; } =

@@ -81,6 +81,7 @@ internal abstract class _Array_Public(Type ItemType) : _Array(ItemType)
         ilg.MarkLabel(not_null_label);
         ilg.Emit(OpCodes.Ldarga, 1);
         ilg.Emit(OpCodes.Ldarg_2);
+        ConvertValue(target, dep, ilg);
         ilg.Emit(OpCodes.Call, dep.GetDepMethodInfo);
         if (dep.Boxed)
         {
@@ -103,4 +104,6 @@ internal abstract class _Array_Public(Type ItemType) : _Array(ItemType)
         TypeBuilder.DefineMethodOverride(write_method,
             interface_type.GetMethod(nameof(ISerialize<object>.Write))!);
     }
+
+    protected virtual void ConvertValue(EmitMeta target, DepPlace dep, ILGenerator ilg) { }
 }

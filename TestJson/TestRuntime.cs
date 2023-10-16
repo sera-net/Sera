@@ -2249,7 +2249,6 @@ public class TestRuntime
 
     #endregion
 
-
     #region PrivateTuple1
 
     private class PrivateTuple1 { }
@@ -2348,6 +2347,51 @@ public class TestRuntime
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[{},{},{},{},{},{},{},{},{},{},{}]"));
         }
+    }
+
+    #endregion
+
+    #region PrivateTuple2
+
+    private class PrivateTuple2
+    {
+        public (PrivateTuple2?, PrivateTuple2?) A { get; set; } = (null, null);
+    }
+
+    [Test]
+    public void TestPrivateTuple2()
+    {
+        var obj = new PrivateTuple2();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"A\":[null,null]}"));
+    }
+
+    #endregion
+
+    #region PrivateTuple3
+
+    private class PrivateTuple3
+    {
+        public Tuple<PrivateTuple3?, PrivateTuple3?> A { get; set; } =
+            Tuple.Create<PrivateTuple3?, PrivateTuple3?>(null, null);
+    }
+
+    [Test]
+    public void TestPrivateTuple3()
+    {
+        var obj = new PrivateTuple3();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"A\":[null,null]}"));
     }
 
     #endregion
@@ -2473,7 +2517,10 @@ public class TestRuntime
 
     #region PrivateList1
 
-    private class PrivateList1 { }
+    private class PrivateList1
+    {
+        public List<PrivateList1?> A { get; set; } = new() { null };
+    }
 
     [Test]
     public void TestPrivateList1()
@@ -2486,7 +2533,7 @@ public class TestRuntime
             .Serialize(obj);
 
         Console.WriteLine(str);
-        Assert.That(str, Is.EqualTo("[{},{},{}]"));
+        Assert.That(str, Is.EqualTo("[{\"A\":[null]},{\"A\":[null]},{\"A\":[null]}]"));
     }
 
     #endregion
@@ -2508,11 +2555,38 @@ public class TestRuntime
 
     #endregion
 
+    #region ReadOnlySequence2
+
+    public class ReadOnlySequence2
+    {
+        public ReadOnlySequence<ReadOnlySequence2?> A { get; set; } =
+            new(new ReadOnlySequence2?[] { null });
+    }
+
+    [Test]
+    public void TestReadOnlySequence2()
+    {
+        var a = new ReadOnlySequence2();
+        var obj = new ReadOnlySequence<ReadOnlySequence2>(new[] { a, a, a });
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[{\"A\":[null]},{\"A\":[null]},{\"A\":[null]}]"));
+    }
+
+    #endregion
 
     #region PrivateReadOnlySequence1
 
-    private class PrivateReadOnlySequence1 { }
-    
+    private class PrivateReadOnlySequence1
+    {
+        public ReadOnlySequence<PrivateReadOnlySequence1?> A { get; set; } =
+            new(new PrivateReadOnlySequence1?[] { null });
+    }
+
     [Test]
     public void TestPrivateReadOnlySequence1()
     {
@@ -2524,7 +2598,137 @@ public class TestRuntime
             .Serialize(obj);
 
         Console.WriteLine(str);
-        Assert.That(str, Is.EqualTo("[{},{},{}]"));
+        Assert.That(str, Is.EqualTo("[{\"A\":[null]},{\"A\":[null]},{\"A\":[null]}]"));
+    }
+
+    #endregion
+
+    #region ReadOnlyMemory1
+
+    [Test]
+    public void TestReadOnlyMemory1()
+    {
+        var obj = new ReadOnlyMemory<int>(new[] { 1, 2, 3 });
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,2,3]"));
+    }
+
+    #endregion
+
+    #region ReadOnlyMemory2
+
+    public class ReadOnlyMemory2
+    {
+        public ReadOnlyMemory<ReadOnlyMemory2?> A { get; set; } =
+            new(new ReadOnlyMemory2?[] { null });
+    }
+
+    [Test]
+    public void TestReadOnlyMemory2()
+    {
+        var a = new ReadOnlyMemory2();
+        var obj = new ReadOnlyMemory<ReadOnlyMemory2>(new[] { a, a, a });
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[{\"A\":[null]},{\"A\":[null]},{\"A\":[null]}]"));
+    }
+
+    #endregion
+
+    #region PrivateReadOnlyMemory1
+
+    private class PrivateReadOnlyMemory1
+    {
+        public ReadOnlyMemory<PrivateReadOnlyMemory1?> A { get; set; } =
+            new(new PrivateReadOnlyMemory1?[] { null });
+    }
+
+    [Test]
+    public void TestPrivateReadOnlyMemory1()
+    {
+        var a = new PrivateReadOnlyMemory1();
+        var obj = new ReadOnlyMemory<PrivateReadOnlyMemory1>(new[] { a, a, a });
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[{\"A\":[null]},{\"A\":[null]},{\"A\":[null]}]"));
+    }
+
+    #endregion
+
+    #region Memory1
+
+    [Test]
+    public void TestMemory1()
+    {
+        var obj = new Memory<int>(new[] { 1, 2, 3 });
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,2,3]"));
+    }
+
+    #endregion
+
+    #region Memory2
+
+    public class Memory2
+    {
+        public Memory<Memory2?> A { get; set; } =
+            new(new Memory2?[] { null });
+    }
+
+    [Test]
+    public void TestMemory2()
+    {
+        var a = new Memory2();
+        var obj = new Memory<Memory2>(new[] { a, a, a });
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[{\"A\":[null]},{\"A\":[null]},{\"A\":[null]}]"));
+    }
+
+    #endregion
+    
+    #region PrivateMemory1
+
+    private class PrivateMemory1
+    {
+        public Memory<PrivateMemory1?> A { get; set; } =
+            new(new PrivateMemory1?[] { null });
+    }
+
+    [Test]
+    public void TestPrivateMemory1()
+    {
+        var a = new PrivateMemory1();
+        var obj = new Memory<PrivateMemory1>(new[] { a, a, a });
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[{\"A\":[null]},{\"A\":[null]},{\"A\":[null]}]"));
     }
 
     #endregion

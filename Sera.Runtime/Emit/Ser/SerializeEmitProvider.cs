@@ -5,7 +5,6 @@ using System.Linq;
 using System.Reflection;
 using Sera.Core;
 using Sera.Core.Impls;
-using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Emit.Transform;
 using Sera.Runtime.Utils;
 
@@ -50,6 +49,8 @@ internal class SerializeEmitProvider : AEmitProvider
         if (target.IsTuple(out var is_value_tuple)) return CreateTupleJob(target, is_value_tuple);
         if (target.Type.IsAssignableTo2(typeof(List<>))) return CreateListJob(target);
         if (target.Type.IsAssignableTo2(typeof(ReadOnlySequence<>))) return CreateReadOnlySequenceJob(target);
+        if (target.Type.IsAssignableTo2(typeof(ReadOnlyMemory<>))) return CreateReadOnlyMemoryJob(target);
+        if (target.Type.IsAssignableTo2(typeof(Memory<>))) return CreateMemoryJob(target);
         // todo other type
         return CreateStructJob(target);
     }
@@ -137,5 +138,19 @@ internal class SerializeEmitProvider : AEmitProvider
         var item_type = target.Type.GetGenericArguments()[0];
         if (item_type.IsVisible) return new Jobs._Array_ReadOnlySequence_Public(item_type);
         return new Jobs._Array_ReadOnlySequence_Private(item_type);
+    }
+
+    private EmitJob CreateReadOnlyMemoryJob(EmitMeta target)
+    {
+        var item_type = target.Type.GetGenericArguments()[0];
+        if (item_type.IsVisible) return new Jobs._Array_ReadOnlyMemory_Public(item_type);
+        return new Jobs._Array_ReadOnlyMemory_Private(item_type);
+    }
+
+    private EmitJob CreateMemoryJob(EmitMeta target)
+    {
+        var item_type = target.Type.GetGenericArguments()[0];
+        if (item_type.IsVisible) return new Jobs._Array_Memory_Public(item_type);
+        return new Jobs._Array_Memory_Private(item_type);
     }
 }
