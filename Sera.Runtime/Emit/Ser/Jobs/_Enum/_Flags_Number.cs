@@ -5,9 +5,9 @@ using Sera.Core.Ser;
 using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Emit.Ser.Internal;
 
-namespace Sera.Runtime.Emit.Ser.Jobs;
+namespace Sera.Runtime.Emit.Ser.Jobs._Enum;
 
-internal class _Enum_Flags_Number(Type UnderlyingType)  : _Enum_Flags(UnderlyingType)
+internal class _Flags_Number(Type UnderlyingType)  : _Flags(UnderlyingType)
 {
     private Type NumberImplType = null!;
 

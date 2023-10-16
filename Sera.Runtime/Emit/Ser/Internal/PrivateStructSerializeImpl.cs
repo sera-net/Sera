@@ -24,6 +24,6 @@ public struct PrivateStructSerializeImpl<T> : ISerialize<T>, IStructSerializerRe
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Receive<S>(T value, S serializer) where S : IStructSerializer
     {
-        Jobs._Struct_Private.ReceiveImpl<T, S>.Receive(data.meta_key, value, serializer);
+        Jobs._Struct._Private.ReceiveImpl<T, S>.Receive(data.meta_key, value, serializer);
     }
 }

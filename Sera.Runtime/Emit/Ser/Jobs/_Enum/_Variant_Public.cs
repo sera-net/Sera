@@ -10,11 +10,11 @@ using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Emit.Transform;
 using Sera.Runtime.Utils;
 
-namespace Sera.Runtime.Emit.Ser.Jobs;
+namespace Sera.Runtime.Emit.Ser.Jobs._Enum;
 
-internal class _Enum_Variant_Public
+internal class _Variant_Public
     (Type UnderlyingType, EnumInfo[] Items, EnumJumpTables? JumpTable, SeraEnumAttribute? EnumAttr)
-    : _Enum_Variant(UnderlyingType, Items, EnumAttr)
+    : _Variant(UnderlyingType, Items, EnumAttr)
 {
     public const int MaxIfNums = 16;
 

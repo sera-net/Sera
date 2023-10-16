@@ -2,9 +2,9 @@
 using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Emit.Transform;
 
-namespace Sera.Runtime.Emit.Ser.Jobs;
+namespace Sera.Runtime.Emit.Ser.Jobs._Enum;
 
-internal abstract class _Enum_Flags(Type UnderlyingType) : _Base
+internal abstract class _Flags(Type UnderlyingType) : _Base
 {
     public override EmitTransform[] CollectTransforms(EmitStub stub, EmitMeta target)
         => EmitTransform.EmptyTransforms;

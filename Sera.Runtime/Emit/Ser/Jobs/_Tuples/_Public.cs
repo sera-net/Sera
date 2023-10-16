@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using Sera.Core;
@@ -8,9 +7,9 @@ using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Emit.Transform;
 using Sera.Runtime.Utils;
 
-namespace Sera.Runtime.Emit.Ser.Jobs;
+namespace Sera.Runtime.Emit.Ser.Jobs._Tuples;
 
-internal class _Tuples_Public(bool IsValueTuple, Type[] ItemTypes) : _Tuples(IsValueTuple, ItemTypes)
+internal class _Public(bool IsValueTuple, Type[] ItemTypes) : _Tuples(IsValueTuple, ItemTypes)
 {
     public MethodInfo StartSeq { get; set; } = null!;
     public TypeBuilder TypeBuilder { get; set; } = null!;

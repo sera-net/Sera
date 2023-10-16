@@ -3,9 +3,9 @@ using System.Reflection;
 using Sera.Core.Impls;
 using Sera.Runtime.Emit.Deps;
 
-namespace Sera.Runtime.Emit.Ser.Jobs;
+namespace Sera.Runtime.Emit.Ser.Jobs._Enum;
 
-internal class _Enum_Flags_String(Type UnderlyingType) : _Enum_Flags(UnderlyingType)
+internal class _Flags_String(Type UnderlyingType) : _Flags(UnderlyingType)
 {
     public override void Init(EmitStub stub, EmitMeta target)
     {

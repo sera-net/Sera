@@ -60,11 +60,11 @@ internal class SerializeEmitProvider : AEmitProvider
         var members = StructReflectionUtils.GetStructMembers(target.Type, SerOrDe.Ser);
         if (target.Type.IsVisible && members.All(m => m.Type.IsVisible))
         {
-            return new Jobs._Struct_Public(members);
+            return new Jobs._Struct._Public(members);
         }
         else
         {
-            return new Jobs._Struct_Private(members);
+            return new Jobs._Struct._Private(members);
         }
     }
 
@@ -78,11 +78,11 @@ internal class SerializeEmitProvider : AEmitProvider
             var mode = flags_attr?.Mode ?? SeraFlagsMode.Array;
             return mode switch
             {
-                SeraFlagsMode.Array => new Jobs._Enum_Flags_Array(underlying_type,
+                SeraFlagsMode.Array => new Jobs._Enum._Flags_Array(underlying_type,
                     EnumUtils.GetEnumInfo(target.Type, underlying_type, distinct: false)),
-                SeraFlagsMode.Number => new Jobs._Enum_Flags_Number(underlying_type),
-                SeraFlagsMode.String => new Jobs._Enum_Flags_String(underlying_type),
-                SeraFlagsMode.StringSplit => new Jobs._Enum_Flags_StringSplit(underlying_type),
+                SeraFlagsMode.Number => new Jobs._Enum._Flags_Number(underlying_type),
+                SeraFlagsMode.String => new Jobs._Enum._Flags_String(underlying_type),
+                SeraFlagsMode.StringSplit => new Jobs._Enum._Flags_StringSplit(underlying_type),
                 _ => throw new ArgumentOutOfRangeException()
             };
         }
@@ -93,11 +93,11 @@ internal class SerializeEmitProvider : AEmitProvider
             if (target.Type.IsVisible)
             {
                 var jump_table = EnumUtils.TryMakeJumpTable(underlying_type, items);
-                return new Jobs._Enum_Variant_Public(underlying_type, items, jump_table, enum_attr);
+                return new Jobs._Enum._Variant_Public(underlying_type, items, jump_table, enum_attr);
             }
             else
             {
-                return new Jobs._Enum_Variant_Private(underlying_type, items, enum_attr);
+                return new Jobs._Enum._Variant_Private(underlying_type, items, enum_attr);
             }
         }
     }
@@ -107,11 +107,11 @@ internal class SerializeEmitProvider : AEmitProvider
         var item_types = target.Type.GetGenericArguments();
         if (item_types.All(t => t.IsVisible))
         {
-            return new Jobs._Tuples_Public(is_value_tuple, item_types);
+            return new Jobs._Tuples._Public(is_value_tuple, item_types);
         }
         else
         {
-            return new Jobs._Tuples_Private(is_value_tuple, item_types);
+            return new Jobs._Tuples._Private(is_value_tuple, item_types);
         }
     }
 

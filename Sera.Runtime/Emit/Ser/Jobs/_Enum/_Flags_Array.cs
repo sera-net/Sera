@@ -4,9 +4,9 @@ using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Emit.Ser.Internal;
 using Sera.Runtime.Utils;
 
-namespace Sera.Runtime.Emit.Ser.Jobs;
+namespace Sera.Runtime.Emit.Ser.Jobs._Enum;
 
-internal class _Enum_Flags_Array(Type UnderlyingType, EnumInfo[] Items) : _Enum_Flags(UnderlyingType)
+internal class _Flags_Array(Type UnderlyingType, EnumInfo[] Items) : _Flags(UnderlyingType)
 {
     private Type InfoType = null!;
     private Array Infos = null!;

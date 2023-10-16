@@ -10,11 +10,11 @@ using Sera.Runtime.Emit.Transform;
 using Sera.Runtime.Emit.Ser.Internal;
 using Sera.Runtime.Utils;
 
-namespace Sera.Runtime.Emit.Ser.Jobs;
+namespace Sera.Runtime.Emit.Ser.Jobs._Enum;
 
-internal class _Enum_Variant_Private
+internal class _Variant_Private
     (Type UnderlyingType, EnumInfo[] Items, SeraEnumAttribute? EnumAttr)
-    : _Enum_Variant(UnderlyingType, Items, EnumAttr)
+    : _Variant(UnderlyingType, Items, EnumAttr)
 {
     private Type ImplType = null!;
     private Type ToTagType = null!;

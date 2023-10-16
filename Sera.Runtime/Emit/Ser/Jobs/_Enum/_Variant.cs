@@ -3,9 +3,9 @@ using System.Reflection;
 using Sera.Core.Ser;
 using Sera.Runtime.Utils;
 
-namespace Sera.Runtime.Emit.Ser.Jobs;
+namespace Sera.Runtime.Emit.Ser.Jobs._Enum;
 
-internal abstract class _Enum_Variant(Type UnderlyingType, EnumInfo[] Items, SeraEnumAttribute? EnumAttr) : _Base
+internal abstract class _Variant(Type UnderlyingType, EnumInfo[] Items, SeraEnumAttribute? EnumAttr) : _Base
 {
     public SeraEnumAttribute? EnumAttr { get; private set; } = EnumAttr;
     protected SerializerVariantHint? RootHint { get; } = EnumAttr?.SerHint;

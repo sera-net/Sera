@@ -8,9 +8,9 @@ using Sera.Core.Ser;
 using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Utils;
 
-namespace Sera.Runtime.Emit.Ser.Jobs;
+namespace Sera.Runtime.Emit.Ser.Jobs._Struct;
 
-internal sealed class _Struct_Public(StructMember[] Members) : _Struct(Members)
+internal sealed class _Public(StructMember[] Members) : _Struct(Members)
 {
     public TypeBuilder TypeBuilder { get; set; } = null!;
     public Type RuntimeType { get; set; } = null!;

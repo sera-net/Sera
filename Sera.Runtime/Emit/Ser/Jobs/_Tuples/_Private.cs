@@ -6,9 +6,9 @@ using Sera.Runtime.Emit.Transform;
 using Sera.Runtime.Utils;
 using BindingFlags = System.Reflection.BindingFlags;
 
-namespace Sera.Runtime.Emit.Ser.Jobs;
+namespace Sera.Runtime.Emit.Ser.Jobs._Tuples;
 
-internal class _Tuples_Private(bool IsValueTuple, Type[] ItemTypes) : _Tuples(IsValueTuple, ItemTypes)
+internal class _Private(bool IsValueTuple, Type[] ItemTypes) : _Tuples(IsValueTuple, ItemTypes)
 {
     public Type BaseType { get; set; } = null!;
     public Type[] ItemTypes { get; set; } = null!;
