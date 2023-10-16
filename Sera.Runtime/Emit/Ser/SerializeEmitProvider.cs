@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -11,13 +12,24 @@ namespace Sera.Runtime.Emit.Ser;
 
 internal class SerializeEmitProvider : AEmitProvider
 {
-    #region Deps
-
     public static readonly EmitTransform[] NullableReferenceTypeTransforms =
         { new Transforms._NullableReferenceTypeSerializeImpl() };
 
     public static readonly EmitTransform[] ReferenceTypeTransforms =
         { new Transforms._ReferenceTypeWrapperSerializeImpl() };
+
+    #region bytes impl
+
+    private static readonly FrozenDictionary<Type, object> bytes_impl = new Dictionary<Type, object>
+    {
+        { typeof(byte[]), BytesImpl.Instance },
+        { typeof(List<byte>), BytesListImpl.Instance },
+        { typeof(Memory<byte>), BytesMemoryImpl.Instance },
+        { typeof(ReadOnlyMemory<byte>), BytesReadOnlyMemoryImpl.Instance },
+        { typeof(ReadOnlySequence<byte>), BytesReadOnlySequenceImpl.Instance },
+    }.ToFrozenDictionary();
+
+    #endregion
 
     private bool TryGetStaticImpl(Type type, out object? impl)
     {
@@ -27,8 +39,6 @@ internal class SerializeEmitProvider : AEmitProvider
         impl = args[0];
         return r;
     }
-
-    #endregion
 
     public ISerialize<T> GetSerialize<T>()
     {
@@ -42,13 +52,19 @@ internal class SerializeEmitProvider : AEmitProvider
             throw new ArgumentException($"ByRefType is not support; {target.Type}");
         if (PrimitiveImpls.IsPrimitiveType(target.Type)) return new Jobs._Primitive();
         if (TryGetStaticImpl(target.Type, out var inst)) return new Jobs._Static(inst!.GetType(), inst);
+        if (target.Data.UserBytes && bytes_impl.TryGetValue(target.Type, out inst))
+            return new Jobs._Static(inst.GetType(), inst);
         if (target.IsArray) return CreateArrayJob(target);
         if (target.IsEnum) return CreateEnumJob(target);
         if (target.IsTuple(out var is_value_tuple)) return CreateTupleJob(target, is_value_tuple);
-        if (target.Type.IsAssignableTo2(typeof(List<>))) return CreateListJob(target);
-        if (target.Type.IsAssignableTo2(typeof(ReadOnlySequence<>))) return CreateReadOnlySequenceJob(target);
-        if (target.Type.IsAssignableTo2(typeof(ReadOnlyMemory<>))) return CreateReadOnlyMemoryJob(target);
-        if (target.Type.IsAssignableTo2(typeof(Memory<>))) return CreateMemoryJob(target);
+        if (target.Type.IsGenericType)
+        {
+            var generic_def = target.Type.GetGenericTypeDefinition();
+            if (generic_def == typeof(ReadOnlySequence<>)) return CreateReadOnlySequenceJob(target);
+            if (generic_def == typeof(ReadOnlyMemory<>)) return CreateReadOnlyMemoryJob(target);
+            if (generic_def == typeof(Memory<>)) return CreateMemoryJob(target);
+        }
+        if (target.Type.IsListBase(out var item_type)) return CreateListJob(target, item_type);
         // todo other type
         return CreateStructJob(target);
     }
@@ -118,37 +134,37 @@ internal class SerializeEmitProvider : AEmitProvider
         var item_type = target.Type.GetElementType()!;
         if (target.IsSZArray)
         {
-            if (item_type.IsVisible) return new Jobs._Array._SZ_Public(item_type);
+            if (target.Type.IsVisible && item_type.IsVisible) return new Jobs._Array._SZ_Public(item_type);
             else return new Jobs._Array._SZ_Private(item_type);
         }
         throw new NotSupportedException("Multidimensional and non-zero lower bound arrays are not supported");
     }
 
-    private EmitJob CreateListJob(EmitMeta target)
+    private EmitJob CreateListJob(EmitMeta target, Type item_type)
     {
-        var item_type = target.Type.GetGenericArguments()[0];
-        if (item_type.IsVisible) return new Jobs._Array._List_Public(item_type);
+        if (item_type == typeof(byte) && target.Data.UserBytes) return new Jobs._Bytes_List();
+        if (target.Type.IsVisible && item_type.IsVisible) return new Jobs._Array._List_Public(item_type);
         return new Jobs._Array._List_Private(item_type);
     }
 
     private EmitJob CreateReadOnlySequenceJob(EmitMeta target)
     {
         var item_type = target.Type.GetGenericArguments()[0];
-        if (item_type.IsVisible) return new Jobs._Array._ReadOnlySequence_Public(item_type);
+        if (target.Type.IsVisible && item_type.IsVisible) return new Jobs._Array._ReadOnlySequence_Public(item_type);
         return new Jobs._Array._ReadOnlySequence_Private(item_type);
     }
 
     private EmitJob CreateReadOnlyMemoryJob(EmitMeta target)
     {
         var item_type = target.Type.GetGenericArguments()[0];
-        if (item_type.IsVisible) return new Jobs._Array._ReadOnlyMemory_Public(item_type);
+        if (target.Type.IsVisible && item_type.IsVisible) return new Jobs._Array._ReadOnlyMemory_Public(item_type);
         return new Jobs._Array._ReadOnlyMemory_Private(item_type);
     }
 
     private EmitJob CreateMemoryJob(EmitMeta target)
     {
         var item_type = target.Type.GetGenericArguments()[0];
-        if (item_type.IsVisible) return new Jobs._Array._Memory_Public(item_type);
+        if (target.Type.IsVisible && item_type.IsVisible) return new Jobs._Array._Memory_Public(item_type);
         return new Jobs._Array._Memory_Private(item_type);
     }
 }

@@ -15,7 +15,9 @@ using Sera.Runtime.Utils;
 namespace Sera.Runtime.Emit;
 
 internal record EmitData(
-    SerializerPrimitiveHint? Hint = null
+    SerializerPrimitiveHint? Hint = null,
+    // use bytes on arrays
+    bool UserBytes = true
 )
 {
     public static EmitData Default { get; } = new();
@@ -52,7 +54,7 @@ internal abstract class AEmitProvider
     }
 
     protected abstract EmitJob CreateJob(EmitMeta target);
-    
+
     #region Emit
 
     protected EmitStub Emit(EmitMeta target)
@@ -509,7 +511,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
     private void Clear()
     {
         DepsGroups = null!;
-        
+
         emitDeps = null!;
         runtimeDeps = null!;
     }

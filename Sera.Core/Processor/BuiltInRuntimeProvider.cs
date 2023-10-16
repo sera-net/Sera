@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -11,7 +12,7 @@ public class BuiltInRuntimeProvider : IRuntimeProvider, IAsyncRuntimeProvider
 {
     public static BuiltInRuntimeProvider Instance { get; } = new();
 
-    private static readonly Dictionary<Type, object> BuiltIns = new()
+    private static readonly FrozenDictionary<Type, object> BuiltIns = new Dictionary<Type, object>
     {
         { typeof(bool), PrimitiveImpls.Boolean },
         { typeof(sbyte), PrimitiveImpls.SByte },
@@ -48,7 +49,7 @@ public class BuiltInRuntimeProvider : IRuntimeProvider, IAsyncRuntimeProvider
         { typeof(DBNull), DBNullImpl.Instance },
         { typeof(Unit), UnitImpl<Unit>.Instance },
         { typeof(ValueTuple), EmptyTupleImpl<ValueTuple>.Instance },
-    };
+    }.ToFrozenDictionary();
 
     private static readonly ConditionalWeakTable<Type, object> InstanceCache = new();
 

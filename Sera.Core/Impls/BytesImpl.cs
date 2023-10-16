@@ -85,6 +85,17 @@ public readonly struct BytesListImpl :
         => await deserializer.ReadBytesAsync<List<byte>, IdentityBytesListVisitor>(new());
 }
 
+public readonly struct BytesListSerializeImpl<L> :
+    ISerialize<L>, IAsyncSerialize<L>
+    where L : List<byte>
+{
+    public void Write<S>(S serializer, L value, ISeraOptions options) where S : ISerializer
+        => serializer.WriteBytes(value);
+    
+    public ValueTask WriteAsync<S>(S serializer, L value, ISeraOptions options) where S : IAsyncSerializer
+        => serializer.WriteBytesAsync(value);
+}
+
 public readonly struct BytesReadOnlySequenceImpl :
     ISerialize<ReadOnlySequence<byte>>, IDeserialize<ReadOnlySequence<byte>>,
     IAsyncSerialize<ReadOnlySequence<byte>>, IAsyncDeserialize<ReadOnlySequence<byte>>

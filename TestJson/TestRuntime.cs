@@ -2538,6 +2538,65 @@ public class TestRuntime
 
     #endregion
 
+    #region ListBase1
+
+    public class ListBase1 : List<int> { }
+
+    [Test]
+    public void TestListBase1()
+    {
+        var obj = new ListBase1 { 1, 2, 3 };
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,2,3]"));
+    }
+
+    #endregion
+
+    #region PrivateListBase1
+
+    private class PrivateListBase1 : List<int> { }
+
+    [Test]
+    public void TestPrivateListBase1()
+    {
+        var obj = new PrivateListBase1 { 1, 2, 3 };
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,2,3]"));
+    }
+
+    #endregion
+
+    #region PrivateListBase2
+
+    public class PrivateListBase2<A> : List<int> { }
+
+    private class PrivateListBase2A { }
+
+    [Test]
+    public void TestPrivateListBase2()
+    {
+        var obj = new PrivateListBase2<PrivateListBase2A> { 1, 2, 3 };
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,2,3]"));
+    }
+
+    #endregion
+
     #region ReadOnlySequence1
 
     [Test]
@@ -2708,7 +2767,7 @@ public class TestRuntime
     }
 
     #endregion
-    
+
     #region PrivateMemory1
 
     private class PrivateMemory1
@@ -2729,6 +2788,82 @@ public class TestRuntime
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[{\"A\":[null]},{\"A\":[null]},{\"A\":[null]}]"));
+    }
+
+    #endregion
+
+    #region Bytes1
+
+    [Test]
+    public void TestBytes1()
+    {
+        var obj = new byte[] { 1, 2, 3 };
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("\"AQID\""));
+    }
+
+    #endregion
+
+    #region BytesBase1
+
+    public class BytesBase1 : List<byte> { }
+
+    [Test]
+    public void TestBytesBase1()
+    {
+        var obj = new BytesBase1 { 1, 2, 3 };
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("\"AQID\""));
+    }
+
+    #endregion
+
+    #region PrivateBytesBase1
+
+    private class PrivateBytesBase1 : List<byte> { }
+
+    [Test]
+    public void TestPrivateBytesBase1()
+    {
+        var obj = new PrivateBytesBase1 { 1, 2, 3 };
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("\"AQID\""));
+    }
+
+    #endregion
+
+    #region PrivateBytesBase2
+
+    public class PrivateBytesBase2<A> : List<byte> { }
+
+    private class PrivateBytesBase2A { }
+
+    [Test]
+    public void TestPrivateBytesBase2()
+    {
+        var obj = new PrivateBytesBase2<PrivateBytesBase2A> { 1, 2, 3 };
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("\"AQID\""));
     }
 
     #endregion

@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -378,6 +379,30 @@ internal static class ReflectionUtils
             var base_type = type.BaseType;
             if (base_type == null) return false;
             if (base_type == target) return true;
+
+            type = base_type;
+        }
+    }
+
+    public static bool IsOpenTypeEq(this Type type, Type target)
+        => type.IsGenericType && type.GetGenericTypeDefinition() == target;
+
+    public static bool IsListBase(this Type type, [NotNullWhen(true)] out Type? itemType)
+    {
+        for (;;)
+        {
+            if (type.IsOpenTypeEq(typeof(List<>)))
+            {
+                itemType = type.GetGenericArguments()[0];
+                return true;
+            }
+
+            var base_type = type.BaseType;
+            if (base_type == null)
+            {
+                itemType = null;
+                return false;
+            }
 
             type = base_type;
         }
