@@ -4,19 +4,18 @@ using Sera.Core.Impls;
 using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Emit.Transform;
 
-namespace Sera.Runtime.Emit.Ser.Jobs;
+namespace Sera.Runtime.Emit.Ser.Jobs._Array;
 
-internal class _Array_List_Private(Type ItemType) : _Array_Private(ItemType)
+internal class _ReadOnlyMemory_Private(Type ItemType) : _Private(ItemType)
 {
     public static readonly EmitTransform[] Transforms =
     {
-        new EmitTransformListSerializeImplWrapper(),
-        new EmitTransformReferenceTypeWrapperSerializeImpl(),
+         new EmitTransformReadOnlyMemorySerializeImplWrapper(),
     };
 
     public override void Init(EmitStub stub, EmitMeta target)
     {
-        BaseType = typeof(ListSerializeImplBase<,>).MakeGenericType(target.Type, ItemType);
+        BaseType = typeof(ReadOnlyMemorySerializeImplBase<>).MakeGenericType(ItemType);
     }
     
     public override EmitTransform[] CollectTransforms(EmitStub stub, EmitMeta target)
@@ -26,7 +25,7 @@ internal class _Array_List_Private(Type ItemType) : _Array_Private(ItemType)
     {
         var dep = deps.Get(0);
         var wrapper = dep.MakeSerializeWrapper(ItemType);
-        var inst_type = typeof(ListSerializeImpl<,,>).MakeGenericType(target.Type, ItemType, wrapper);
+        var inst_type = typeof(ReadOnlyMemorySerializeImpl<,>).MakeGenericType(ItemType, wrapper);
         var ctor = inst_type.GetConstructor(BindingFlags.Public | BindingFlags.Instance, new[] { wrapper })!;
         var inst = ctor.Invoke(new object?[] { null });
         return inst;

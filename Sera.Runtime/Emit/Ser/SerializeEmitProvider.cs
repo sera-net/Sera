@@ -120,8 +120,8 @@ internal class SerializeEmitProvider : AEmitProvider
         var item_type = target.Type.GetElementType()!;
         if (target.IsSZArray)
         {
-            if (item_type.IsVisible) return new Jobs._Array_SZ_Public(item_type);
-            else return new Jobs._Array_SZ_Private(item_type);
+            if (item_type.IsVisible) return new Jobs._Array._SZ_Public(item_type);
+            else return new Jobs._Array._SZ_Private(item_type);
         }
         throw new NotSupportedException("Multidimensional and non-zero lower bound arrays are not supported");
     }
@@ -129,28 +129,28 @@ internal class SerializeEmitProvider : AEmitProvider
     private EmitJob CreateListJob(EmitMeta target)
     {
         var item_type = target.Type.GetGenericArguments()[0];
-        if (item_type.IsVisible) return new Jobs._Array_List_Public(item_type);
-        return new Jobs._Array_List_Private(item_type);
+        if (item_type.IsVisible) return new Jobs._Array._List_Public(item_type);
+        return new Jobs._Array._List_Private(item_type);
     }
 
     private EmitJob CreateReadOnlySequenceJob(EmitMeta target)
     {
         var item_type = target.Type.GetGenericArguments()[0];
-        if (item_type.IsVisible) return new Jobs._Array_ReadOnlySequence_Public(item_type);
-        return new Jobs._Array_ReadOnlySequence_Private(item_type);
+        if (item_type.IsVisible) return new Jobs._Array._ReadOnlySequence_Public(item_type);
+        return new Jobs._Array._ReadOnlySequence_Private(item_type);
     }
 
     private EmitJob CreateReadOnlyMemoryJob(EmitMeta target)
     {
         var item_type = target.Type.GetGenericArguments()[0];
-        if (item_type.IsVisible) return new Jobs._Array_ReadOnlyMemory_Public(item_type);
-        return new Jobs._Array_ReadOnlyMemory_Private(item_type);
+        if (item_type.IsVisible) return new Jobs._Array._ReadOnlyMemory_Public(item_type);
+        return new Jobs._Array._ReadOnlyMemory_Private(item_type);
     }
 
     private EmitJob CreateMemoryJob(EmitMeta target)
     {
         var item_type = target.Type.GetGenericArguments()[0];
-        if (item_type.IsVisible) return new Jobs._Array_Memory_Public(item_type);
-        return new Jobs._Array_Memory_Private(item_type);
+        if (item_type.IsVisible) return new Jobs._Array._Memory_Public(item_type);
+        return new Jobs._Array._Memory_Private(item_type);
     }
 }

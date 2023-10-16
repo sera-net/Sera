@@ -2,9 +2,9 @@
 using System.Reflection;
 using Sera.Runtime.Utils;
 
-namespace Sera.Runtime.Emit.Ser.Jobs;
+namespace Sera.Runtime.Emit.Ser.Jobs._Array;
 
-internal class _Array_ReadOnlySequence_Public(Type ItemType) : _Array_Public(ItemType)
+internal class _ReadOnlySequence_Public(Type ItemType) : _Public(ItemType)
 {
     protected override MethodInfo WriteArrayMethod => ReflectionUtils.ISerializer_WriteArray_2generic_ReadOnlySequence;
 }

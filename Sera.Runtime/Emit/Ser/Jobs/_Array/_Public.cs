@@ -6,9 +6,9 @@ using Sera.Core.Ser;
 using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Utils;
 
-namespace Sera.Runtime.Emit.Ser.Jobs;
+namespace Sera.Runtime.Emit.Ser.Jobs._Array;
 
-internal abstract class _Array_Public(Type ItemType) : _Array(ItemType)
+internal abstract class _Public(Type ItemType) : _Array(ItemType)
 {
     public TypeBuilder TypeBuilder { get; set; } = null!;
     public Type RuntimeType { get; set; } = null!;

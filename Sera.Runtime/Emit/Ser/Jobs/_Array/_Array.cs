@@ -4,7 +4,7 @@ using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Emit.Transform;
 using Sera.Runtime.Utils;
 
-namespace Sera.Runtime.Emit.Ser.Jobs;
+namespace Sera.Runtime.Emit.Ser.Jobs._Array;
 
 internal abstract class _Array(Type ItemType) : _Base
 {

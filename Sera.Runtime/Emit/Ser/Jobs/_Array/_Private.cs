@@ -1,9 +1,9 @@
 ﻿using System;
 using Sera.Runtime.Emit.Deps;
 
-namespace Sera.Runtime.Emit.Ser.Jobs;
+namespace Sera.Runtime.Emit.Ser.Jobs._Array;
 
-internal abstract class _Array_Private(Type ItemType) : _Array(ItemType)
+internal abstract class _Private(Type ItemType) : _Array(ItemType)
 {
     public Type BaseType { get; set; } = null!;
 
