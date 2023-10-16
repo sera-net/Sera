@@ -2,7 +2,6 @@
 using System.Linq;
 using Sera.Core.Impls.Tuples;
 using Sera.Runtime.Emit.Deps;
-using Sera.Runtime.Emit.Transform;
 using Sera.Runtime.Utils;
 using BindingFlags = System.Reflection.BindingFlags;
 
@@ -35,7 +34,7 @@ internal class _Private(bool IsValueTuple, Type[] ItemTypes) : _Tuples(IsValueTu
             ? ReflectionUtils.ValueTupleSerImplWrappers[Size]
             : ReflectionUtils.ClassTupleSerImplWrappers[Size];
         if (target.IsValueType || Size == 8) return new EmitTransform[] { wrapper };
-        else return new EmitTransform[] { wrapper, new EmitTransformReferenceTypeWrapperSerializeImpl() };
+        else return new EmitTransform[] { wrapper, new Transforms._ReferenceTypeWrapperSerializeImpl() };
     }
 
     public override Type GetEmitType(EmitStub stub, EmitMeta target, DepItem[] deps)

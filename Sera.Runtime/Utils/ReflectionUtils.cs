@@ -12,7 +12,7 @@ using Sera.Core.Impls.Deps;
 using Sera.Core.Impls.Tuples;
 using Sera.Core.Ser;
 using Sera.Runtime.Emit;
-using Sera.Runtime.Emit.Transform;
+using Ser = Sera.Runtime.Emit.Ser;
 
 namespace Sera.Runtime.Utils;
 
@@ -340,7 +340,7 @@ internal static class ReflectionUtils
         { 7, typeof(TupleSerializeImplBase<,,,,,,>) },
     };
 
-    public static Dictionary<int, EmitTransformTupleSerializeImplWrapper> ValueTupleSerImplWrappers { get; } = new()
+    public static Dictionary<int, Ser.Transforms._TupleSerializeImplWrapper> ValueTupleSerImplWrappers { get; } = new()
     {
         { 1, new(typeof(ValueTupleSerializeImplWrapper<>), typeof(ValueTupleSerializeImplBase<>)) },
         { 2, new(typeof(ValueTupleSerializeImplWrapper<,>), typeof(ValueTupleSerializeImplBase<,>)) },
@@ -352,7 +352,7 @@ internal static class ReflectionUtils
         { 8, new(typeof(ValueTupleSerializeImplWrapper<,,,,,,,>), typeof(ValueTupleRestSerializeImplBase<,,,,,,,>)) },
     };
 
-    public static Dictionary<int, EmitTransformTupleSerializeImplWrapper> ClassTupleSerImplWrappers { get; } = new()
+    public static Dictionary<int, Ser.Transforms._TupleSerializeImplWrapper> ClassTupleSerImplWrappers { get; } = new()
     {
         { 1, new(typeof(TupleSerializeImplWrapper<>), typeof(TupleSerializeImplBase<>)) },
         { 2, new(typeof(TupleSerializeImplWrapper<,>), typeof(TupleSerializeImplBase<,>)) },

@@ -2,7 +2,6 @@
 using System.Reflection;
 using Sera.Core.Impls;
 using Sera.Runtime.Emit.Deps;
-using Sera.Runtime.Emit.Transform;
 
 namespace Sera.Runtime.Emit.Ser.Jobs._Array;
 
@@ -10,7 +9,7 @@ internal class _ReadOnlySequence_Private(Type ItemType) : _Private(ItemType)
 {
     public static readonly EmitTransform[] Transforms =
     {
-         new EmitTransformReadOnlySequenceSerializeImplWrapper(),
+         new Transforms._ReadOnlySequenceSerializeImplWrapper(),
     };
 
     public override void Init(EmitStub stub, EmitMeta target)

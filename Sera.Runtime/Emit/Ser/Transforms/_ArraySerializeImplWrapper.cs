@@ -1,9 +1,9 @@
 ﻿using System;
 using Sera.Core.Impls;
 
-namespace Sera.Runtime.Emit.Transform;
+namespace Sera.Runtime.Emit.Ser.Transforms;
 
-internal class EmitTransformArraySerializeImplWrapper  : EmitTransform
+internal class _ArraySerializeImplWrapper  : EmitTransform
 {
     public override Type TransformType(EmitMeta target, Type prevType)
     {

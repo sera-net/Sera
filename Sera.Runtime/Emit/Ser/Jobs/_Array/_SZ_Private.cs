@@ -1,7 +1,6 @@
 ﻿using System;
 using Sera.Core.Impls;
 using Sera.Runtime.Emit.Deps;
-using Sera.Runtime.Emit.Transform;
 using BindingFlags = System.Reflection.BindingFlags;
 
 namespace Sera.Runtime.Emit.Ser.Jobs._Array;
@@ -10,8 +9,8 @@ internal class _SZ_Private(Type ItemType) : _Private(ItemType)
 {
     public static readonly EmitTransform[] Transforms =
     {
-        new EmitTransformArraySerializeImplWrapper(),
-        new EmitTransformReferenceTypeWrapperSerializeImpl(),
+        new Transforms._ArraySerializeImplWrapper(),
+        new Transforms._ReferenceTypeWrapperSerializeImpl(),
     };
 
     public override void Init(EmitStub stub, EmitMeta target)

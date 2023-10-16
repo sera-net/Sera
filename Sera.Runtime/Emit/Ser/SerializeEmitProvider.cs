@@ -5,7 +5,6 @@ using System.Linq;
 using System.Reflection;
 using Sera.Core;
 using Sera.Core.Impls;
-using Sera.Runtime.Emit.Transform;
 using Sera.Runtime.Utils;
 
 namespace Sera.Runtime.Emit.Ser;
@@ -15,10 +14,10 @@ internal class SerializeEmitProvider : AEmitProvider
     #region Deps
 
     public static readonly EmitTransform[] NullableReferenceTypeTransforms =
-        { new EmitTransformNullableReferenceTypeImpl() };
+        { new Transforms._NullableReferenceTypeSerializeImpl() };
 
     public static readonly EmitTransform[] ReferenceTypeTransforms =
-        { new EmitTransformReferenceTypeWrapperSerializeImpl() };
+        { new Transforms._ReferenceTypeWrapperSerializeImpl() };
 
     private bool TryGetStaticImpl(Type type, out object? impl)
     {
@@ -39,7 +38,6 @@ internal class SerializeEmitProvider : AEmitProvider
 
     protected override EmitJob CreateJob(EmitMeta target)
     {
-        // todo support span or custom impl
         if (target.Type.IsByRefLike || target.Type.IsByRef)
             throw new ArgumentException($"ByRefType is not support; {target.Type}");
         if (PrimitiveImpls.IsPrimitiveType(target.Type)) return new Jobs._Primitive();

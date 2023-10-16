@@ -2,7 +2,6 @@
 using System.Reflection;
 using Sera.Core.Impls;
 using Sera.Runtime.Emit.Deps;
-using Sera.Runtime.Emit.Transform;
 
 namespace Sera.Runtime.Emit.Ser.Jobs._Array;
 
@@ -10,8 +9,8 @@ internal class _List_Private(Type ItemType) : _Private(ItemType)
 {
     public static readonly EmitTransform[] Transforms =
     {
-        new EmitTransformListSerializeImplWrapper(),
-        new EmitTransformReferenceTypeWrapperSerializeImpl(),
+        new Transforms._ListSerializeImplWrapper(),
+        new Transforms._ReferenceTypeWrapperSerializeImpl(),
     };
 
     public override void Init(EmitStub stub, EmitMeta target)

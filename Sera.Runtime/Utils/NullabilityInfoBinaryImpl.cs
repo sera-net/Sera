@@ -8,7 +8,7 @@ namespace Sera.Runtime.Utils;
 internal class NullabilityInfoBinarySerializeImpl : ISerialize<NullabilityInfo>, ISeqSerializerReceiver<NullabilityInfo>
 {
     public static NullabilityInfoBinarySerializeImpl Instance { get; } = new();
-    public static NullableReferenceTypeImpl<NullabilityInfo, NullabilityInfoBinarySerializeImpl> NullableImpl { get; }
+    public static NullableReferenceTypeSerializeImpl<NullabilityInfo, NullabilityInfoBinarySerializeImpl> NullableImpl { get; }
         = new(Instance);
     public static ArraySerializeImpl<NullabilityInfo, NullabilityInfoBinarySerializeImpl> ArrayImpl { get; }
         = new(Instance);

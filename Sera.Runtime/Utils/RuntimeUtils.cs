@@ -17,7 +17,7 @@ public static class RuntimeUtils
         return (ISerialize<T>)ReferenceNullableCache.GetValue(ser, _ =>
         {
             var ser_type = ser.GetType();
-            var impl_type = typeof(NullableReferenceTypeImpl<,>).MakeGenericType(target_type, ser.GetType());
+            var impl_type = typeof(NullableReferenceTypeSerializeImpl<,>).MakeGenericType(target_type, ser.GetType());
             var ctor = impl_type.GetConstructor(BindingFlags.Public | BindingFlags.Instance, new[] { ser_type })!;
             var inst = ctor.Invoke(new object[] { ser });
             return inst;

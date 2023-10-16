@@ -1,9 +1,9 @@
 ﻿using System;
 using BindingFlags = System.Reflection.BindingFlags;
 
-namespace Sera.Runtime.Emit.Transform;
+namespace Sera.Runtime.Emit.Ser.Transforms;
 
-internal class EmitTransformTupleSerializeImplWrapper(Type Wrapper, Type Base) : EmitTransform
+internal class _TupleSerializeImplWrapper(Type Wrapper, Type Base) : EmitTransform
 {
     public override Type TransformType(EmitMeta target, Type prevType)
     {
