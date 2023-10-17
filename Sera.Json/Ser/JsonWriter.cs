@@ -3,9 +3,9 @@ using System.Buffers;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Text;
 using Sera.Json.Utils;
+using Sera.Utils;
 
 namespace Sera.Json.Ser;
 
@@ -17,6 +17,7 @@ public abstract record AJsonWriter(SeraJsonOptions Options, AJsonFormatter Forma
     public abstract void EndBase64();
     public abstract void Write(ReadOnlySpan<char> str);
     public abstract void WriteEncoded(ReadOnlySpan<byte> str, Encoding encoding);
+    public abstract void WriteEncoded(ReadOnlySequence<byte> str, Encoding encoding);
 
     public virtual void WriteString(ReadOnlySpan<char> str, bool escape)
     {
@@ -26,7 +27,35 @@ public abstract record AJsonWriter(SeraJsonOptions Options, AJsonFormatter Forma
         Write("\"");
     }
 
+    public virtual void WriteString(ReadOnlySequence<char> str, bool escape)
+    {
+        Write("\"");
+        if (escape)
+        {
+            using var stream = new ReadOnlySequenceStream<char>(str);
+            using var code_stream = Encoding.CreateTranscodingStream(stream, Encoding.Unicode, Encoding.UTF8, true);
+            WriteEscapeUtf8(code_stream);
+        }
+        else
+        {
+            // safe because char
+            foreach (var mem in str)
+            {
+                Write(mem.Span);
+            }
+        }
+        Write("\"");
+    }
+
     public virtual void WriteStringEncoded(ReadOnlySpan<byte> str, Encoding encoding, bool escape)
+    {
+        Write("\"");
+        if (escape) WriteEscapeEncoded(str, encoding);
+        else WriteEncoded(str, encoding);
+        Write("\"");
+    }
+
+    public virtual void WriteStringEncoded(ReadOnlySequence<byte> str, Encoding encoding, bool escape)
     {
         Write("\"");
         if (escape) WriteEscapeEncoded(str, encoding);
@@ -154,6 +183,45 @@ public abstract record AJsonWriter(SeraJsonOptions Options, AJsonFormatter Forma
         }
     }
 
+    /// <summary>Stream must be utf8</summary>
+    protected virtual void WriteEscapeUtf8(Stream str)
+    {
+        Span<byte> bytes = stackalloc byte[4];
+
+        str.ReadExactly(MemoryMarshal.AsBytes(bytes[..1]));
+        
+        var byte0 = bytes[0];
+        if (byte0 >> 3 == 0b11110) str.ReadExactly(MemoryMarshal.AsBytes(bytes.Slice(1, 3)));
+        else if (byte0 >> 4 == 0b1110) str.ReadExactly(MemoryMarshal.AsBytes(bytes.Slice(1, 2)));
+        else if (byte0 >> 5 == 0b110) str.ReadExactly(MemoryMarshal.AsBytes(bytes.Slice(1, 1)));
+
+        var r = Rune.DecodeFromUtf8(bytes, out var rune, out _);
+        if (r != OperationStatus.Done) throw new FormatException();
+        if (rune.IsAscii && EscapeTable.TryGet((char)bytes[0], out var esc))
+        {
+            Write("\\");
+            Write(new ReadOnlySpan<char>(ref esc));
+        }
+        else if (
+            (Formatter.EscapeAllNonAsciiChar && !rune.IsAscii) ||
+            Rune.GetUnicodeCategory(rune) is
+                UnicodeCategory.Control or
+                UnicodeCategory.Format or
+                UnicodeCategory.LineSeparator or
+                UnicodeCategory.OtherNotAssigned or
+                UnicodeCategory.PrivateUse
+        )
+        {
+            WriteEscapeHex(rune);
+        }
+        else
+        {
+            Span<char> chars = stackalloc char[2];
+            var n = rune.EncodeToUtf16(chars);
+            Write(chars[..n]);
+        }
+    }
+
     protected virtual void WriteEscapeEncoded(ReadOnlySpan<byte> str, Encoding encoding)
     {
         if (encoding.Equals(Encoding.Unicode)) WriteEscape(MemoryMarshal.Cast<byte, char>(str));
@@ -173,6 +241,17 @@ public abstract record AJsonWriter(SeraJsonOptions Options, AJsonFormatter Forma
             {
                 ArrayPool<char>.Shared.Return(chars);
             }
+        }
+    }
+
+    protected virtual void WriteEscapeEncoded(ReadOnlySequence<byte> str, Encoding encoding)
+    {
+        var stream = new ReadOnlySequenceStream<byte>(str);
+        if (encoding.Equals(Encoding.UTF8)) WriteEscapeUtf8(stream);
+        else
+        {
+            using var code_stream = Encoding.CreateTranscodingStream(stream, encoding, Encoding.UTF8, true);
+            WriteEscapeUtf8(code_stream);
         }
     }
 }

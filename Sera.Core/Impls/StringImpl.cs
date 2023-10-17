@@ -4,7 +4,8 @@ using Sera.Core.Ser;
 
 namespace Sera.Core.Impls;
 
-public struct StringImpl : ISerialize<string>, IDeserialize<string>, IAsyncSerialize<string>, IAsyncDeserialize<string>
+public readonly struct StringImpl :
+    ISerialize<string>, IDeserialize<string>, IAsyncSerialize<string>, IAsyncDeserialize<string>
 {
     public static StringImpl Instance { get; } = new();
 
@@ -19,4 +20,20 @@ public struct StringImpl : ISerialize<string>, IDeserialize<string>, IAsyncSeria
 
     public ValueTask<string> ReadAsync<D>(D deserializer, ISeraOptions options) where D : IAsyncDeserializer
         => deserializer.ReadStringAsync();
+}
+
+public readonly struct CharArrayStringImpl :
+    ISerialize<char[]>, IAsyncSerialize<char[]>, IDeserialize<char[]>, IAsyncDeserialize<char[]>
+{
+    public void Write<S>(S serializer, char[] value, ISeraOptions options) where S : ISerializer
+        => serializer.WriteString(value);
+
+    public ValueTask WriteAsync<S>(S serializer, char[] value, ISeraOptions options) where S : IAsyncSerializer
+        => serializer.WriteStringAsync(value);
+
+    public char[] Read<D>(D deserializer, ISeraOptions options) where D : IDeserializer
+        => deserializer.ReadStringAsCharArray();
+
+    public ValueTask<char[]> ReadAsync<D>(D deserializer, ISeraOptions options) where D : IAsyncDeserializer
+        => deserializer.ReadStringAsCharArrayAsync();
 }

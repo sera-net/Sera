@@ -368,6 +368,8 @@ public partial interface IDeserializer
     public R ReadString<R, V>(V visitor) where V : IStringDeserializerVisitor<R>;
 
     public string ReadString() => ReadString<string, IdentityStringVisitor>(new());
+
+    public char[] ReadStringAsCharArray() => ReadString<char[], IdentityStringCharArrayVisitor>(new());
 }
 
 public interface IStringDeserializerVisitor<out R>
@@ -392,6 +394,9 @@ public interface IStringAccess
 
     /// <summary>Read string as utf-16</summary>
     public string ReadString();
+
+    /// <summary>Read string as utf-16</summary>
+    public char[] ReadStringAsCharArray() => ReadString().ToCharArray();
 
     /// <summary>Read string as utf-16</summary>
     public void ReadString(Memory<char> value) => ReadString(value.Span);
@@ -426,6 +431,8 @@ public partial interface IAsyncDeserializer
     public ValueTask<R> ReadStringAsync<R, V>(V visitor) where V : IAsyncStringDeserializerVisitor<R>;
 
     public ValueTask<string> ReadStringAsync() => ReadStringAsync<string, IdentityStringVisitor>(new());
+    
+    public ValueTask<char[]> ReadStringAsCharArrayAsync() => ReadStringAsync<char[], IdentityStringCharArrayVisitor>(new());
 }
 
 public interface IAsyncStringDeserializerVisitor<R>
@@ -450,6 +457,9 @@ public interface IAsyncStringAccess
 
     /// <summary>Read string as utf-16</summary>
     public ValueTask<string> ReadStringAsync();
+
+    /// <summary>Read string as utf-16</summary>
+    public async ValueTask<char[]> ReadStringAsCharArrayAsync() => (await ReadStringAsync()).ToCharArray();
 
     /// <summary>Read string as utf-16</summary>
     public ValueTask ReadStringAsync(Memory<char> value);

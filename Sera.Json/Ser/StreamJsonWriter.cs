@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Sera.Json.Builders;
 using Sera.Json.Builders.Ser;
+using Sera.Utils;
 
 namespace Sera.Json.Ser;
 
@@ -14,7 +15,7 @@ public record StreamJsonWriter
 {
     public static StreamJsonWriter Create(Builder<ToStream> self) =>
         new(self.Options, self.Formatter, self.Value.Stream);
-    
+
     private static Stream? tmpStream;
 
     public override Stream StartBase64()
@@ -94,6 +95,26 @@ public record StreamJsonWriter
             {
                 ArrayPool<char>.Shared.Return(chars);
             }
+        }
+    }
+
+    public override void WriteEncoded(ReadOnlySequence<byte> str, Encoding encoding)
+    {
+        var encode = Options.Encoding;
+        if (str.IsSingleSegment) WriteEncoded(str.FirstSpan, encoding);
+        else if (encode.Equals(encoding))
+        {
+            // safe because char
+            foreach (var mem in str)
+            {
+                Stream.Write(mem.Span);
+            }
+        }
+        else
+        {
+            using var code_stream = Encoding.CreateTranscodingStream(Stream, encode, encoding, true);
+            using var stream = new ReadOnlySequenceStream<byte>(str);
+            stream.CopyTo(code_stream);
         }
     }
 }

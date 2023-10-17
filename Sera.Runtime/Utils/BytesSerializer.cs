@@ -55,7 +55,7 @@ internal class BytesSerializer : ISerializer, IDisposable, IAsyncDisposable
     {
         return false;
     }
-
+    
     public void WritePrimitive<T>(T value, SerializerPrimitiveHint? hint)
     {
         switch (value)
@@ -209,6 +209,24 @@ internal class BytesSerializer : ISerializer, IDisposable, IAsyncDisposable
         Writer.Write(value);
     }
 
+    public void WriteString(ReadOnlySequence<char> value)
+    {
+        var len = value.Length;
+        if (len <= 15)
+        {
+            Writer.Write((byte)((byte)TypeToken.String | (1 << 3) | (value.Length << 4)));
+        }
+        else
+        {
+            Writer.Write((byte)TypeToken.String);
+            Writer.Write(value.Length);
+        }
+        foreach (var mem in value)
+        {
+            Writer.Write(mem.Span);
+        }
+    }
+
     public void WriteStringEncoded(ReadOnlySpan<byte> value, Encoding encoding)
     {
         Writer.Write((byte)((byte)TypeToken.String | (1 << 4)));
@@ -216,8 +234,18 @@ internal class BytesSerializer : ISerializer, IDisposable, IAsyncDisposable
         Writer.Write(encoding.CodePage);
         Writer.Write(value);
     }
-
-
+    
+    public void WriteStringEncoded(ReadOnlySequence<byte> value, Encoding encoding)
+    {
+        Writer.Write((byte)((byte)TypeToken.String | (1 << 4)));
+        Writer.Write(value.Length);
+        Writer.Write(encoding.CodePage);
+        foreach (var mem in value)
+        {
+            Writer.Write(mem.Span);
+        }
+    }
+    
     public void WriteBytes(ReadOnlySpan<byte> value)
     {
         Writer.Write((byte)TypeToken.Bytes);
