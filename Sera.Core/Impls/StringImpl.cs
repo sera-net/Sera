@@ -24,11 +24,11 @@ public readonly struct StringImpl :
         => deserializer.ReadStringAsync();
 }
 
-public readonly struct CharArrayStringImpl :
+public readonly struct ArrayStringImpl :
     ISerialize<char[]>, IAsyncSerialize<char[]>, IDeserialize<char[]>, IAsyncDeserialize<char[]>
 {
-    public static CharArrayStringImpl Instance { get; } = new();
-    
+    public static ArrayStringImpl Instance { get; } = new();
+
     public void Write<S>(S serializer, char[] value, ISeraOptions options) where S : ISerializer
         => serializer.WriteString(value);
 
@@ -36,17 +36,17 @@ public readonly struct CharArrayStringImpl :
         => serializer.WriteStringAsync(value);
 
     public char[] Read<D>(D deserializer, ISeraOptions options) where D : IDeserializer
-        => deserializer.ReadStringAsCharArray();
+        => deserializer.ReadStringAsArray();
 
     public ValueTask<char[]> ReadAsync<D>(D deserializer, ISeraOptions options) where D : IAsyncDeserializer
-        => deserializer.ReadStringAsCharArrayAsync();
+        => deserializer.ReadStringAsArrayAsync();
 }
 
-public readonly struct CharListStringImpl :
+public readonly struct ListStringImpl :
     ISerialize<List<char>>, IAsyncSerialize<List<char>>, IDeserialize<List<char>>, IAsyncDeserialize<List<char>>
 {
-    public static CharListStringImpl Instance { get; } = new();
-    
+    public static ListStringImpl Instance { get; } = new();
+
     public void Write<S>(S serializer, List<char> value, ISeraOptions options) where S : ISerializer
         => serializer.WriteString(value);
 
@@ -54,17 +54,17 @@ public readonly struct CharListStringImpl :
         => serializer.WriteStringAsync(value);
 
     public List<char> Read<D>(D deserializer, ISeraOptions options) where D : IDeserializer
-        => deserializer.ReadStringAsCharList();
+        => deserializer.ReadStringAsList();
 
     public ValueTask<List<char>> ReadAsync<D>(D deserializer, ISeraOptions options) where D : IAsyncDeserializer
-        => deserializer.ReadStringAsCharListAsync();
+        => deserializer.ReadStringAsListAsync();
 }
 
 public readonly struct MemoryStringImpl :
     ISerialize<Memory<char>>, IAsyncSerialize<Memory<char>>, IDeserialize<Memory<char>>, IAsyncDeserialize<Memory<char>>
 {
     public static MemoryStringImpl Instance { get; } = new();
-    
+
     public void Write<S>(S serializer, Memory<char> value, ISeraOptions options) where S : ISerializer
         => serializer.WriteString(value);
 
@@ -79,19 +79,34 @@ public readonly struct MemoryStringImpl :
 }
 
 public readonly struct ReadOnlyMemoryStringImpl :
-    ISerialize<ReadOnlyMemory<char>>, IAsyncSerialize<ReadOnlyMemory<char>>, IDeserialize<ReadOnlyMemory<char>>, IAsyncDeserialize<ReadOnlyMemory<char>>
+    ISerialize<ReadOnlyMemory<char>>, IAsyncSerialize<ReadOnlyMemory<char>>, IDeserialize<ReadOnlyMemory<char>>,
+    IAsyncDeserialize<ReadOnlyMemory<char>>
 {
     public static ReadOnlyMemoryStringImpl Instance { get; } = new();
-    
+
     public void Write<S>(S serializer, ReadOnlyMemory<char> value, ISeraOptions options) where S : ISerializer
         => serializer.WriteString(value);
 
-    public ValueTask WriteAsync<S>(S serializer, ReadOnlyMemory<char> value, ISeraOptions options) where S : IAsyncSerializer
+    public ValueTask WriteAsync<S>(S serializer, ReadOnlyMemory<char> value, ISeraOptions options)
+        where S : IAsyncSerializer
         => serializer.WriteStringAsync(value);
 
     public ReadOnlyMemory<char> Read<D>(D deserializer, ISeraOptions options) where D : IDeserializer
         => deserializer.ReadStringAsReadOnlyMemory();
 
-    public ValueTask<ReadOnlyMemory<char>> ReadAsync<D>(D deserializer, ISeraOptions options) where D : IAsyncDeserializer
+    public ValueTask<ReadOnlyMemory<char>> ReadAsync<D>(D deserializer, ISeraOptions options)
+        where D : IAsyncDeserializer
         => deserializer.ReadStringAsReadOnlyMemoryAsync();
+}
+
+public readonly struct ListBaseStringSerializeImpl<L> : ISerialize<L>, IAsyncSerialize<L>
+    where L : List<char>
+{
+    public static ListBaseStringSerializeImpl<L> Instance { get; } = new();
+
+    public void Write<S>(S serializer, L value, ISeraOptions options) where S : ISerializer
+        => serializer.WriteString(value);
+
+    public ValueTask WriteAsync<S>(S serializer, L value, ISeraOptions options) where S : IAsyncSerializer
+        => serializer.WriteStringAsync(value);
 }

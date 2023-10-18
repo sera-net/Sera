@@ -4,13 +4,13 @@ using Sera.Runtime.Emit.Deps;
 
 namespace Sera.Runtime.Emit.Ser.Jobs;
 
-internal class _Bytes_List : _Base
+internal class _String_List : _Base
 {
     public Type ImplType { get; set; } = null!;
 
     public override void Init(EmitStub stub, EmitMeta target)
     {
-        ImplType = typeof(ListBaseBytesSerializeImpl<>).MakeGenericType(target.Type);
+        ImplType = typeof(ListBaseStringSerializeImpl<>).MakeGenericType(target.Type);
     }
 
     public override EmitTransform[] CollectTransforms(EmitStub stub, EmitMeta target)

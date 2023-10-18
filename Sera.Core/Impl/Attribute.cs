@@ -9,7 +9,7 @@ namespace Sera;
 [AttributeUsage(AttributeTargets.All)]
 public sealed class SeraAttribute : Attribute
 {
-    /// <summary>Hint what format is expected to be serialize, but the serializer does not have to be fully implemented</summary>
+    /// <summary>Hint what format is expected to be serialize</summary>
     public SerializerPrimitiveHint? SerPrimitive { get; set; }
     /// <summary>Specify special semantics, only for field | property</summary>
     public SeraAs As { get; set; } = SeraAs.None;

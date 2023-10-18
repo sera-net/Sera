@@ -374,11 +374,11 @@ public static partial class DeserializerEx
     public static string ReadString<D>(this D self) where D : IDeserializer
         => self.ReadString<string, IdentityStringVisitor>(new());
 
-    public static char[] ReadStringAsCharArray<D>(this D self) where D : IDeserializer
-        => self.ReadString<char[], IdentityStringCharArrayVisitor>(new());
+    public static char[] ReadStringAsArray<D>(this D self) where D : IDeserializer
+        => self.ReadString<char[], IdentityStringArrayVisitor>(new());
 
-    public static List<char> ReadStringAsCharList<D>(this D self) where D : IDeserializer
-        => self.ReadString<List<char>, IdentityStringCharListVisitor>(new());
+    public static List<char> ReadStringAsList<D>(this D self) where D : IDeserializer
+        => self.ReadString<List<char>, IdentityStringListVisitor>(new());
 
     public static Memory<char> ReadStringAsMemory<D>(this D self) where D : IDeserializer
         => self.ReadString<Memory<char>, IdentityStringMemoryVisitor>(new());
@@ -411,10 +411,10 @@ public interface IStringAccess
     public string ReadString();
 
     /// <summary>Read string as utf-16</summary>
-    public char[] ReadStringAsCharArray() => ReadString().ToCharArray();
+    public char[] ReadStringAsArray() => ReadString().ToCharArray();
 
     /// <summary>Read string as utf-16</summary>
-    public List<char> ReadStringAsCharList() => ReadString().ToList();
+    public List<char> ReadStringAsList() => ReadString().ToList();
 
     /// <summary>Read string as utf-16</summary>
     public void ReadString(Memory<char> value) => ReadString(value.Span);
@@ -454,11 +454,11 @@ public static partial class DeserializerEx
     public static ValueTask<string> ReadStringAsync<D>(this D self) where D : IAsyncDeserializer
         => self.ReadStringAsync<string, IdentityStringVisitor>(new());
 
-    public static ValueTask<char[]> ReadStringAsCharArrayAsync<D>(this D self) where D : IAsyncDeserializer
-        => self.ReadStringAsync<char[], IdentityStringCharArrayVisitor>(new());
+    public static ValueTask<char[]> ReadStringAsArrayAsync<D>(this D self) where D : IAsyncDeserializer
+        => self.ReadStringAsync<char[], IdentityStringArrayVisitor>(new());
 
-    public static ValueTask<List<char>> ReadStringAsCharListAsync<D>(this D self) where D : IAsyncDeserializer
-        => self.ReadStringAsync<List<char>, IdentityStringCharListVisitor>(new());
+    public static ValueTask<List<char>> ReadStringAsListAsync<D>(this D self) where D : IAsyncDeserializer
+        => self.ReadStringAsync<List<char>, IdentityStringListVisitor>(new());
 
     public static ValueTask<Memory<char>> ReadStringAsMemoryAsync<D>(this D self) where D : IAsyncDeserializer
         => self.ReadStringAsync<Memory<char>, IdentityStringMemoryVisitor>(new());
@@ -492,10 +492,10 @@ public interface IAsyncStringAccess
     public ValueTask<string> ReadStringAsync();
 
     /// <summary>Read string as utf-16</summary>
-    public async ValueTask<char[]> ReadStringAsCharArrayAsync() => (await ReadStringAsync()).ToCharArray();
+    public async ValueTask<char[]> ReadStringAsArrayAsync() => (await ReadStringAsync()).ToCharArray();
 
     /// <summary>Read string as utf-16</summary>
-    public async ValueTask<List<char>> ReadStringAsCharListAsync() => (await ReadStringAsync()).ToList();
+    public async ValueTask<List<char>> ReadStringAsListAsync() => (await ReadStringAsync()).ToList();
 
     /// <summary>Read string as utf-16</summary>
     public ValueTask ReadStringAsync(Memory<char> value);

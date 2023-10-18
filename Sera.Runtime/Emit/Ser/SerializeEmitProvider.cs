@@ -23,16 +23,16 @@ internal class SerializeEmitProvider : AEmitProvider
     private static readonly FrozenDictionary<Type, object> bytes_impl = new Dictionary<Type, object>
     {
         { typeof(byte[]), BytesImpl.Instance },
-        { typeof(List<byte>), BytesListImpl.Instance },
-        { typeof(Memory<byte>), BytesMemoryImpl.Instance },
-        { typeof(ReadOnlyMemory<byte>), BytesReadOnlyMemoryImpl.Instance },
-        { typeof(ReadOnlySequence<byte>), BytesReadOnlySequenceImpl.Instance },
+        { typeof(List<byte>), ListBytesImpl.Instance },
+        { typeof(Memory<byte>), MemoryBytesImpl.Instance },
+        { typeof(ReadOnlyMemory<byte>), ReadOnlyMemoryBytesImpl.Instance },
+        { typeof(ReadOnlySequence<byte>), ReadOnlySequenceBytesImpl.Instance },
     }.ToFrozenDictionary();
 
     private static readonly FrozenDictionary<Type, object> string_impl = new Dictionary<Type, object>
     {
-        { typeof(char[]), CharArrayStringImpl.Instance },
-        { typeof(List<char>), CharListStringImpl.Instance },
+        { typeof(char[]), ArrayStringImpl.Instance },
+        { typeof(List<char>), ListStringImpl.Instance },
         { typeof(Memory<char>), MemoryStringImpl.Instance },
         { typeof(ReadOnlyMemory<char>), ReadOnlyMemoryStringImpl.Instance },
     }.ToFrozenDictionary();
@@ -153,6 +153,7 @@ internal class SerializeEmitProvider : AEmitProvider
     private EmitJob CreateListJob(EmitMeta target, Type item_type)
     {
         if (item_type == typeof(byte) && target.Data.As is SeraAs.Bytes) return new Jobs._Bytes_List();
+        if (item_type == typeof(char) && target.Data.As is SeraAs.String) return new Jobs._String_List();
         if (target.Type.IsVisible && item_type.IsVisible) return new Jobs._Array._List_Public(item_type);
         return new Jobs._Array._List_Private(item_type);
     }

@@ -15,24 +15,24 @@ public readonly struct IdentityStringVisitor
         => access.ReadStringAsync();
 }
 
-public readonly struct IdentityStringCharArrayVisitor
+public readonly struct IdentityStringArrayVisitor
     : IStringDeserializerVisitor<char[]>, IAsyncStringDeserializerVisitor<char[]>
 {
     public char[] VisitString<A>(A access) where A : IStringAccess
-        => access.ReadStringAsCharArray();
+        => access.ReadStringAsArray();
 
     public ValueTask<char[]> VisitStringAsync<A>(A access) where A : IAsyncStringAccess
-        => access.ReadStringAsCharArrayAsync();
+        => access.ReadStringAsArrayAsync();
 }
 
-public readonly struct IdentityStringCharListVisitor
+public readonly struct IdentityStringListVisitor
     : IStringDeserializerVisitor<List<char>>, IAsyncStringDeserializerVisitor<List<char>>
 {
     public List<char> VisitString<A>(A access) where A : IStringAccess
-        => access.ReadStringAsCharList();
+        => access.ReadStringAsList();
 
     public ValueTask<List<char>> VisitStringAsync<A>(A access) where A : IAsyncStringAccess
-        => access.ReadStringAsCharListAsync();
+        => access.ReadStringAsListAsync();
 }
 
 public readonly struct IdentityStringReadOnlyMemoryVisitor

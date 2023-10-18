@@ -19,7 +19,7 @@ public class TestBase64
 
         SeraJson.Serializer
             .ToStream(stream)
-            .SerializeStatic(seq, BytesReadOnlySequenceImpl.Instance);
+            .SerializeStatic(seq, ReadOnlySequenceBytesImpl.Instance);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -39,7 +39,7 @@ public class TestBase64
         SeraJson.Serializer
             .ToStream(stream)
             .WithOptions(SeraJsonOptions.Default with { Encoding = Encoding.Unicode })
-            .SerializeStatic(seq, BytesReadOnlySequenceImpl.Instance);
+            .SerializeStatic(seq, ReadOnlySequenceBytesImpl.Instance);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.Unicode);
@@ -56,7 +56,7 @@ public class TestBase64
 
         var str = SeraJson.Serializer
             .ToString()
-            .SerializeStatic(seq, BytesReadOnlySequenceImpl.Instance);
+            .SerializeStatic(seq, ReadOnlySequenceBytesImpl.Instance);
 
         Console.WriteLine(str);
 
