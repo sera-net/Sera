@@ -3142,6 +3142,35 @@ public class TestRuntime
 
     #endregion
 
+    #region Nullable4
+
+    public struct Nullable4
+    {
+        public Nullable4A A { get; set; } = new();
+
+        public Nullable4() { }
+    }
+
+    public class Nullable4A
+    {
+        public Nullable4? A { get; set; } = null;
+    }
+
+    [Test]
+    public void TestNullable4()
+    {
+        var obj = new Nullable4();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"A\":{\"A\":null}}"));
+    }
+
+    #endregion
+
     #region PrivateNullable1
 
     private struct PrivateNullable1 { }
@@ -3202,6 +3231,35 @@ public class TestRuntime
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"A\":{}}"));
+    }
+
+    #endregion
+
+    #region PrivateNullable4
+
+    private struct PrivateNullable4
+    {
+        public PrivateNullable4A A { get; set; } = new();
+
+        public PrivateNullable4() { }
+    }
+
+    private class PrivateNullable4A
+    {
+        public PrivateNullable4? A { get; set; } = null;
+    }
+
+    [Test]
+    public void TestPrivateNullable4()
+    {
+        var obj = new PrivateNullable4();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"A\":{\"A\":null}}"));
     }
 
     #endregion
