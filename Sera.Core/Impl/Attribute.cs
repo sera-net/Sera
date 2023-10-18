@@ -5,6 +5,27 @@ namespace Sera;
 
 #region Generator
 
+/// <summary>Misc options</summary>
+[AttributeUsage(AttributeTargets.All)]
+public sealed class SeraAttribute : Attribute
+{
+    /// <summary>Hint what format is expected to be serialize, but the serializer does not have to be fully implemented</summary>
+    public SerializerPrimitiveHint? SerPrimitive { get; set; }
+    /// <summary>Specify special semantics, only for field | property</summary>
+    public SeraAs As { get; set; } = SeraAs.None;
+}
+
+/// <summary>Specify special semantics</summary>
+public enum SeraAs
+{
+    /// <summary>No operation</summary>
+    None,
+    /// <summary>Mark byte array | list | memory ... is bytes semantics</summary>
+    Bytes,
+    /// <summary>Mark char array | list | memory ... is string semantics</summary>
+    String,
+}
+
 /// <summary>Mark auto-generated serialize and deserialize</summary>
 [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Enum, Inherited = false)]
 public sealed class SeraGenAttribute : Attribute

@@ -9,9 +9,9 @@ public class EmitRuntimeProvider : IRuntimeProvider
     public static EmitRuntimeProvider Instance { get; } = new();
 
     #region Serialize
-    
+
     internal readonly SerializeEmitProvider serializeEmitProvider = new();
-    
+
     public ISerialize<object?> GetRuntimeSerialize()
     {
         throw new NotImplementedException("todo");
@@ -23,16 +23,20 @@ public class EmitRuntimeProvider : IRuntimeProvider
         return true;
     }
 
-    public ISerialize<T> GetSerialize<T>()
+    public ISerialize<T> GetSerialize<T>() => GetSerialize<T>(SeraHints.Default);
+
+    public ISerialize<T> GetSerialize<T>(SeraHints hints)
     {
         if (StaticRuntimeProvider.Instance.TryGetSerialize<T>(out var ser)) return ser;
-        return serializeEmitProvider.GetSerialize<T>();
-        // return serializeProvider.GetSerialize<T>();
+        return serializeEmitProvider.GetSerialize<T>(hints);
     }
 
-    public bool TryGetSerialize<T>(out ISerialize<T> serialize)
+    public bool TryGetSerialize<T>(out ISerialize<T> serialize) =>
+        TryGetSerialize(SeraHints.Default, out serialize);
+
+    public bool TryGetSerialize<T>(SeraHints hints, out ISerialize<T> serialize)
     {
-        serialize = GetSerialize<T>();
+        serialize = GetSerialize<T>(hints);
         return true;
     }
 

@@ -140,17 +140,22 @@ public partial interface ISerializer
 {
     public void WriteString(string value) => WriteString(value.AsSpan());
     public void WriteString(char[] value) => WriteString(value.AsSpan());
+
+    public void WriteString(List<char> value) => WriteString(CollectionsMarshal.AsSpan(value));
+
     public void WriteString(ReadOnlyMemory<char> value) => WriteString(value.Span);
     public void WriteString(ReadOnlySpan<char> value);
-    public void WriteString(ReadOnlySequence<char> value);
 
     public void WriteStringEncoded(byte[] value, Encoding encoding) =>
         WriteStringEncoded(value.AsSpan(), encoding);
+
+    public void WriteStringEncoded(List<byte> value, Encoding encoding) =>
+        WriteStringEncoded(CollectionsMarshal.AsSpan(value), encoding);
+
     public void WriteStringEncoded(ReadOnlyMemory<byte> value, Encoding encoding) =>
         WriteStringEncoded(value.Span, encoding);
 
     public void WriteStringEncoded(ReadOnlySpan<byte> value, Encoding encoding);
-    public void WriteStringEncoded(ReadOnlySequence<byte> value, Encoding encoding);
 }
 
 public partial interface IAsyncSerializer
@@ -158,10 +163,13 @@ public partial interface IAsyncSerializer
     public ValueTask WriteStringAsync(string value) => WriteStringAsync(value.AsMemory());
     public ValueTask WriteStringAsync(char[] value) => WriteStringAsync(value.AsMemory());
 
+    public ValueTask WriteStringAsync(List<char> value);
+
     public ValueTask WriteStringAsync(ReadOnlyMemory<char> value);
 
     public ValueTask WriteStringEncodedAsync(byte[] value, Encoding encoding)
         => WriteStringEncodedAsync(value.AsMemory(), encoding);
+
     public ValueTask WriteStringEncodedAsync(ReadOnlyMemory<byte> value, Encoding encoding);
 }
 
@@ -266,7 +274,7 @@ public partial interface ISerializer
         => StartSeq(len, value, receiver);
 }
 
-public interface ISeqSerializerReceiver<T>
+public interface ISeqSerializerReceiver<in T>
 {
     public void Receive<S>(T value, S serializer) where S : ISeqSerializer;
 }
@@ -284,7 +292,7 @@ public partial interface IAsyncSerializer
         => StartSeqAsync(len, value, receiver);
 }
 
-public interface IAsyncSeqSerializerReceiver<T>
+public interface IAsyncSeqSerializerReceiver<in T>
 {
     public ValueTask ReceiveAsync<S>(T value, S serializer) where S : IAsyncSeqSerializer;
 }

@@ -97,24 +97,4 @@ public record StreamJsonWriter
             }
         }
     }
-
-    public override void WriteEncoded(ReadOnlySequence<byte> str, Encoding encoding)
-    {
-        var encode = Options.Encoding;
-        if (str.IsSingleSegment) WriteEncoded(str.FirstSpan, encoding);
-        else if (encode.Equals(encoding))
-        {
-            // safe because char
-            foreach (var mem in str)
-            {
-                Stream.Write(mem.Span);
-            }
-        }
-        else
-        {
-            using var code_stream = Encoding.CreateTranscodingStream(Stream, encode, encoding, true);
-            using var stream = new ReadOnlySequenceStream<byte>(str);
-            stream.CopyTo(code_stream);
-        }
-    }
 }

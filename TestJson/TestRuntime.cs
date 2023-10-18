@@ -3,6 +3,7 @@ using JetBrains.Annotations;
 using Sera;
 using Sera.Json;
 using Sera.Json.Runtime;
+using Sera.Runtime;
 
 namespace TestJson;
 
@@ -2794,14 +2795,37 @@ public class TestRuntime
 
     #region Bytes1
 
+    public class Bytes1
+    {
+        [Sera(As = SeraAs.Bytes)]
+        public byte[] A { get; set; } = { 1, 2, 3 };
+    }
+
     [Test]
     public void TestBytes1()
+    {
+        var obj = new Bytes1();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"A\":\"AQID\"}"));
+    }
+
+    #endregion
+
+    #region Bytes2
+
+    [Test]
+    public void TestBytes2()
     {
         var obj = new byte[] { 1, 2, 3 };
 
         var str = SeraJson.Serializer
             .ToString()
-            .Serialize(obj);
+            .Serialize(obj, new SeraHints(As: SeraAs.Bytes));
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("\"AQID\""));
@@ -2820,7 +2844,7 @@ public class TestRuntime
 
         var str = SeraJson.Serializer
             .ToString()
-            .Serialize(obj);
+            .Serialize(obj, new SeraHints(As: SeraAs.Bytes));
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("\"AQID\""));
@@ -2839,7 +2863,7 @@ public class TestRuntime
 
         var str = SeraJson.Serializer
             .ToString()
-            .Serialize(obj);
+            .Serialize(obj, new SeraHints(As: SeraAs.Bytes));
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("\"AQID\""));
@@ -2860,7 +2884,7 @@ public class TestRuntime
 
         var str = SeraJson.Serializer
             .ToString()
-            .Serialize(obj);
+            .Serialize(obj, new SeraHints(As: SeraAs.Bytes));
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("\"AQID\""));

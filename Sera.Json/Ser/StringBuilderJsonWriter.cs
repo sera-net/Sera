@@ -80,25 +80,4 @@ public record StringBuilderJsonWriter
             }
         }
     }
-
-    public override void WriteEncoded(ReadOnlySequence<byte> str, Encoding encoding)
-    {
-        if (str.IsSingleSegment) WriteEncoded(str.FirstSpan, encoding);
-        else if (encoding.Equals(Encoding.Unicode))
-        {
-            // safe because char
-            foreach (var mem in str)
-            {
-                Builder.Append(MemoryMarshal.Cast<byte, char>(mem.Span));
-            }
-        }
-        else
-        {
-            using var stream = new StringBuilderStream(Builder);
-            stream.Position = Builder.Length;
-            using var code_stream = Encoding.CreateTranscodingStream(stream, Encoding.Unicode, encoding, true);
-            var str_stream = new ReadOnlySequenceStream<byte>(str);
-            str_stream.CopyTo(code_stream);
-        }
-    }
 }

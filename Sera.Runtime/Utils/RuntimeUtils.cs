@@ -9,9 +9,9 @@ public static class RuntimeUtils
 {
     private static readonly ConditionalWeakTable<object, object> ReferenceNullableCache = new();
 
-    public static ISerialize<T> GetMayReferenceNullableSerialize<T>(this EmitRuntimeProvider rt)
+    public static ISerialize<T> GetMayReferenceNullableSerialize<T>(this EmitRuntimeProvider rt, SeraHints hints)
     {
-        var ser = rt.GetSerialize<T>();
+        var ser = rt.GetSerialize<T>(hints);
         var target_type = typeof(T);
         if (target_type.IsValueType) return ser;
         return (ISerialize<T>)ReferenceNullableCache.GetValue(ser, _ =>

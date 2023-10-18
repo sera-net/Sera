@@ -14,16 +14,7 @@ using Sera.Runtime.Utils;
 
 namespace Sera.Runtime.Emit;
 
-internal record EmitData(
-    SerializerPrimitiveHint? Hint = null,
-    // use bytes on arrays
-    bool UserBytes = true
-)
-{
-    public static EmitData Default { get; } = new();
-}
-
-internal readonly record struct EmitMeta(TypeMeta TypeMeta, EmitData Data)
+internal readonly record struct EmitMeta(TypeMeta TypeMeta, SeraHints Data)
 {
     public Type Type => TypeMeta.Type;
 

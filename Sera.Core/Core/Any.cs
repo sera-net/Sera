@@ -33,8 +33,8 @@ public readonly struct SeraAny : IEquatable<SeraAny>,
     public static AnyImpl GetAsyncSerialize() => AnyImpl.Instance;
     public static AnyImpl GetAsyncDeserialize() => AnyImpl.Instance;
 
-    private readonly _union_ _union;
     private readonly object? _ref_object;
+    private readonly _union_ _union;
     public SeraPrimitiveTypes PrimitiveType { get; }
     public SeraAnyKind Kind { get; }
 

@@ -14,7 +14,7 @@ internal class _Primitive : _Base
     public override void Init(EmitStub stub, EmitMeta target)
     {
         Type = typeof(PrimitiveImpl<>).MakeGenericType(target.Type);
-        Hint = target.Data.Hint;
+        Hint = target.Data.Primitive;
     }
 
     public override EmitTransform[] CollectTransforms(EmitStub stub, EmitMeta target)

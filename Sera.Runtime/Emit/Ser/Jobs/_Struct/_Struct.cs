@@ -29,8 +29,19 @@ internal abstract class _Struct(StructMember[] Members) : _Base
                     { NullabilityInfo.ReadState: NullabilityState.NotNull }
                     ? SerializeEmitProvider.NullableReferenceTypeTransforms
                     : EmitTransform.EmptyTransforms;
-                // todo EmitData from attr
-                return new DepMeta(new(TypeMetas.GetTypeMeta(m.Type, null_meta), EmitData.Default), transforms);
+
+                var sera_attr = m.Kind switch
+                {
+                    PropertyOrField.Property => m.Property!.GetCustomAttribute<SeraAttribute>(),
+                    PropertyOrField.Field => m.Field!.GetCustomAttribute<SeraAttribute>(),
+                    _ => throw new ArgumentOutOfRangeException()
+                };
+                var data = new SeraHints(
+                    Primitive: sera_attr?.SerPrimitive,
+                    As: sera_attr?.As ?? SeraAs.None
+                );
+
+                return new DepMeta(new(TypeMetas.GetTypeMeta(m.Type, null_meta), data), transforms);
             }).ToArray();
     }
 }

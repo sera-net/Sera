@@ -18,7 +18,7 @@ internal class SerializeEmitProvider : AEmitProvider
     public static readonly EmitTransform[] ReferenceTypeTransforms =
         { new Transforms._ReferenceTypeWrapperSerializeImpl() };
 
-    #region bytes impl
+    #region impls
 
     private static readonly FrozenDictionary<Type, object> bytes_impl = new Dictionary<Type, object>
     {
@@ -27,6 +27,14 @@ internal class SerializeEmitProvider : AEmitProvider
         { typeof(Memory<byte>), BytesMemoryImpl.Instance },
         { typeof(ReadOnlyMemory<byte>), BytesReadOnlyMemoryImpl.Instance },
         { typeof(ReadOnlySequence<byte>), BytesReadOnlySequenceImpl.Instance },
+    }.ToFrozenDictionary();
+
+    private static readonly FrozenDictionary<Type, object> string_impl = new Dictionary<Type, object>
+    {
+        { typeof(char[]), CharArrayStringImpl.Instance },
+        { typeof(List<char>), CharListStringImpl.Instance },
+        { typeof(Memory<char>), MemoryStringImpl.Instance },
+        { typeof(ReadOnlyMemory<char>), ReadOnlyMemoryStringImpl.Instance },
     }.ToFrozenDictionary();
 
     #endregion
@@ -40,9 +48,9 @@ internal class SerializeEmitProvider : AEmitProvider
         return r;
     }
 
-    public ISerialize<T> GetSerialize<T>()
+    public ISerialize<T> GetSerialize<T>(SeraHints hints)
     {
-        var stub = Emit(new(TypeMetas.GetTypeMeta(typeof(T)), EmitData.Default));
+        var stub = Emit(new(TypeMetas.GetTypeMeta(typeof(T)), hints));
         return (ISerialize<T>)stub.GetResult()!;
     }
 
@@ -52,7 +60,9 @@ internal class SerializeEmitProvider : AEmitProvider
             throw new ArgumentException($"ByRefType is not support; {target.Type}");
         if (PrimitiveImpls.IsPrimitiveType(target.Type)) return new Jobs._Primitive();
         if (TryGetStaticImpl(target.Type, out var inst)) return new Jobs._Static(inst!.GetType(), inst);
-        if (target.Data.UserBytes && bytes_impl.TryGetValue(target.Type, out inst))
+        if (target.Data.As is SeraAs.Bytes && bytes_impl.TryGetValue(target.Type, out inst))
+            return new Jobs._Static(inst.GetType(), inst);
+        if (target.Data.As is SeraAs.String && string_impl.TryGetValue(target.Type, out inst))
             return new Jobs._Static(inst.GetType(), inst);
         if (target.IsArray) return CreateArrayJob(target);
         if (target.IsEnum) return CreateEnumJob(target);
@@ -142,7 +152,7 @@ internal class SerializeEmitProvider : AEmitProvider
 
     private EmitJob CreateListJob(EmitMeta target, Type item_type)
     {
-        if (item_type == typeof(byte) && target.Data.UserBytes) return new Jobs._Bytes_List();
+        if (item_type == typeof(byte) && target.Data.As is SeraAs.Bytes) return new Jobs._Bytes_List();
         if (target.Type.IsVisible && item_type.IsVisible) return new Jobs._Array._List_Public(item_type);
         return new Jobs._Array._List_Private(item_type);
     }

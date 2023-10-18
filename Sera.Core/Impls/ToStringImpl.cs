@@ -33,7 +33,7 @@ public struct SpanParsableSerializeImpl<T> : IDeserialize<T>, IStringDeserialize
 
     public T VisitString<A>(A access) where A : IStringAccess
     {
-        var memory = access.ReadStringAsMemory();
+        var memory = access.ReadStringAsReadOnlyMemory();
         return T.Parse(memory.Span, null);
     }
 
@@ -42,7 +42,7 @@ public struct SpanParsableSerializeImpl<T> : IDeserialize<T>, IStringDeserialize
 
     public async ValueTask<T> VisitStringAsync<A>(A access) where A : IAsyncStringAccess
     {
-        var memory = await access.ReadStringAsMemoryAsync();
+        var memory = await access.ReadStringAsReadOnlyMemoryAsync();
         return T.Parse(memory.Span, null);
     }
 }

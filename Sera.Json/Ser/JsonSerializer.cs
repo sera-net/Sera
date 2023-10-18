@@ -330,14 +330,8 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonFormatter Formatter, 
 
     public void WriteString(ReadOnlySpan<char> value)
         => Writer.WriteString(value, true);
-
-    public void WriteString(ReadOnlySequence<char> value)
-        => Writer.WriteString(value, true);
-
+    
     public void WriteStringEncoded(ReadOnlySpan<byte> value, Encoding encoding)
-        => Writer.WriteStringEncoded(value, encoding, true);
-
-    public void WriteStringEncoded(ReadOnlySequence<byte> value, Encoding encoding)
         => Writer.WriteStringEncoded(value, encoding, true);
     
     #endregion
@@ -613,16 +607,10 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonFormatter Formatter, 
 
         public void WriteString(ReadOnlySpan<char> value)
             => self.WriteString(value);
-
-        public void WriteString(ReadOnlySequence<char> value)
-            => self.WriteString(value);
-
+        
         public void WriteStringEncoded(ReadOnlySpan<byte> value, Encoding encoding)
             => self.WriteStringEncoded(value, encoding);
-
-        public void WriteStringEncoded(ReadOnlySequence<byte> value, Encoding encoding)
-            => self.WriteStringEncoded(value, encoding);
-
+        
         private void Throw() => throw new NotSupportedException("key must be a string");
 
         #region Other
