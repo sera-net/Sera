@@ -18,7 +18,7 @@ internal abstract class _Array(Type ItemType) : _Base
             ? SerializeEmitProvider.NullableReferenceTypeTransforms
             : EmitTransform.EmptyTransforms;
         var meta = new DepMeta(
-            new(TypeMetas.GetTypeMeta(ItemType, new NullabilityMeta(item_nullable)), SeraHints.Default),
+            new(TypeMetas.GetTypeMeta(ItemType, new NullabilityMeta(item_nullable)), target.Data),
             transforms);
         return new[] { meta };
     }

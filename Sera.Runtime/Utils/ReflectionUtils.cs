@@ -91,6 +91,20 @@ internal static class ReflectionUtils
                 && m.GetParameters()[0].ParameterType is { IsGenericType: true } p0
                 && p0.GetGenericTypeDefinition() == typeof(ReadOnlyMemory<>)
             );
+    
+    public static MethodInfo ISerializer_WriteNone_1generic { get; } =
+        ISerializerMethods[nameof(ISerializer.WriteNone)]
+            .Single(m =>
+                m is { IsGenericMethod: true }
+                && m.GetGenericArguments() is { Length: 1 }
+            );
+    
+    public static MethodInfo ISerializer_WriteSome_2generic { get; } =
+        ISerializerMethods[nameof(ISerializer.WriteSome)]
+            .Single(m =>
+                m is { IsGenericMethod: true }
+                && m.GetGenericArguments() is { Length: 2 }
+            );
 
     public static MethodInfo ISerializer_StartSeq_2generic { get; } =
         ISerializerMethods[nameof(ISerializer.StartSeq)]

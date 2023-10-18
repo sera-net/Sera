@@ -6,20 +6,21 @@ using Sera.Core.Ser;
 using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Utils;
 
-namespace Sera.Runtime.Emit.Ser.Jobs._Array;
+namespace Sera.Runtime.Emit.Ser.Jobs._Nullable;
 
-internal abstract class _Public(Type ItemType) : _Array(ItemType)
+internal class _Public(Type UnderlyingType) : _Nullable(UnderlyingType)
 {
     public TypeBuilder TypeBuilder { get; set; } = null!;
     public Type RuntimeType { get; set; } = null!;
-
-    protected abstract MethodInfo WriteArrayMethod { get; }
 
     public override void Init(EmitStub stub, EmitMeta target)
     {
         TypeBuilder = CreateTypeBuilderStruct($"Ser_{target.Type.Name}");
         TypeBuilder.MarkReadonly();
     }
+
+    public override EmitTransform[] CollectTransforms(EmitStub stub, EmitMeta target)
+        => EmitTransform.EmptyTransforms;
 
     public override Type GetEmitPlaceholderType(EmitStub stub, EmitMeta target)
         => TypeBuilder;
@@ -57,39 +58,81 @@ internal abstract class _Public(Type ItemType) : _Array(ItemType)
         write_method.DefineParameter(3, ParameterAttributes.None, "options");
         write_method.SetImplementationFlags(MethodImplAttributes.AggressiveInlining);
 
+        #region misc
+
+        var dep = deps.Get(0);
+
+        var has_value =
+            target.Type.GetProperty(nameof(Nullable<int>.HasValue), BindingFlags.Public | BindingFlags.Instance)!;
+        var get_has_value = has_value.GetMethod!;
+
+        var write_none = ReflectionUtils.ISerializer_WriteNone_1generic
+            .MakeGenericMethod(UnderlyingType);
+
+        var value =
+            target.Type.GetProperty(nameof(Nullable<int>.Value), BindingFlags.Public | BindingFlags.Instance)!;
+        var get_value = value.GetMethod!;
+        
+        var write_some = ReflectionUtils.ISerializer_WriteSome_2generic
+            .MakeGenericMethod(UnderlyingType, dep.TransformedType);
+
+        #endregion
+
         var ilg = write_method.GetILGenerator();
 
         var not_null_label = ilg.DefineLabel();
 
-        if (!target.Type.IsValueType)
-        {
-            #region if (value == null) throw new NullReferenceException();
+        #region if value.HasValue
 
-            ilg.Emit(OpCodes.Ldarg_2);
-            ilg.Emit(OpCodes.Brtrue_S, not_null_label);
-            ilg.Emit(OpCodes.Newobj, ReflectionUtils.NullReferenceException_ctor);
-            ilg.Emit(OpCodes.Throw);
+        ilg.Emit(OpCodes.Ldarga, 2);
+        ilg.Emit(OpCodes.Call, get_has_value);
+        ilg.Emit(OpCodes.Brtrue_S, not_null_label);
 
-            #endregion
-        }
+        #endregion
 
-        #region serializer.WriteArray<T, S>(value, Serialize);
+        #region None
 
-        var dep = deps.Get(0);
-        var write_array = WriteArrayMethod.MakeGenericMethod(ItemType, dep.TransformedType);
+        ilg.Emit(OpCodes.Ldarga, 1);
+        ilg.Emit(OpCodes.Constrained, TS);
+        ilg.Emit(OpCodes.Callvirt, write_none);
+
+        ilg.Emit(OpCodes.Ret);
+
+        #endregion
+
+        #region Some
+
+        #region load serializer
 
         ilg.MarkLabel(not_null_label);
         ilg.Emit(OpCodes.Ldarga, 1);
-        ilg.Emit(OpCodes.Ldarg_2);
-        ConvertValue(target, dep, ilg);
+
+        #endregion
+
+        #region value.Value
+
+        ilg.Emit(OpCodes.Ldarga, 2);
+        ilg.Emit(OpCodes.Call, get_value);
+
+        #endregion
+
+        #region get dep
+
         ilg.Emit(OpCodes.Call, dep.GetDepMethodInfo);
         if (dep.Boxed)
         {
             var get_method = dep.MakeBoxGetMethodInfo();
             ilg.Emit(OpCodes.Call, get_method);
         }
+
+        #endregion
+
+        #region serializer.WriteSome<T, S>(value.Value, Dep.impl)
+
         ilg.Emit(OpCodes.Constrained, TS);
-        ilg.Emit(OpCodes.Callvirt, write_array);
+        ilg.Emit(OpCodes.Callvirt, write_some);
+
+        #endregion
 
         #endregion
 
@@ -104,6 +147,4 @@ internal abstract class _Public(Type ItemType) : _Array(ItemType)
         TypeBuilder.DefineMethodOverride(write_method,
             interface_type.GetMethod(nameof(ISerialize<object>.Write))!);
     }
-
-    protected virtual void ConvertValue(EmitMeta target, DepPlace dep, ILGenerator ilg) { }
 }

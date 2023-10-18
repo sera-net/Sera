@@ -170,6 +170,8 @@ internal static class TypeMetas
         {
             GenericMeta? generic = !index.Target.IsGenericType
                 ? null
+                : index.Target.GetGenericTypeDefinition() == typeof(Nullable<>)
+                ? null
                 : GetGenericMeta(
                     index.Target.GenericTypeArguments,
                     index.Meta?.NullabilityInfo?.GenericTypeArguments

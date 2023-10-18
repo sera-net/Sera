@@ -2598,6 +2598,30 @@ public class TestRuntime
 
     #endregion
 
+    #region PrivateListBase3
+
+    private class PrivateListBase3 : List<int> { }
+
+    private class PrivateListBase3A
+    {
+        public PrivateListBase3 A { get; set; } = new() { 1, 2, 3 };
+    }
+
+    [Test]
+    public void TestPrivateListBase3()
+    {
+        var obj = new PrivateListBase3A();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"A\":[1,2,3]}"));
+    }
+
+    #endregion
+
     #region ReadOnlySequence1
 
     [Test]
@@ -2892,6 +2916,31 @@ public class TestRuntime
 
     #endregion
 
+    #region PrivateBytesBase3
+
+    private class PrivateBytesBase3 : List<byte> { }
+
+    private class PrivateBytesBase3A
+    {
+        [Sera(As = SeraAs.Bytes)]
+        public PrivateBytesBase3 A { get; set; } = new() { 1, 2, 3 };
+    }
+
+    [Test]
+    public void TestPrivateBytesBase3()
+    {
+        var obj = new PrivateBytesBase3A();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"A\":\"AQID\"}"));
+    }
+
+    #endregion
+
     #region String1
 
     [Test]
@@ -2967,7 +3016,7 @@ public class TestRuntime
     }
 
     #endregion
-    
+
     #region PrivateStringBase1
 
     private class PrivateStringBase1 : List<char> { }
@@ -2986,7 +3035,7 @@ public class TestRuntime
     }
 
     #endregion
-    
+
     #region PrivateStringBase2
 
     public class PrivateStringBase2<A> : List<char> { }
@@ -3004,6 +3053,155 @@ public class TestRuntime
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("\"abc\""));
+    }
+
+    #endregion
+
+    #region PrivateStringBase3
+
+    private class PrivateStringBase3 : List<char> { }
+
+    private class PrivateStringBase3A
+    {
+        [Sera(As = SeraAs.String)]
+        public PrivateStringBase3 A { get; set; } = new() { 'a', 'b', 'c' };
+    }
+
+    [Test]
+    public void TestPrivateStringBase3()
+    {
+        var obj = new PrivateStringBase3A();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"A\":\"abc\"}"));
+    }
+
+    #endregion
+
+    #region Nullable1
+
+    [Test]
+    public void TestNullable1()
+    {
+        int? obj = 1;
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("1"));
+    }
+
+    #endregion
+
+    #region Nullable2
+
+    [Test]
+    public void TestNullable2()
+    {
+        int? obj = null;
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("null"));
+    }
+
+    #endregion
+
+    #region Nullable3
+
+    public struct Nullable3
+    {
+        public Nullable3A? A { get; set; } = new Nullable3A();
+
+        public Nullable3() { }
+    }
+
+    public struct Nullable3A;
+
+    [Test]
+    public void TestNullable3()
+    {
+        var obj = new Nullable3();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"A\":{}}"));
+    }
+
+    #endregion
+
+    #region PrivateNullable1
+
+    private struct PrivateNullable1 { }
+
+    [Test]
+    public void TestPrivateNullable1()
+    {
+        PrivateNullable1? obj = new PrivateNullable1();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{}"));
+    }
+
+    #endregion
+
+    #region PrivateNullable2
+
+    private struct PrivateNullable2 { }
+
+    [Test]
+    public void TestPrivateNullable2()
+    {
+        PrivateNullable1? obj = null;
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("null"));
+    }
+
+    #endregion
+
+    #region PrivateNullable3
+
+    private struct PrivateNullable3
+    {
+        public PrivateNullable3A? A { get; set; } = new PrivateNullable3A();
+
+        public PrivateNullable3() { }
+    }
+
+    private struct PrivateNullable3A;
+
+    [Test]
+    public void TestPrivateNullable3()
+    {
+        var obj = new PrivateNullable3();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"A\":{}}"));
     }
 
     #endregion

@@ -7,19 +7,17 @@ namespace Sera.Runtime.Emit.Ser.Jobs._Array;
 
 internal class _List_Private(Type ItemType) : _Private(ItemType)
 {
-    public static readonly EmitTransform[] Transforms =
-    {
-        new Transforms._ListSerializeImplWrapper(),
-        new Transforms._ReferenceTypeWrapperSerializeImpl(),
-    };
-
     public override void Init(EmitStub stub, EmitMeta target)
     {
         BaseType = typeof(ListSerializeImplBase<,>).MakeGenericType(target.Type, ItemType);
     }
-    
+
     public override EmitTransform[] CollectTransforms(EmitStub stub, EmitMeta target)
-        => Transforms;
+        => new EmitTransform[]
+        {
+            new Transforms._ListSerializeImplWrapper(ItemType),
+            new Transforms._ReferenceTypeWrapperSerializeImpl(),
+        };
 
     public override object CreateInst(EmitStub stub, EmitMeta target, RuntimeDeps deps)
     {

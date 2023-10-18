@@ -42,7 +42,7 @@ internal abstract class _Tuples(bool IsValueTuple, Type[] ItemTypes) : _Base
                 { NullabilityInfo.ReadState: NullabilityState.NotNull }
                 ? SerializeEmitProvider.NullableReferenceTypeTransforms
                 : EmitTransform.EmptyTransforms;
-            return new DepMeta(new(TypeMetas.GetTypeMeta(t, item_nullable), SeraHints.Default),
+            return new DepMeta(new(TypeMetas.GetTypeMeta(t, item_nullable), target.Data),
                 transforms, KeepRaw: i == 7);
         }).ToArray();
     }
