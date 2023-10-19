@@ -1,4 +1,5 @@
 ﻿using System.Buffers;
+using System.Collections;
 using JetBrains.Annotations;
 using Sera;
 using Sera.Json;
@@ -3260,6 +3261,281 @@ public class TestRuntime
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"A\":{\"A\":null}}"));
+    }
+
+    #endregion
+
+    #region IEnumerable1
+
+    public class ClassIEnumerable1 : IEnumerable<int>
+    {
+        public IEnumerator<int> GetEnumerator()
+        {
+            yield return 1;
+            yield return 2;
+            yield return 3;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    [Test]
+    public void TestIEnumerable1()
+    {
+        var obj = new ClassIEnumerable1();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,2,3]"));
+    }
+
+    #endregion
+
+    #region IEnumerable2
+
+    [Test]
+    public void TestIEnumerable2()
+    {
+        IEnumerable<int> obj = new[] { 1, 2, 3, };
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,2,3]"));
+    }
+
+    #endregion
+
+    #region IEnumerable3
+
+    public struct ClassIEnumerable3 : IEnumerable<int>
+    {
+        public IEnumerator<int> GetEnumerator()
+        {
+            yield return 1;
+            yield return 2;
+            yield return 3;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    [Test]
+    public void TestIEnumerable3()
+    {
+        var obj = new ClassIEnumerable3();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,2,3]"));
+    }
+
+    #endregion
+
+    #region IEnumerable4
+
+    public class ClassIEnumerable4 : IEnumerable<int>
+    {
+        IEnumerator<int> IEnumerable<int>.GetEnumerator()
+        {
+            yield return 1;
+            yield return 2;
+            yield return 3;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<int>)this).GetEnumerator();
+    }
+
+    [Test]
+    public void TestIEnumerable4()
+    {
+        var obj = new ClassIEnumerable4();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,2,3]"));
+    }
+
+    #endregion
+
+    #region IEnumerable5
+
+    public struct ClassIEnumerable5 : IEnumerable<int>
+    {
+        IEnumerator<int> IEnumerable<int>.GetEnumerator()
+        {
+            yield return 1;
+            yield return 2;
+            yield return 3;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => ((IEnumerable<int>)this).GetEnumerator();
+    }
+
+    [Test]
+    public void TestIEnumerable5()
+    {
+        var obj = new ClassIEnumerable5();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,2,3]"));
+    }
+
+    #endregion
+
+    #region IEnumerable6
+
+    public class ClassIEnumerable6 : IEnumerable<int>
+    {
+        public Enumerator GetEnumerator() => new();
+
+        IEnumerator<int> IEnumerable<int>.GetEnumerator() => GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public struct Enumerator : IEnumerator<int>
+        {
+            private bool end = false;
+
+            public Enumerator() { }
+
+            public void Dispose() { }
+
+            public bool MoveNext()
+            {
+                if (end) return false;
+                end = true;
+                return true;
+            }
+
+            public void Reset()
+            {
+                end = false;
+            }
+
+            public int Current => 1;
+            object IEnumerator.Current => Current;
+        }
+    }
+
+    [Test]
+    public void TestIEnumerable6()
+    {
+        var obj = new ClassIEnumerable6();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1]"));
+    }
+
+    #endregion
+    
+    #region IEnumerable7
+
+    public class IEnumerable7
+    {
+        public IEnumerable<IEnumerable7?> A { get; set; } = new IEnumerable7?[] { null };
+    }
+
+    [Test]
+    public void TestIEnumerable7()
+    {
+        var obj = new IEnumerable7();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"A\":[null]}"));
+    }
+
+    #endregion
+    
+    #region PrivateIEnumerable1
+
+    private class ClassPrivateIEnumerable1 : IEnumerable<int>
+    {
+        public IEnumerator<int> GetEnumerator()
+        {
+            yield return 1;
+            yield return 2;
+            yield return 3;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    [Test]
+    public void TestPrivateIEnumerable1()
+    {
+        var obj = new ClassPrivateIEnumerable1();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,2,3]"));
+    }
+
+    #endregion
+    
+    #region PrivateIEnumerable2
+
+    private class PrivateIEnumerable2 { }
+
+    [Test]
+    public void TestPrivateIEnumerable2()
+    {
+        IEnumerable<PrivateIEnumerable2> obj = new[] { new PrivateIEnumerable2() };
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[{}]"));
+    }
+
+    #endregion
+    
+    #region PrivateIEnumerable3
+
+    private class PrivateIEnumerable3
+    {
+        public IEnumerable<PrivateIEnumerable3?> A { get; set; } = new PrivateIEnumerable3?[] { null };
+    }
+
+    [Test]
+    public void TestPrivateIEnumerable3()
+    {
+        var obj = new PrivateIEnumerable3();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"A\":[null]}"));
     }
 
     #endregion

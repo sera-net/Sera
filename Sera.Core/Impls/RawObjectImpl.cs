@@ -5,7 +5,7 @@ using Sera.Core.Ser;
 
 namespace Sera.Core.Impls;
 
-public class RawObjectImpl :
+public readonly struct RawObjectImpl :
     ISerialize<object>, IAsyncSerialize<object>,
     IDeserialize<object>, IAsyncDeserialize<object>,
     IStructSerializerReceiver<object>, IAsyncStructSerializerReceiver<object>

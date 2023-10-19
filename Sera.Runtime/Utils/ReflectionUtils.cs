@@ -91,14 +91,14 @@ internal static class ReflectionUtils
                 && m.GetParameters()[0].ParameterType is { IsGenericType: true } p0
                 && p0.GetGenericTypeDefinition() == typeof(ReadOnlyMemory<>)
             );
-    
+
     public static MethodInfo ISerializer_WriteNone_1generic { get; } =
         ISerializerMethods[nameof(ISerializer.WriteNone)]
             .Single(m =>
                 m is { IsGenericMethod: true }
                 && m.GetGenericArguments() is { Length: 1 }
             );
-    
+
     public static MethodInfo ISerializer_WriteSome_2generic { get; } =
         ISerializerMethods[nameof(ISerializer.WriteSome)]
             .Single(m =>
@@ -113,6 +113,13 @@ internal static class ReflectionUtils
                 && m.GetGenericArguments() is { Length: 2 }
             );
 
+    public static MethodInfo ISerializer_StartSeq_3generic { get; } =
+        ISerializerMethods[nameof(ISerializer.StartSeq)]
+            .Single(m =>
+                m is { IsGenericMethod: true }
+                && m.GetGenericArguments() is { Length: 3 }
+            );
+    
     public static MethodInfo ISerializer_WriteVariantUnit_1generic { get; } =
         ISerializerMethods[nameof(ISerializer.WriteVariantUnit)]
             .Single(m =>
@@ -420,5 +427,30 @@ internal static class ReflectionUtils
 
             type = base_type;
         }
+    }
+
+    public static bool IsIEnumerableT(this Type type, [NotNullWhen(true)] out Type? itemType, out InterfaceMapping? mapping)
+    {
+        if (type.IsOpenTypeEq(typeof(IEnumerable<>)))
+        {
+            itemType = type.GetGenericArguments()[0];
+            mapping = null;
+            return true;
+        }
+
+        var interfaces =
+            type.FindInterfaces((it, _) => it.IsOpenTypeEq(typeof(IEnumerable<>)), null);
+        
+        if (interfaces.Length == 1)
+        {
+            var it = interfaces[0];
+            mapping = type.GetInterfaceMap(it);
+            itemType = it.GetGenericArguments()[0];
+            return true;
+        }
+
+        itemType = null;
+        mapping = null;
+        return false;
     }
 }

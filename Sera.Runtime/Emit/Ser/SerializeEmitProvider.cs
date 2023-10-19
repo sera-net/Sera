@@ -76,6 +76,8 @@ internal class SerializeEmitProvider : AEmitProvider
             if (generic_def == typeof(Nullable<>)) return CreateNullableJob(target);
         }
         if (target.Type.IsListBase(out var item_type)) return CreateListJob(target, item_type);
+        if (target.Type.IsIEnumerableT(out item_type, out var interface_mapping))
+            return CreateIEnumerableJob(target, item_type, interface_mapping);
         // todo other type
         return CreateStructJob(target);
     }
@@ -155,7 +157,7 @@ internal class SerializeEmitProvider : AEmitProvider
     {
         if (item_type == typeof(byte) && target.Data.As is SeraAs.Bytes) return new Jobs._Bytes_List();
         if (item_type == typeof(char) && target.Data.As is SeraAs.String) return new Jobs._String_List();
-        if (target.Type.IsVisible) return new Jobs._Array._List_Public(item_type);
+        if (target.Type.IsVisible && item_type.IsVisible) return new Jobs._Array._List_Public(item_type);
         return new Jobs._Array._List_Private(item_type);
     }
 
@@ -185,5 +187,15 @@ internal class SerializeEmitProvider : AEmitProvider
         var item_type = target.Type.GetGenericArguments()[0];
         if (target.Type.IsVisible) return new Jobs._Nullable._Public(item_type);
         return new Jobs._Nullable._Private(item_type);
+    }
+
+    private EmitJob CreateIEnumerableJob(EmitMeta target, Type item_type, InterfaceMapping? mapping)
+    {
+        var direct_get_enumerator = target.Type.GetMethod(nameof(IEnumerable<int>.GetEnumerator),
+            BindingFlags.Public | BindingFlags.Instance,
+            Array.Empty<Type>());
+        if (target.Type.IsVisible && item_type.IsVisible)
+            return new Jobs._IEnumerable._Generic._Public(item_type, mapping, direct_get_enumerator);
+        return new Jobs._IEnumerable._Generic._Private(item_type);
     }
 }
