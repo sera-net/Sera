@@ -81,11 +81,12 @@ internal class _Public(Type ItemType, InterfaceMapping? mapping, MethodInfo? Dir
 
         #region serializer.StartSeq<I, T, Self>(null, value, this);
 
+        ilg.MarkLabel(not_null_label);
+
         var nullable_tmp = ilg.DeclareLocal(typeof(nuint?));
         ilg.Emit(OpCodes.Ldloca, nullable_tmp);
         ilg.Emit(OpCodes.Initobj, typeof(nuint?));
 
-        ilg.MarkLabel(not_null_label);
         ilg.Emit(OpCodes.Ldarga, 1);
         ilg.Emit(OpCodes.Ldloc, nullable_tmp);
         ilg.Emit(OpCodes.Ldarg_2);
