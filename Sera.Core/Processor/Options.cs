@@ -26,10 +26,12 @@ public interface ISeraOptions
     /// <summary>
     /// Runtime provider
     /// </summary>
+    [Obsolete("Internal use only, use serializer.RuntimeProvider")]
     public virtual IRuntimeProvider RuntimeProvider => StaticRuntimeProvider.Instance;
     /// <summary>
     /// Async Runtime provider
     /// </summary>
+    [Obsolete("Internal use only, use serializer.AsyncRuntimeProvider")]
     public virtual IAsyncRuntimeProvider AsyncRuntimeProvider => StaticRuntimeProvider.Instance;
     /// <summary>
     /// 标记根（传入的实际参数）对象时引用类型时是否可空
@@ -48,7 +50,19 @@ public abstract record ASeraOptions : ISeraOptions
     public Encoding Encoding { get; set; } = DefaultSeraOptions.Default.Encoding;
     public TimeZoneInfo TimeZone { get; set; } = DefaultSeraOptions.Default.TimeZone;
     public bool PropertyNameCaseInsensitive { get; set; } = DefaultSeraOptions.Default.PropertyNameCaseInsensitive;
-    public IRuntimeProvider RuntimeProvider { get; set; } = DefaultSeraOptions.Default.RuntimeProvider;
-    public IAsyncRuntimeProvider AsyncRuntimeProvider { get; set; } = DefaultSeraOptions.Default.AsyncRuntimeProvider;
+#pragma warning disable CS0618
+    public IRuntimeProvider RuntimeProvider
+    {
+        [Obsolete("Internal use only, use serializer.RuntimeProvider")]
+        get;
+        set;
+    } = DefaultSeraOptions.Default.RuntimeProvider;
+    public IAsyncRuntimeProvider AsyncRuntimeProvider
+    {
+        [Obsolete("Internal use only, use serializer.AsyncRuntimeProvider")]
+        get;
+        set;
+    } = DefaultSeraOptions.Default.AsyncRuntimeProvider;
+#pragma warning restore CS0618
     public virtual bool RootReferenceNullable { get; set; } = DefaultSeraOptions.Default.RootReferenceNullable;
 }

@@ -33,7 +33,7 @@ public static partial class SeraJsonRuntime
         var rt = EmitRuntimeProvider.Instance;
         var ser = new JsonSerializer(StreamJsonWriter.Create(self))
         {
-            RuntimeProvider = rt,
+            RuntimeProviderOverride = rt,
         };
         rt.GetSerialize<T>(self.Options, hints).Write(ser, value, self.Options);
     }
@@ -43,7 +43,7 @@ public static partial class SeraJsonRuntime
         var rt = EmitRuntimeProvider.Instance;
         var ser = new JsonSerializer(StreamJsonWriter.Create(self))
         {
-            RuntimeProvider = rt,
+            RuntimeProviderOverride = rt,
         };
         serialize.Write(ser, value, self.Options);
     }
@@ -61,7 +61,7 @@ public static partial class SeraJsonRuntime
         var builder = new StringBuilder();
         var ser = new JsonSerializer(StringBuilderJsonWriter.Create(self, builder))
         {
-            RuntimeProvider = rt,
+            RuntimeProviderOverride = rt,
         };
         rt.GetSerialize<T>(self.Options, hints).Write(ser, value, self.Options);
         return builder.ToString();
@@ -73,7 +73,7 @@ public static partial class SeraJsonRuntime
         var builder = new StringBuilder();
         var ser = new JsonSerializer(StringBuilderJsonWriter.Create(self, builder))
         {
-            RuntimeProvider = rt,
+            RuntimeProviderOverride = rt,
         };
         serialize.Write(ser, value, self.Options);
         return builder.ToString();
@@ -91,7 +91,7 @@ public static partial class SeraJsonRuntime
         var rt = EmitRuntimeProvider.Instance;
         var ser = new JsonSerializer(StringBuilderJsonWriter.Create(self))
         {
-            RuntimeProvider = rt,
+            RuntimeProviderOverride = rt,
         };
         rt.GetSerialize<T>(self.Options, hints).Write(ser, value, self.Options);
     }
@@ -101,7 +101,7 @@ public static partial class SeraJsonRuntime
         var rt = EmitRuntimeProvider.Instance;
         var ser = new JsonSerializer(StringBuilderJsonWriter.Create(self))
         {
-            RuntimeProvider = rt,
+            RuntimeProviderOverride = rt,
         };
         serialize.Write(ser, value, self.Options);
     }

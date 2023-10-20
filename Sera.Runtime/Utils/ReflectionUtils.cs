@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Collections;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -119,7 +120,7 @@ internal static class ReflectionUtils
                 m is { IsGenericMethod: true }
                 && m.GetGenericArguments() is { Length: 3 }
             );
-    
+
     public static MethodInfo ISerializer_WriteVariantUnit_1generic { get; } =
         ISerializerMethods[nameof(ISerializer.WriteVariantUnit)]
             .Single(m =>
@@ -429,7 +430,8 @@ internal static class ReflectionUtils
         }
     }
 
-    public static bool IsIEnumerableT(this Type type, [NotNullWhen(true)] out Type? itemType, out InterfaceMapping? mapping)
+    public static bool IsIEnumerableT(this Type type, [NotNullWhen(true)] out Type? itemType,
+        out InterfaceMapping? mapping)
     {
         if (type.IsOpenTypeEq(typeof(IEnumerable<>)))
         {
@@ -440,7 +442,7 @@ internal static class ReflectionUtils
 
         var interfaces =
             type.FindInterfaces((it, _) => it.IsOpenTypeEq(typeof(IEnumerable<>)), null);
-        
+
         if (interfaces.Length == 1)
         {
             var it = interfaces[0];
@@ -452,5 +454,15 @@ internal static class ReflectionUtils
         itemType = null;
         mapping = null;
         return false;
+    }
+
+    public static bool IsIEnumerable(this Type type)
+    {
+        if (type == typeof(IEnumerable)) return true;
+
+        var interfaces =
+            type.FindInterfaces((it, _) => it == typeof(IEnumerable), null);
+
+        return interfaces.Length > 0;
     }
 }

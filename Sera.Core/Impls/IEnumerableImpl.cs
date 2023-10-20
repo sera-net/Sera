@@ -91,7 +91,7 @@ public readonly struct IEnumerableSerializeRuntimeImpl<E> : ISerialize<E>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Write<S>(S serializer, E value, ISeraOptions options) where S : ISerializer
         => serializer.StartSeq(null, value,
-            new IEnumerableSerializeReceiveRuntimeImpl<E>(options.RuntimeProvider.GetRuntimeSerialize()));
+            new IEnumerableSerializeReceiveRuntimeImpl<E>(serializer.RuntimeProvider.GetRuntimeSerialize()));
 }
 
 public readonly struct IEnumerableSerializeReceiveRuntimeImpl<E>(ISerialize<object?> Serialize) : ISeqSerializerReceiver<E>

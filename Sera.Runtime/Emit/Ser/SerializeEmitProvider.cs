@@ -92,6 +92,7 @@ internal class SerializeEmitProvider : AEmitProvider
         if (target.Type.IsListBase(out var item_type)) return CreateListJob(target, item_type);
         if (target.Type.IsIEnumerableT(out item_type, out var interface_mapping))
             return CreateIEnumerableJob(target, item_type, interface_mapping);
+        if (target.Type.IsIEnumerable()) return CreateIEnumerableLegacyJob();
         // todo other type
         return CreateStructJob(target);
     }
@@ -212,4 +213,7 @@ internal class SerializeEmitProvider : AEmitProvider
             return new Jobs._IEnumerable._Generic._Public(item_type, mapping, direct_get_enumerator);
         return new Jobs._IEnumerable._Generic._Private(item_type);
     }
+
+    private EmitJob CreateIEnumerableLegacyJob()
+        => new Jobs._IEnumerable._Legacy();
 }

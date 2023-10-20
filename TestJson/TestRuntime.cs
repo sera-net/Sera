@@ -3594,4 +3594,53 @@ public class TestRuntime
     }
 
     #endregion
+
+    #region IEnumerableLegacy1
+
+    public class ClassIEnumerableLegacy1 : IEnumerable
+    {
+        public IEnumerator GetEnumerator()
+        {
+            yield return 1;
+            yield return "a";
+            yield return true;
+        }
+    }
+
+    [Test]
+    public void TestIEnumerableLegacy1()
+    {
+        var obj = new ClassIEnumerableLegacy1();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,\"a\",true]"));
+    }
+
+    #endregion
+
+    #region IEnumerableLegacy2
+
+    public class ClassIEnumerableLegacy2(int n = 0)
+    {
+        public IEnumerable A { get; set; } = n == 1 ? new[] { 1, 2, 3 } : new ClassIEnumerableLegacy2[] { new(1) };
+    }
+
+    [Test]
+    public void TestIEnumerableLegacy2()
+    {
+        var obj = new ClassIEnumerableLegacy2();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"A\":[{\"A\":[1,2,3]}]}"));
+    }
+
+    #endregion
 }

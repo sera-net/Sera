@@ -18,9 +18,14 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonFormatter Formatter, 
     public string FormatMIME => "application/json";
     public SeraFormatType FormatType => SeraFormatType.HumanReadableText;
 
-    public IRuntimeProvider RuntimeProvider { get; set; } = Options.RuntimeProvider;
+    public IRuntimeProvider? RuntimeProviderOverride { get; set; }
+    public IAsyncRuntimeProvider? AsyncRuntimeProviderOverride { get; set; }
 
-    public IAsyncRuntimeProvider AsyncRuntimeProvider { get; set; } = Options.AsyncRuntimeProvider;
+#pragma warning disable CS0618
+    public IRuntimeProvider RuntimeProvider => RuntimeProviderOverride ?? Options.RuntimeProvider;
+
+    public IAsyncRuntimeProvider AsyncRuntimeProvider => AsyncRuntimeProviderOverride ?? Options.AsyncRuntimeProvider;
+#pragma warning restore CS0618
 
 
     private JsonSerializerState state;
@@ -36,7 +41,7 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonFormatter Formatter, 
     #endregion
 
     #region Primitive
-    
+
     public void WritePrimitive<T>(T value, SerializerPrimitiveHint? hint)
     {
         switch (value)
@@ -330,10 +335,10 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonFormatter Formatter, 
 
     public void WriteString(ReadOnlySpan<char> value)
         => Writer.WriteString(value, true);
-    
+
     public void WriteStringEncoded(ReadOnlySpan<byte> value, Encoding encoding)
         => Writer.WriteStringEncoded(value, encoding, true);
-    
+
     #endregion
 
     #region Bytes
@@ -607,10 +612,10 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonFormatter Formatter, 
 
         public void WriteString(ReadOnlySpan<char> value)
             => self.WriteString(value);
-        
+
         public void WriteStringEncoded(ReadOnlySpan<byte> value, Encoding encoding)
             => self.WriteStringEncoded(value, encoding);
-        
+
         private void Throw() => throw new NotSupportedException("key must be a string");
 
         #region Other
