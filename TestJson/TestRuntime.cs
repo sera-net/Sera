@@ -3566,4 +3566,32 @@ public class TestRuntime
     }
 
     #endregion
+
+    #region Runtime2
+
+    [SeraIncludeField]
+    public struct Runtime2
+    {
+        public int A { get; set; } = 123456;
+        public int B = 654321;
+
+        public Runtime2() { }
+    }
+
+    [Test]
+    public void TestRuntime2()
+    {
+        var obj = new Runtime2();
+
+        var impl = EmitRuntimeProvider.Instance.GetRuntimeSerialize();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize((object)obj, impl);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"A\":123456,\"B\":654321}"));
+    }
+
+    #endregion
 }
