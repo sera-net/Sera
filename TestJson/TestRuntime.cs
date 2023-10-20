@@ -5,6 +5,7 @@ using Sera;
 using Sera.Json;
 using Sera.Json.Runtime;
 using Sera.Runtime;
+using Sera.Runtime.Emit;
 
 namespace TestJson;
 
@@ -3447,7 +3448,7 @@ public class TestRuntime
     }
 
     #endregion
-    
+
     #region IEnumerable7
 
     public class IEnumerable7
@@ -3469,7 +3470,7 @@ public class TestRuntime
     }
 
     #endregion
-    
+
     #region PrivateIEnumerable1
 
     private class ClassPrivateIEnumerable1 : IEnumerable<int>
@@ -3498,7 +3499,7 @@ public class TestRuntime
     }
 
     #endregion
-    
+
     #region PrivateIEnumerable2
 
     private class PrivateIEnumerable2 { }
@@ -3517,7 +3518,7 @@ public class TestRuntime
     }
 
     #endregion
-    
+
     #region PrivateIEnumerable3
 
     private class PrivateIEnumerable3
@@ -3536,6 +3537,32 @@ public class TestRuntime
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"A\":[null]}"));
+    }
+
+    #endregion
+
+    #region Runtime1
+
+    [SeraIncludeField]
+    public class Runtime1
+    {
+        public int A { get; set; } = 123456;
+        public int B = 654321;
+    }
+
+    [Test]
+    public void TestRuntime1()
+    {
+        var obj = new Runtime1();
+
+        var impl = EmitRuntimeProvider.Instance.GetRuntimeSerialize();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj, impl);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"A\":123456,\"B\":654321}"));
     }
 
     #endregion

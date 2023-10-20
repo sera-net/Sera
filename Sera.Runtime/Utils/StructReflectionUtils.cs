@@ -93,8 +93,8 @@ public static class StructReflectionUtils
                 }
                 else return null;
             })
-            .Where(a => a is not { Type: { IsByRef: true } or { IsByRefLike: true } }) // todo support span
             .Where(a => a != null)
+            .Where(a => a is not { Type: { IsByRef: true } or { IsByRefLike: true } }) // todo support span
             .ToArray()!;
     }
 }

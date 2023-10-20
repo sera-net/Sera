@@ -37,7 +37,7 @@ public sealed class NullableSerializeImpl<T, ST>(ST Serialize) : NullableSeriali
 
 #region Async
 
-public record struct AsyncNullableSerializeImpl<T, ST>(ST Serialize) : IAsyncSerialize<T?>
+public readonly struct AsyncNullableSerializeImpl<T, ST>(ST Serialize) : IAsyncSerialize<T?>
     where T : struct where ST : IAsyncSerialize<T>
 {
     public ValueTask WriteAsync<S>(S serializer, T? value, ISeraOptions options) where S : IAsyncSerializer
@@ -50,7 +50,7 @@ public record struct AsyncNullableSerializeImpl<T, ST>(ST Serialize) : IAsyncSer
 
 #region ReferenceType
 
-public record struct NullableReferenceTypeSerializeImpl<T, ST>(ST Serialize) : ISerialize<T?>
+public readonly struct NullableReferenceTypeSerializeImpl<T, ST>(ST Serialize) : ISerialize<T?>
     where T : class where ST : ISerialize<T>
 {
     public void Write<S>(S serializer, T? value, ISeraOptions options) where S : ISerializer
@@ -60,7 +60,7 @@ public record struct NullableReferenceTypeSerializeImpl<T, ST>(ST Serialize) : I
     }
 }
 
-public record struct AsyncNullableReferenceTypeSerializeImpl<T, ST>(ST Serialize) : IAsyncSerialize<T?>
+public readonly struct AsyncNullableReferenceTypeSerializeImpl<T, ST>(ST Serialize) : IAsyncSerialize<T?>
     where T : class where ST : IAsyncSerialize<T>
 {
     public ValueTask WriteAsync<S>(S serializer, T? value, ISeraOptions options) where S : IAsyncSerializer

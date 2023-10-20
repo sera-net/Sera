@@ -3,7 +3,7 @@ using Sera.Core.Ser;
 
 namespace Sera.Core.Impls;
 
-public record struct ReferenceTypeWrapperSerializeImpl<T, ST>(ST Serialize) : ISerialize<T>
+public readonly struct ReferenceTypeWrapperSerializeImpl<T, ST>(ST Serialize) : ISerialize<T>
     where T : class where ST : ISerialize<T>
 {
     public void Write<S>(S serializer, T value, ISeraOptions options) where S : ISerializer
@@ -13,7 +13,7 @@ public record struct ReferenceTypeWrapperSerializeImpl<T, ST>(ST Serialize) : IS
     }
 }
 
-public record struct AsyncReferenceTypeWrapperSerializeImpl<T, ST>(ST Serialize) : IAsyncSerialize<T>
+public readonly struct AsyncReferenceTypeWrapperSerializeImpl<T, ST>(ST Serialize) : IAsyncSerialize<T>
     where T : class where ST : IAsyncSerialize<T>
 {
     public async ValueTask WriteAsync<S>(S serializer, T value, ISeraOptions options) where S : IAsyncSerializer

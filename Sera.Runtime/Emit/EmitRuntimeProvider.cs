@@ -1,6 +1,8 @@
 ﻿using System;
 using Sera.Core;
+using Sera.Core.Impls;
 using Sera.Runtime.Emit.Ser;
+using Sera.Runtime.Emit.Ser.Internal;
 
 namespace Sera.Runtime.Emit;
 
@@ -12,10 +14,10 @@ public class EmitRuntimeProvider : IRuntimeProvider
 
     internal readonly SerializeEmitProvider serializeEmitProvider = new();
 
-    public ISerialize<object?> GetRuntimeSerialize()
-    {
-        throw new NotImplementedException("todo");
-    }
+    public ISerialize<object?> GetRuntimeSerialize() =>
+        new NullableReferenceTypeSerializeImpl<object, ReferenceTypeWrapperSerializeImpl<object, RuntimeSerializeImpl>>(
+            new(new())
+        );
 
     public bool TryGetRuntimeSerialize(out ISerialize<object?> serialize)
     {

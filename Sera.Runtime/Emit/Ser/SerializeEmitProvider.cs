@@ -4,8 +4,10 @@ using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Sera.Core;
 using Sera.Core.Impls;
+using Sera.Runtime.Emit.Ser.Internal;
 using Sera.Runtime.Utils;
 
 namespace Sera.Runtime.Emit.Ser;
@@ -53,6 +55,18 @@ internal class SerializeEmitProvider : AEmitProvider
         var stub = Emit(new(TypeMetas.GetTypeMeta(typeof(T)), hints));
         return (ISerialize<T>)stub.GetResult()!;
     }
+
+    private readonly ConditionalWeakTable<Type, ISerialize<object>> RuntimeImplCache = new();
+
+    public ISerialize<object> GetRuntimeSerialize(Type type) => RuntimeImplCache.GetValue(type, type =>
+    {
+        var stub = Emit(new(TypeMetas.GetTypeMeta(type), SeraHints.Default));
+        var res = stub.GetResult()!;
+        var impl = typeof(RuntimeSerializeImplWrapper<,>).MakeGenericType(type, res.GetType());
+        var ctor = impl.GetConstructor(BindingFlags.Public | BindingFlags.Instance, new[] { res.GetType() })!;
+        var inst = ctor.Invoke(new[] { res });
+        return (ISerialize<object>)inst;
+    });
 
     protected override EmitJob CreateJob(EmitMeta target)
     {
