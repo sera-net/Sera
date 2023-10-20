@@ -90,7 +90,9 @@ internal class SerializeEmitProvider : AEmitProvider
             if (generic_def == typeof(Nullable<>)) return CreateNullableJob(target);
         }
         if (target.Type.IsListBase(out var item_type)) return CreateListJob(target, item_type);
-        if (target.Type.IsIEnumerableT(out item_type, out var interface_mapping))
+        if (target.Type.IsICollectionT(out item_type, out var interface_mapping))
+            return CreateICollectionJob(target, item_type, interface_mapping);
+        if (target.Type.IsIEnumerableT(out item_type, out  interface_mapping))
             return CreateIEnumerableJob(target, item_type, interface_mapping);
         if (target.Type.IsIEnumerable()) return CreateIEnumerableLegacyJob();
         // todo other type
@@ -216,4 +218,14 @@ internal class SerializeEmitProvider : AEmitProvider
 
     private EmitJob CreateIEnumerableLegacyJob()
         => new Jobs._IEnumerable._Legacy();
+    
+    private EmitJob CreateICollectionJob(EmitMeta target, Type item_type, InterfaceMapping? mapping)
+    {
+        var direct_get_enumerator = target.Type.GetMethod(nameof(IEnumerable<int>.GetEnumerator),
+            BindingFlags.Public | BindingFlags.Instance,
+            Array.Empty<Type>());
+        if (target.Type.IsVisible && item_type.IsVisible)
+            return new Jobs._IEnumerable._Generic._ICollection_Public(item_type, mapping, direct_get_enumerator);
+        return new Jobs._IEnumerable._Generic._ICollection_Private(item_type);
+    }
 }

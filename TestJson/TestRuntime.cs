@@ -3643,4 +3643,261 @@ public class TestRuntime
     }
 
     #endregion
+
+    #region ICollection1
+
+    public class ClassICollection1 : ICollection<int>
+    {
+        public bool IsReadOnly => true;
+        public int Count => 3;
+
+        public IEnumerator<int> GetEnumerator()
+        {
+            yield return 1;
+            yield return 2;
+            yield return 3;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public void Add(int item) => throw new NotImplementedException();
+
+        public void Clear() => throw new NotImplementedException();
+
+        public bool Contains(int item) => throw new NotImplementedException();
+
+        public void CopyTo(int[] array, int arrayIndex) => throw new NotImplementedException();
+
+        public bool Remove(int item) => throw new NotImplementedException();
+    }
+
+    [Test]
+    public void TestICollection1()
+    {
+        var obj = new ClassICollection1();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,2,3]"));
+    }
+
+    #endregion
+
+    #region ICollection2
+
+    public struct ClassICollection2 : ICollection<int>
+    {
+        public bool IsReadOnly => true;
+        public int Count => 3;
+
+        public IEnumerator<int> GetEnumerator()
+        {
+            yield return 1;
+            yield return 2;
+            yield return 3;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public void Add(int item) => throw new NotImplementedException();
+
+        public void Clear() => throw new NotImplementedException();
+
+        public bool Contains(int item) => throw new NotImplementedException();
+
+        public void CopyTo(int[] array, int arrayIndex) => throw new NotImplementedException();
+
+        public bool Remove(int item) => throw new NotImplementedException();
+    }
+
+    [Test]
+    public void TestICollection2()
+    {
+        var obj = new ClassICollection2();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,2,3]"));
+    }
+
+    #endregion
+
+    #region ICollection3
+
+    public struct ClassICollection3 : ICollection<int>
+    {
+        bool ICollection<int>.IsReadOnly => true;
+        int ICollection<int>.Count => 3;
+
+        public IEnumerator<int> GetEnumerator()
+        {
+            yield return 1;
+            yield return 2;
+            yield return 3;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public void Add(int item) => throw new NotImplementedException();
+
+        public void Clear() => throw new NotImplementedException();
+
+        public bool Contains(int item) => throw new NotImplementedException();
+
+        public void CopyTo(int[] array, int arrayIndex) => throw new NotImplementedException();
+
+        public bool Remove(int item) => throw new NotImplementedException();
+    }
+
+    [Test]
+    public void TestICollection3()
+    {
+        var obj = new ClassICollection3();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,2,3]"));
+    }
+
+    #endregion
+
+    #region ICollection4
+
+    public class ClassICollection4 : ICollection<int>
+    {
+        bool ICollection<int>.IsReadOnly => true;
+        int ICollection<int>.Count => 3;
+
+        public IEnumerator<int> GetEnumerator()
+        {
+            yield return 1;
+            yield return 2;
+            yield return 3;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public void Add(int item) => throw new NotImplementedException();
+
+        public void Clear() => throw new NotImplementedException();
+
+        public bool Contains(int item) => throw new NotImplementedException();
+
+        public void CopyTo(int[] array, int arrayIndex) => throw new NotImplementedException();
+
+        public bool Remove(int item) => throw new NotImplementedException();
+    }
+
+    [Test]
+    public void TestICollection4()
+    {
+        var obj = new ClassICollection4();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,2,3]"));
+    }
+
+    #endregion
+
+    #region PrivateICollection1
+
+    private class PrivateClassICollection1 : ICollection<int>
+    {
+        public bool IsReadOnly => true;
+        public int Count => 3;
+
+        public IEnumerator<int> GetEnumerator()
+        {
+            yield return 1;
+            yield return 2;
+            yield return 3;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public void Add(int item) => throw new NotImplementedException();
+
+        public void Clear() => throw new NotImplementedException();
+
+        public bool Contains(int item) => throw new NotImplementedException();
+
+        public void CopyTo(int[] array, int arrayIndex) => throw new NotImplementedException();
+
+        public bool Remove(int item) => throw new NotImplementedException();
+    }
+
+    [Test]
+    public void TestPrivateICollection1()
+    {
+        var obj = new PrivateClassICollection1();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,2,3]"));
+    }
+
+    #endregion
+
+    #region PrivateICollection2
+
+    private class PrivateClassICollection2 : ICollection<int>
+    {
+        public bool IsReadOnly => true;
+        public int Count => 3;
+
+        public IEnumerator<int> GetEnumerator()
+        {
+            yield return 1;
+            yield return 2;
+            yield return 3;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public void Add(int item) => throw new NotImplementedException();
+
+        public void Clear() => throw new NotImplementedException();
+
+        public bool Contains(int item) => throw new NotImplementedException();
+
+        public void CopyTo(int[] array, int arrayIndex) => throw new NotImplementedException();
+
+        public bool Remove(int item) => throw new NotImplementedException();
+    }
+
+    private class PrivateClassICollection1A
+    {
+        public PrivateClassICollection1 A { get; set; } = new();
+    }
+
+    [Test]
+    public void TestPrivateICollection2()
+    {
+        var obj = new PrivateClassICollection1A();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"A\":[1,2,3]}"));
+    }
+
+    #endregion
 }

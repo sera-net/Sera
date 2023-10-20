@@ -429,6 +429,32 @@ internal static class ReflectionUtils
             type = base_type;
         }
     }
+    
+    public static bool IsICollectionT(this Type type, [NotNullWhen(true)] out Type? itemType,
+        out InterfaceMapping? mapping)
+    {
+        if (type.IsOpenTypeEq(typeof(ICollection<>)))
+        {
+            itemType = type.GetGenericArguments()[0];
+            mapping = null;
+            return true;
+        }
+
+        var interfaces =
+            type.FindInterfaces((it, _) => it.IsOpenTypeEq(typeof(ICollection<>)), null);
+
+        if (interfaces.Length == 1)
+        {
+            var it = interfaces[0];
+            mapping = type.GetInterfaceMap(it);
+            itemType = it.GetGenericArguments()[0];
+            return true;
+        }
+
+        itemType = null;
+        mapping = null;
+        return false;
+    }
 
     public static bool IsIEnumerableT(this Type type, [NotNullWhen(true)] out Type? itemType,
         out InterfaceMapping? mapping)

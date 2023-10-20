@@ -16,7 +16,7 @@ internal class _Public(Type ItemType, InterfaceMapping? mapping, MethodInfo? Dir
     public TypeBuilder TypeBuilder { get; set; } = null!;
     public Type RuntimeType { get; set; } = null!;
 
-    private MethodInfo StartSeq { get; set; } = null!;
+    protected MethodInfo StartSeq { get; set; } = null!;
 
     public override void Init(EmitStub stub, EmitMeta target)
     {
@@ -50,7 +50,7 @@ internal class _Public(Type ItemType, InterfaceMapping? mapping, MethodInfo? Dir
         return Activator.CreateInstance(RuntimeType)!;
     }
 
-    private void EmitWrite(EmitMeta target)
+    protected virtual void EmitWrite(EmitMeta target)
     {
         var write_method = TypeBuilder.DefineMethod(nameof(ISerialize<object>.Write),
             MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.NewSlot);
