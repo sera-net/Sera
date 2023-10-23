@@ -3,23 +3,23 @@ using System.Reflection;
 using Sera.Core.Impls;
 using Sera.Runtime.Emit.Deps;
 
-namespace Sera.Runtime.Emit.Ser.Jobs._IEnumerable._Generic;
+namespace Sera.Runtime.Emit.Ser.Jobs._ICollection._Generic;
 
-internal class _ICollection_Private(Type ItemType) : _Private(ItemType)
+internal class _ReadOnly_Private(Type ItemType) : _Private(ItemType)
 {
     public override void Init(EmitStub stub, EmitMeta target)
     {
-        BaseType = typeof(ICollectionSerializeImplBase<,>).MakeGenericType(target.Type, ItemType);
+        BaseType = typeof(IReadOnlyCollectionSerializeImplBase<,>).MakeGenericType(target.Type, ItemType);
     }
 
     public override EmitTransform[] CollectTransforms(EmitStub stub, EmitMeta target) => target.IsValueType
         ? new EmitTransform[]
         {
-            new Transforms._ICollectionSerializeImplWrapper(ItemType),
+            new Transforms._IReadOnlyCollectionSerializeImplWrapper(ItemType),
         }
         : new EmitTransform[]
         {
-            new Transforms._ICollectionSerializeImplWrapper(ItemType),
+            new Transforms._IReadOnlyCollectionSerializeImplWrapper(ItemType),
             new Transforms._ReferenceTypeWrapperSerializeImpl(),
         };
 
@@ -27,7 +27,7 @@ internal class _ICollection_Private(Type ItemType) : _Private(ItemType)
     {
         var dep = deps.Get(0);
         var wrapper = dep.MakeSerializeWrapper(ItemType);
-        var inst_type = typeof(ICollectionSerializeImpl<,,>).MakeGenericType(target.Type, ItemType, wrapper);
+        var inst_type = typeof(IReadOnlyCollectionSerializeImpl<,,>).MakeGenericType(target.Type, ItemType, wrapper);
         var ctor = inst_type.GetConstructor(BindingFlags.Public | BindingFlags.Instance, new[] { wrapper })!;
         var inst = ctor.Invoke(new object?[] { null });
         return inst;

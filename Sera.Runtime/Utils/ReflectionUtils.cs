@@ -429,54 +429,83 @@ internal static class ReflectionUtils
             type = base_type;
         }
     }
-    
-    public static bool IsICollectionT(this Type type, [NotNullWhen(true)] out Type? itemType,
-        out InterfaceMapping? mapping)
+
+    private static bool IsCollectionLikeInternal(
+        this Type self,
+        Type? target,
+        out CollectionLikeKind Kind,
+        [NotNullWhen(true)] out Type? itemType,
+        out Type? keyType,
+        out InterfaceMapping? mapping
+    )
     {
-        if (type.IsOpenTypeEq(typeof(ICollection<>)))
+        if (self.IsOpenTypeEq(typeof(ICollection<>)))
         {
-            itemType = type.GetGenericArguments()[0];
-            mapping = null;
-            return true;
+            Kind = CollectionLikeKind.ICollection;
+            goto Enumerable_Like;
+        }
+        if (self.IsOpenTypeEq(typeof(IReadOnlyCollection<>)))
+        {
+            Kind = CollectionLikeKind.IReadOnlyCollection;
+            goto Enumerable_Like;
+        }
+        if (self.IsOpenTypeEq(typeof(IDictionary<,>)))
+        {
+            Kind = CollectionLikeKind.IDictionary;
+            goto Dictionary_Like;
+        }
+        if (self.IsOpenTypeEq(typeof(IReadOnlyDictionary<,>)))
+        {
+            Kind = CollectionLikeKind.IReadOnlyDictionary;
+            goto Dictionary_Like;
+        }
+        if (self.IsOpenTypeEq(typeof(IEnumerable<>)))
+        {
+            Kind = CollectionLikeKind.IEnumerable;
+            goto Enumerable_Like;
         }
 
-        var interfaces =
-            type.FindInterfaces((it, _) => it.IsOpenTypeEq(typeof(ICollection<>)), null);
-
-        if (interfaces.Length == 1)
-        {
-            var it = interfaces[0];
-            mapping = type.GetInterfaceMap(it);
-            itemType = it.GetGenericArguments()[0];
-            return true;
-        }
-
+        Kind = CollectionLikeKind.None;
+        keyType = null;
         itemType = null;
         mapping = null;
         return false;
+
+        ok:
+        mapping = target?.GetInterfaceMap(self);
+        return true;
+
+        Enumerable_Like:
+        keyType = null;
+        itemType = self.GetGenericArguments()[0];
+        goto ok;
+
+        Dictionary_Like:
+        var generic = self.GetGenericArguments();
+        keyType = generic[0];
+        itemType = generic[1];
+        goto ok;
     }
 
-    public static bool IsIEnumerableT(this Type type, [NotNullWhen(true)] out Type? itemType,
-        out InterfaceMapping? mapping)
+    public static bool IsCollectionLike(
+        this Type type,
+        out CollectionLikeKind Kind,
+        [NotNullWhen(true)] out Type? itemType,
+        out Type? keyType,
+        out InterfaceMapping? mapping
+    )
     {
-        if (type.IsOpenTypeEq(typeof(IEnumerable<>)))
+        if (IsCollectionLikeInternal(type, null, out Kind, out itemType, out keyType, out mapping)) return true;
+
+        var interfaces = type.GetInterfaces();
+
+        foreach (var it in interfaces)
         {
-            itemType = type.GetGenericArguments()[0];
-            mapping = null;
-            return true;
+            if (IsCollectionLikeInternal(it, type, out Kind, out itemType, out keyType, out mapping)) return true;
         }
 
-        var interfaces =
-            type.FindInterfaces((it, _) => it.IsOpenTypeEq(typeof(IEnumerable<>)), null);
-
-        if (interfaces.Length == 1)
-        {
-            var it = interfaces[0];
-            mapping = type.GetInterfaceMap(it);
-            itemType = it.GetGenericArguments()[0];
-            return true;
-        }
-
+        Kind = CollectionLikeKind.None;
+        keyType = null;
         itemType = null;
         mapping = null;
         return false;
@@ -488,6 +517,16 @@ internal static class ReflectionUtils
 
         var interfaces =
             type.FindInterfaces((it, _) => it == typeof(IEnumerable), null);
+
+        return interfaces.Length > 0;
+    }
+    
+    public static bool IsICollection(this Type type)
+    {
+        if (type == typeof(ICollection)) return true;
+
+        var interfaces =
+            type.FindInterfaces((it, _) => it == typeof(ICollection), null);
 
         return interfaces.Length > 0;
     }

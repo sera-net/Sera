@@ -1,16 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 using Sera.Core;
 using Sera.Core.Ser;
 using Sera.Runtime.Utils;
+using _Public_Base = Sera.Runtime.Emit.Ser.Jobs._IEnumerable._Generic._Public;
 
-namespace Sera.Runtime.Emit.Ser.Jobs._IEnumerable._Generic;
+namespace Sera.Runtime.Emit.Ser.Jobs._ICollection._Generic;
 
-internal class _ICollection_Public(Type ItemType, InterfaceMapping? mapping, MethodInfo? DirectGetEnumerator)
-    : _Public(ItemType, mapping, DirectGetEnumerator)
+internal abstract class _Public(Type ItemType, InterfaceMapping? mapping, MethodInfo? DirectGetEnumerator)
+    : _Public_Base(ItemType, mapping, DirectGetEnumerator)
 {
+    protected abstract MethodInfo GetGetCount();
+    
     protected override void EmitWrite(EmitMeta target)
     {
         var write_method = TypeBuilder.DefineMethod(nameof(ISerialize<object>.Write),
@@ -24,9 +26,7 @@ internal class _ICollection_Public(Type ItemType, InterfaceMapping? mapping, Met
         write_method.DefineParameter(3, ParameterAttributes.None, "options");
         write_method.SetImplementationFlags(MethodImplAttributes.AggressiveInlining);
 
-        var get_count = typeof(ICollection<>).MakeGenericType(ItemType)
-            .GetProperty(nameof(ICollection<int>.Count))!
-            .GetMethod!;
+        var get_count = GetGetCount();
         if (mapping.HasValue)
         {
             var i = Array.IndexOf(mapping.Value.InterfaceMethods, get_count);

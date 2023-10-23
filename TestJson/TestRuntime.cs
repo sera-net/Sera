@@ -3900,4 +3900,130 @@ public class TestRuntime
     }
 
     #endregion
+    
+    #region IReadOnlyCollection1
+
+    public class ClassIReadOnlyCollection1 : IReadOnlyCollection<int>
+    {
+        public int Count => 3;
+
+        public IEnumerator<int> GetEnumerator()
+        {
+            yield return 1;
+            yield return 2;
+            yield return 3;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    [Test]
+    public void TestIReadOnlyCollection1()
+    {
+        var obj = new ClassIReadOnlyCollection1();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,2,3]"));
+    }
+
+    #endregion
+
+    #region ICollection2
+
+    public struct ClassIReadOnlyCollection2 : IReadOnlyCollection<int>
+    {
+        public int Count => 3;
+
+        public IEnumerator<int> GetEnumerator()
+        {
+            yield return 1;
+            yield return 2;
+            yield return 3;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    [Test]
+    public void TestIReadOnlyCollection2()
+    {
+        var obj = new ClassIReadOnlyCollection2();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,2,3]"));
+    }
+
+    #endregion
+    
+    #region PrivateICollection1
+
+    private class PrivateClassIReadOnlyCollection1 : IReadOnlyCollection<int>
+    {
+        public int Count => 3;
+
+        public IEnumerator<int> GetEnumerator()
+        {
+            yield return 1;
+            yield return 2;
+            yield return 3;
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    [Test]
+    public void TestPrivateIReadOnlyCollection1()
+    {
+        var obj = new PrivateClassIReadOnlyCollection1();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,2,3]"));
+    }
+
+    #endregion
+    
+    #region ICollectionLegacy1
+
+    public class ClassICollectionLegacy1 : ICollection
+    {
+        public IEnumerator GetEnumerator()
+        {
+            yield return 1;
+            yield return "a";
+            yield return true;
+        }
+
+        public void CopyTo(Array array, int index) => throw new NotImplementedException();
+
+        public int Count => 3;
+        public bool IsSynchronized => false;
+        public object SyncRoot { get; } = new();
+    }
+
+    [Test]
+    public void TestICollectionLegacy1()
+    {
+        var obj = new ClassICollectionLegacy1();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[1,\"a\",true]"));
+    }
+
+    #endregion
 }
