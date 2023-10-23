@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Sera.Core.Ser;
 
@@ -7,14 +8,40 @@ namespace Sera.Core.Impls;
 
 #region Serialize
 
-public record IDictionaryImpl<M, K, V, SK, SV>(SK KeySerialize, SV ValueSerialize) : ISerialize<M>,
+#region Sync
+
+public readonly struct IDictionarySerializeImplWrapper<M, K, V>(IDictionarySerializeImplBase<M, K, V> Serialize) : ISerialize<M>,
     IMapSerializerReceiver<M>
+    where M : IDictionary<K, V>
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Write<S>(S serializer, M value, ISeraOptions options) where S : ISerializer
+        => Serialize.Write(serializer, value, options);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Receive<S>(M value, S serializer) where S : IMapSerializer
+        => Serialize.Receive(value, serializer);
+}
+
+public abstract class IDictionarySerializeImplBase<M, K, V> : ISerialize<M>, IMapSerializerReceiver<M>
+    where M : IDictionary<K, V>
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public abstract void Write<S>(S serializer, M value, ISeraOptions options) where S : ISerializer;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public abstract void Receive<S>(M value, S serializer) where S : IMapSerializer;
+}
+
+public sealed class IDictionarySerializeImpl<M, K, V, SK, SV>(SK KeySerialize, SV ValueSerialize) : IDictionarySerializeImplBase<M, K, V>
     where M : IDictionary<K, V> where SK : ISerialize<K> where SV : ISerialize<V>
 {
-    public void Write<S>(S serializer, M value, ISeraOptions options) where S : ISerializer
-        => serializer.StartMap<K, V, M, IDictionaryImpl<M, K, V, SK, SV>>((nuint)value.Count, value, this);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public override void Write<S>(S serializer, M value, ISeraOptions options)
+        => serializer.StartMap<K, V, M, IDictionarySerializeImpl<M, K, V, SK, SV>>((nuint)value.Count, value, this);
 
-    public void Receive<S>(M value, S serializer) where S : IMapSerializer
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public override void Receive<S>(M value, S serializer)
     {
         foreach (var (k, v) in value)
         {
@@ -22,6 +49,10 @@ public record IDictionaryImpl<M, K, V, SK, SV>(SK KeySerialize, SV ValueSerializ
         }
     }
 }
+
+#endregion
+
+#region Async
 
 public record AsyncIDictionaryImpl<M, K, V, SK, SV>(SK KeySerialize, SV ValueSerialize) : IAsyncSerialize<M>,
     IAsyncMapSerializerReceiver<M>
@@ -57,5 +88,7 @@ public record AsyncIDictionaryImpl<M, SK, SV>(SK KeySerialize, SV ValueSerialize
         }
     }
 }
+
+#endregion
 
 #endregion

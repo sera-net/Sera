@@ -2,7 +2,6 @@
 using System.Reflection;
 using Sera.Core.Impls;
 using Sera.Runtime.Emit.Deps;
-using Sera.Runtime.Emit.Ser.Transforms;
 
 namespace Sera.Runtime.Emit.Ser.Jobs._Nullable;
 
@@ -10,7 +9,7 @@ internal class _Private(Type UnderlyingType) : _Nullable(UnderlyingType)
 {
     private static readonly EmitTransform[] Transforms =
     {
-        new _NullableSerializeImplWrapper()
+        new Transforms._NullableSerializeImplWrapper()
     };
 
     public Type ImplType { get; set; } = null!;

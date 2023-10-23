@@ -88,6 +88,7 @@ internal class SerializeEmitProvider : AEmitProvider
             if (generic_def == typeof(ReadOnlyMemory<>)) return CreateReadOnlyMemoryJob(target);
             if (generic_def == typeof(Memory<>)) return CreateMemoryJob(target);
             if (generic_def == typeof(Nullable<>)) return CreateNullableJob(target);
+            if (generic_def == typeof(KeyValuePair<,>)) return CreateKeyValuePairJob(target);
         }
         if (target.Type.IsListBase(out var item_type)) return CreateListJob(target, item_type);
         if (
@@ -96,19 +97,27 @@ internal class SerializeEmitProvider : AEmitProvider
             )
         )
         {
-            return CollectionKind switch
+            switch (CollectionKind)
             {
-                CollectionLikeKind.IEnumerable =>
-                    CreateIEnumerableJob(target, item_type, interface_mapping),
-                CollectionLikeKind.ICollection =>
-                    CreateICollectionJob(target, item_type, interface_mapping),
-                CollectionLikeKind.IReadOnlyCollection =>
-                    CreateIReadOnlyCollectionJob(target, item_type, interface_mapping),
-                _ => throw new ArgumentOutOfRangeException(nameof(CollectionKind), $"{CollectionKind}")
-            };
+                // todo kv seq as map
+                case CollectionLikeKind.IEnumerable:
+                    return CreateIEnumerableJob(target, item_type, interface_mapping);
+                case CollectionLikeKind.ICollection:
+                    return CreateICollectionJob(target, item_type, interface_mapping);
+                case CollectionLikeKind.IReadOnlyCollection:
+                    return CreateIReadOnlyCollectionJob(target, item_type, interface_mapping);
+                case CollectionLikeKind.IDictionary:
+                    if (target.Data.As is SeraAs.Seq)
+                        return CreateICollectionJob(target,
+                            typeof(KeyValuePair<,>).MakeGenericType(key_type!, item_type), interface_mapping);
+                    return CreateIDictionaryJob(target, key_type!, item_type, interface_mapping);
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(CollectionKind),
+                        $"Unknown CollectionKind {CollectionKind}");
+            }
         }
-        if (target.Type.IsIEnumerable()) return CreateIEnumerableLegacyJob();
         if (target.Type.IsICollection()) return CreateICollectionLegacyJob();
+        if (target.Type.IsIEnumerable()) return CreateIEnumerableLegacyJob();
         // todo other type
         return CreateStructJob(target);
     }
@@ -220,6 +229,15 @@ internal class SerializeEmitProvider : AEmitProvider
         return new Jobs._Nullable._Private(item_type);
     }
 
+    private EmitJob CreateKeyValuePairJob(EmitMeta target)
+    {
+        var generic = target.Type.GetGenericArguments();
+        var key_type = generic[0];
+        var val_type = generic[1];
+        if (target.Type.IsVisible) return new Jobs._KeyValuePair._Public(key_type, val_type);
+        return new Jobs._KeyValuePair._Private(key_type, val_type);
+    }
+
     private EmitJob CreateIEnumerableJob(EmitMeta target, Type item_type, InterfaceMapping? mapping)
     {
         var direct_get_enumerator = target.Type.GetMethod(nameof(IEnumerable<int>.GetEnumerator),
@@ -252,7 +270,17 @@ internal class SerializeEmitProvider : AEmitProvider
             return new Jobs._ICollection._Generic._ReadOnly_Public(item_type, mapping, direct_get_enumerator);
         return new Jobs._ICollection._Generic._ReadOnly_Private(item_type);
     }
-    
+
     private EmitJob CreateICollectionLegacyJob()
         => new Jobs._ICollection._Legacy();
+
+    private EmitJob CreateIDictionaryJob(EmitMeta target, Type key_type, Type item_type, InterfaceMapping? mapping)
+    {
+        var direct_get_enumerator = target.Type.GetMethod(nameof(IEnumerable<int>.GetEnumerator),
+            BindingFlags.Public | BindingFlags.Instance,
+            Array.Empty<Type>());
+        if (target.Type.IsVisible && key_type.IsVisible && item_type.IsVisible)
+            return new Jobs.IDictionary._Generic._Mutable_Public(key_type, item_type, mapping, direct_get_enumerator);
+        return new Jobs.IDictionary._Generic._Mutable_Private(key_type, item_type);
+    }
 }

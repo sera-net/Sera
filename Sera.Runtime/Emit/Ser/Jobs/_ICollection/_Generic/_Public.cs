@@ -84,4 +84,9 @@ internal abstract class _Public(Type ItemType, InterfaceMapping? mapping, Method
         TypeBuilder.DefineMethodOverride(write_method,
             interface_type.GetMethod(nameof(ISerialize<object>.Write))!);
     }
+    
+    protected virtual void EmitStartXX()
+    {
+        
+    }
 }

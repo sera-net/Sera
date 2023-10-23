@@ -3900,7 +3900,7 @@ public class TestRuntime
     }
 
     #endregion
-    
+
     #region IReadOnlyCollection1
 
     public class ClassIReadOnlyCollection1 : IReadOnlyCollection<int>
@@ -3962,7 +3962,7 @@ public class TestRuntime
     }
 
     #endregion
-    
+
     #region PrivateICollection1
 
     private class PrivateClassIReadOnlyCollection1 : IReadOnlyCollection<int>
@@ -3993,7 +3993,7 @@ public class TestRuntime
     }
 
     #endregion
-    
+
     #region ICollectionLegacy1
 
     public class ClassICollectionLegacy1 : ICollection
@@ -4023,6 +4023,214 @@ public class TestRuntime
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,\"a\",true]"));
+    }
+
+    #endregion
+
+    #region IDictionary1
+
+    public class ClassIDictionary1 : IDictionary<int, int>
+    {
+        public IEnumerator<KeyValuePair<int, int>> GetEnumerator()
+        {
+            yield return new(1, 2);
+            yield return new(3, 4);
+            yield return new(5, 6);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public void Add(KeyValuePair<int, int> item) => throw new NotImplementedException();
+
+        public void Clear() => throw new NotImplementedException();
+
+        public bool Contains(KeyValuePair<int, int> item) => throw new NotImplementedException();
+
+        public void CopyTo(KeyValuePair<int, int>[] array, int arrayIndex) => throw new NotImplementedException();
+
+        public bool Remove(KeyValuePair<int, int> item) => throw new NotImplementedException();
+
+        public int Count => 3;
+        public bool IsReadOnly => true;
+        public void Add(int key, int value) => throw new NotImplementedException();
+
+        public bool ContainsKey(int key) => throw new NotImplementedException();
+
+        public bool Remove(int key) => throw new NotImplementedException();
+
+        public bool TryGetValue(int key, out int value) => throw new NotImplementedException();
+
+        public int this[int key]
+        {
+            get => throw new NotImplementedException();
+            set => throw new NotImplementedException();
+        }
+        public ICollection<int> Keys => throw new NotImplementedException();
+        public ICollection<int> Values => throw new NotImplementedException();
+    }
+
+    [Test]
+    public void TestIDictionary1()
+    {
+        var obj = new ClassIDictionary1();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[[1,2],[3,4],[5,6]]"));
+    }
+
+    #endregion
+
+    #region IDictionary2
+
+    public class ClassIDictionary2 : IDictionary<string, int>
+    {
+        public IEnumerator<KeyValuePair<string, int>> GetEnumerator()
+        {
+            yield return new("a", 2);
+            yield return new("b", 4);
+            yield return new("c", 6);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public void Add(KeyValuePair<string, int> item) => throw new NotImplementedException();
+
+        public void Clear() => throw new NotImplementedException();
+
+        public bool Contains(KeyValuePair<string, int> item) => throw new NotImplementedException();
+
+        public void CopyTo(KeyValuePair<string, int>[] array, int arrayIndex) => throw new NotImplementedException();
+
+        public bool Remove(KeyValuePair<string, int> item) => throw new NotImplementedException();
+
+        public int Count => 3;
+        public bool IsReadOnly => true;
+        public void Add(string key, int value) => throw new NotImplementedException();
+
+        public bool ContainsKey(string key) => throw new NotImplementedException();
+
+        public bool Remove(string key) => throw new NotImplementedException();
+
+        public bool TryGetValue(string key, out int value) => throw new NotImplementedException();
+
+        public int this[string key]
+        {
+            get => throw new NotImplementedException();
+            set => throw new NotImplementedException();
+        }
+        public ICollection<string> Keys => throw new NotImplementedException();
+        public ICollection<int> Values => throw new NotImplementedException();
+    }
+
+    [Test]
+    public void TestIDictionary2()
+    {
+        var obj = new ClassIDictionary2();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"a\":2,\"b\":4,\"c\":6}"));
+    }
+
+    #endregion
+
+    #region IDictionary3
+
+    public class ClassIDictionary3
+    {
+        public Dictionary<string, int> A { get; set; } = new() { { "1", 2 } };
+    }
+
+    [Test]
+    public void TestIDictionary3()
+    {
+        var obj = new ClassIDictionary3();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"A\":{\"1\":2}}"));
+    }
+
+    #endregion
+
+    #region IDictionary4
+
+    public class ClassIDictionary4
+    {
+        [Sera(As = SeraAs.Seq)]
+        public Dictionary<string, int> A { get; set; } = new() { { "1", 2 } };
+    }
+
+    [Test]
+    public void TestIDictionary4()
+    {
+        var obj = new ClassIDictionary4();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"A\":[[\"1\",2]]}"));
+    }
+
+    #endregion
+
+    #region PrivateIDictionary1
+
+    private class PrivateClassIDictionary1A { }
+
+    private class PrivateClassIDictionary1
+    {
+        [Sera(As = SeraAs.Seq)]
+        public Dictionary<string, PrivateClassIDictionary1A> A { get; set; } = new() { { "1", new() } };
+    }
+
+    [Test]
+    public void TestPrivateIDictionary1()
+    {
+        var obj = new PrivateClassIDictionary1();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"A\":[[\"1\",{}]]}"));
+    }
+
+    #endregion
+    
+    #region PrivateIDictionary2
+
+    private class PrivateClassIDictionary2A { }
+
+    private class PrivateClassIDictionary2
+    {
+        public Dictionary<string, PrivateClassIDictionary2A> A { get; set; } = new() { { "1", new() } };
+    }
+
+    [Test]
+    public void TestPrivateIDictionary2()
+    {
+        var obj = new PrivateClassIDictionary2();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"A\":{\"1\":{}}}"));
     }
 
     #endregion

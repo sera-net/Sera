@@ -136,7 +136,7 @@ internal class _Public(bool IsValueTuple, Type[] ItemTypes) : _Tuples(IsValueTup
             if (i > 7) throw new ArgumentOutOfRangeException();
             if (i < 7)
             {
-                var write_field = ReflectionUtils.ISeqSerializer_WriteElement_2generic
+                var write_element = ReflectionUtils.ISeqSerializer_WriteElement_2generic
                     .MakeGenericMethod(item, dep.TransformedType);
 
                 #region load serializer
@@ -198,7 +198,7 @@ internal class _Public(bool IsValueTuple, Type[] ItemTypes) : _Tuples(IsValueTup
                 #region serializer.WriteElement<V, VImpl>(item_value, Dep.Impl);
 
                 ilg.Emit(OpCodes.Constrained, TS);
-                ilg.Emit(OpCodes.Callvirt, write_field);
+                ilg.Emit(OpCodes.Callvirt, write_element);
 
                 #endregion
             }

@@ -8,22 +8,29 @@ using Sera.Core;
 using Sera.Core.Ser;
 using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Utils;
+using _Public_Base = Sera.Runtime.Emit.Ser.Jobs._ICollection._Generic._Public;
 
-namespace Sera.Runtime.Emit.Ser.Jobs._IEnumerable._Generic;
+namespace Sera.Runtime.Emit.Ser.Jobs.IDictionary._Generic;
 
-internal class _Public(Type ItemType, InterfaceMapping? mapping, MethodInfo? DirectGetEnumerator) : _Generic(ItemType)
+internal abstract class _Public(Type KeyType, Type ValueType,
+        InterfaceMapping? mapping, MethodInfo? DirectGetEnumerator)
+    : _Generic(KeyType, ValueType)
 {
     public TypeBuilder TypeBuilder { get; set; } = null!;
     public Type RuntimeType { get; set; } = null!;
 
-    protected MethodInfo StartSeq { get; set; } = null!;
+    protected MethodInfo StartMap { get; set; } = null!;
+
+    public Type ItemType { get; } = typeof(KeyValuePair<,>).MakeGenericType(KeyType, ValueType);
+
+    protected abstract MethodInfo GetGetCount();
 
     public override void Init(EmitStub stub, EmitMeta target)
     {
         TypeBuilder = CreateTypeBuilderStruct($"Ser_{target.Type.Name}");
         TypeBuilder.MarkReadonly();
-        StartSeq = ReflectionUtils.ISerializer_StartSeq_3generic
-            .MakeGenericMethod(ItemType, target.Type, TypeBuilder);
+        StartMap = ReflectionUtils.ISerializer_StartMap_4generic
+            .MakeGenericMethod(KeyType, ValueType, target.Type, TypeBuilder);
     }
 
     public override Type GetEmitPlaceholderType(EmitStub stub, EmitMeta target)
@@ -50,7 +57,7 @@ internal class _Public(Type ItemType, InterfaceMapping? mapping, MethodInfo? Dir
         return Activator.CreateInstance(RuntimeType)!;
     }
 
-    protected virtual void EmitWrite(EmitMeta target)
+    private void EmitWrite(EmitMeta target)
     {
         var write_method = TypeBuilder.DefineMethod(nameof(ISerialize<object>.Write),
             MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.NewSlot);
@@ -62,6 +69,20 @@ internal class _Public(Type ItemType, InterfaceMapping? mapping, MethodInfo? Dir
         write_method.DefineParameter(2, ParameterAttributes.None, "value");
         write_method.DefineParameter(3, ParameterAttributes.None, "options");
         write_method.SetImplementationFlags(MethodImplAttributes.AggressiveInlining);
+
+        var get_count = GetGetCount();
+        if (mapping.HasValue)
+        {
+            var i = Array.IndexOf(mapping.Value.InterfaceMethods, get_count);
+            if (i >= 0)
+            {
+                var dm = mapping.Value.TargetMethods[i];
+                if (dm.IsPublic)
+                {
+                    get_count = dm;
+                }
+            }
+        }
 
         var ilg = write_method.GetILGenerator();
 
@@ -79,21 +100,20 @@ internal class _Public(Type ItemType, InterfaceMapping? mapping, MethodInfo? Dir
             #endregion
         }
 
-        #region serializer.StartSeq<I, T, Self>(null, value, this);
+        #region serializer.StartSeq<I, T, Self>(value.Count, value, this);
 
         ilg.MarkLabel(not_null_label);
-
-        var nullable_tmp = ilg.DeclareLocal(typeof(nuint?));
-        ilg.Emit(OpCodes.Ldloca, nullable_tmp);
-        ilg.Emit(OpCodes.Initobj, typeof(nuint?));
-
         ilg.Emit(OpCodes.Ldarga, 1);
-        ilg.Emit(OpCodes.Ldloc, nullable_tmp);
+        ilg.Emit(OpCodes.Ldarga, 2);
+        ilg.Emit(OpCodes.Constrained, target.Type);
+        ilg.Emit(OpCodes.Callvirt, get_count);
+        ilg.Emit(OpCodes.Conv_I);
+        ilg.Emit(OpCodes.Newobj, ReflectionUtils.Nullable_UIntPtr_ctor);
         ilg.Emit(OpCodes.Ldarg_2);
         ilg.Emit(OpCodes.Ldarg_0);
         ilg.Emit(OpCodes.Ldobj, TypeBuilder);
         ilg.Emit(OpCodes.Constrained, TS);
-        ilg.Emit(OpCodes.Callvirt, StartSeq);
+        ilg.Emit(OpCodes.Callvirt, StartMap);
 
         #endregion
 
@@ -112,11 +132,11 @@ internal class _Public(Type ItemType, InterfaceMapping? mapping, MethodInfo? Dir
     private void EmitReceive(EmitMeta target, EmitDeps deps)
     {
         var receive_method =
-            TypeBuilder.DefineMethod(nameof(ISeqSerializerReceiver<object>.Receive),
+            TypeBuilder.DefineMethod(nameof(IMapSerializerReceiver<object>.Receive),
                 MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.NewSlot);
         var generic_parameters = receive_method.DefineGenericParameters("S");
         var TS = generic_parameters[0];
-        TS.SetInterfaceConstraints(typeof(ISeqSerializer));
+        TS.SetInterfaceConstraints(typeof(IMapSerializer));
         receive_method.SetParameters(target.Type, TS);
         receive_method.DefineParameter(1, ParameterAttributes.None, "value");
         receive_method.DefineParameter(2, ParameterAttributes.None, "serializer");
@@ -126,10 +146,14 @@ internal class _Public(Type ItemType, InterfaceMapping? mapping, MethodInfo? Dir
 
         #region ready
 
-        var dep = deps.Get(0);
+        var key_dep = deps.Get(0);
+        var val_dep = deps.Get(1);
 
-        var write_element = ReflectionUtils.ISeqSerializer_WriteElement_2generic
-            .MakeGenericMethod(ItemType, dep.TransformedType);
+        var get_key = ItemType.GetProperty(nameof(KeyValuePair<int, int>.Key))!.GetMethod!;
+        var get_val = ItemType.GetProperty(nameof(KeyValuePair<int, int>.Value))!.GetMethod!;
+
+        var write_entry = ReflectionUtils.IMapSerializer_WriteEntry_4generic
+            .MakeGenericMethod(KeyType, ValueType, key_dep.TransformedType, val_dep.TransformedType);
 
         var get_current = typeof(IEnumerator<>)
             .MakeGenericType(ItemType)
@@ -237,18 +261,48 @@ internal class _Public(Type ItemType, InterfaceMapping? mapping, MethodInfo? Dir
 
         #endregion
 
-        #region serializer.WriteElement<I, SI>(v, Dep.impl)
+        #region serializer.WriteEntry<K, V, SK, SV>(v.Key, v.Value, DepK.impl, DepV.impl)
 
         ilg.Emit(OpCodes.Ldarga, 2);
-        ilg.Emit(OpCodes.Ldloc, value_tmp);
-        ilg.Emit(OpCodes.Call, dep.GetDepMethodInfo);
-        if (dep.Boxed)
+
+        #region value.Key
+
+        ilg.Emit(OpCodes.Ldloca, value_tmp);
+        ilg.Emit(OpCodes.Call, get_key);
+
+        #endregion
+
+        #region value.Value
+
+        ilg.Emit(OpCodes.Ldloca, value_tmp);
+        ilg.Emit(OpCodes.Call, get_val);
+
+        #endregion
+
+        #region get key dep
+
+        ilg.Emit(OpCodes.Call, key_dep.GetDepMethodInfo);
+        if (key_dep.Boxed)
         {
-            var get_method = dep.MakeBoxGetMethodInfo();
+            var get_method = key_dep.MakeBoxGetMethodInfo();
             ilg.Emit(OpCodes.Call, get_method);
         }
+
+        #endregion
+
+        #region get val dep
+
+        ilg.Emit(OpCodes.Call, val_dep.GetDepMethodInfo);
+        if (val_dep.Boxed)
+        {
+            var get_method = val_dep.MakeBoxGetMethodInfo();
+            ilg.Emit(OpCodes.Call, get_method);
+        }
+
+        #endregion
+
         ilg.Emit(OpCodes.Constrained, TS);
-        ilg.Emit(OpCodes.Callvirt, write_element);
+        ilg.Emit(OpCodes.Callvirt, write_entry);
 
         #endregion
 
@@ -300,9 +354,9 @@ internal class _Public(Type ItemType, InterfaceMapping? mapping, MethodInfo? Dir
 
         #endregion
 
-        var interface_type = typeof(ISeqSerializerReceiver<>).MakeGenericType(target.Type);
+        var interface_type = typeof(IMapSerializerReceiver<>).MakeGenericType(target.Type);
         TypeBuilder.AddInterfaceImplementation(interface_type);
         TypeBuilder.DefineMethodOverride(receive_method,
-            interface_type.GetMethod(nameof(ISeqSerializerReceiver<object>.Receive))!);
+            interface_type.GetMethod(nameof(IMapSerializerReceiver<object>.Receive))!);
     }
 }

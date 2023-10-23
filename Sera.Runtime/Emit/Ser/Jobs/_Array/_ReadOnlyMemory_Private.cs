@@ -7,6 +7,9 @@ namespace Sera.Runtime.Emit.Ser.Jobs._Array;
 
 internal class _ReadOnlyMemory_Private(Type ItemType) : _Private(ItemType)
 {
+    protected override NullabilityInfo? GetElementNullabilityInfo(EmitMeta target)
+        => target.TypeMeta.Nullability?.NullabilityInfo?.GenericTypeArguments[0];
+    
     public static readonly EmitTransform[] Transforms =
     {
          new Transforms._ReadOnlyMemorySerializeImplWrapper(),

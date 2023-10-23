@@ -121,6 +121,13 @@ internal static class ReflectionUtils
                 && m.GetGenericArguments() is { Length: 3 }
             );
 
+    public static MethodInfo ISerializer_StartMap_4generic { get; } =
+        ISerializerMethods[nameof(ISerializer.StartMap)]
+            .Single(m =>
+                m is { IsGenericMethod: true }
+                && m.GetGenericArguments() is { Length: 4 }
+            );
+
     public static MethodInfo ISerializer_WriteVariantUnit_1generic { get; } =
         ISerializerMethods[nameof(ISerializer.WriteVariantUnit)]
             .Single(m =>
@@ -150,6 +157,14 @@ internal static class ReflectionUtils
         .Single(m =>
             m is { Name: nameof(ISeqSerializer.WriteElement), IsGenericMethod: true }
             && m.GetGenericArguments() is { Length: 2 }
+        );
+
+    public static MethodInfo[] IMapSerializerMethods { get; } = typeof(IMapSerializer).GetMethods();
+
+    public static MethodInfo IMapSerializer_WriteEntry_4generic { get; } = IMapSerializerMethods
+        .Single(m =>
+            m is { Name: nameof(IMapSerializer.WriteEntry), IsGenericMethod: true }
+            && m.GetGenericArguments() is { Length: 4 }
         );
 
     public static readonly ConstructorInfo IsReadOnlyAttributeCtor =
@@ -409,6 +424,13 @@ internal static class ReflectionUtils
     public static bool IsOpenTypeEq(this Type type, Type target)
         => type.IsGenericType && type.GetGenericTypeDefinition() == target;
 
+    public static bool IsOpenTypeEqAny(this Type type, params Type[] targets)
+    {
+        if (!type.IsGenericType) return false;
+        var t = type.GetGenericTypeDefinition();
+        return targets.Any(a => a == t);
+    }
+
     public static bool IsListBase(this Type type, [NotNullWhen(true)] out Type? itemType)
     {
         for (;;)
@@ -439,16 +461,6 @@ internal static class ReflectionUtils
         out InterfaceMapping? mapping
     )
     {
-        if (self.IsOpenTypeEq(typeof(ICollection<>)))
-        {
-            Kind = CollectionLikeKind.ICollection;
-            goto Enumerable_Like;
-        }
-        if (self.IsOpenTypeEq(typeof(IReadOnlyCollection<>)))
-        {
-            Kind = CollectionLikeKind.IReadOnlyCollection;
-            goto Enumerable_Like;
-        }
         if (self.IsOpenTypeEq(typeof(IDictionary<,>)))
         {
             Kind = CollectionLikeKind.IDictionary;
@@ -458,6 +470,16 @@ internal static class ReflectionUtils
         {
             Kind = CollectionLikeKind.IReadOnlyDictionary;
             goto Dictionary_Like;
+        }
+        if (self.IsOpenTypeEq(typeof(ICollection<>)))
+        {
+            Kind = CollectionLikeKind.ICollection;
+            goto Enumerable_Like;
+        }
+        if (self.IsOpenTypeEq(typeof(IReadOnlyCollection<>)))
+        {
+            Kind = CollectionLikeKind.IReadOnlyCollection;
+            goto Enumerable_Like;
         }
         if (self.IsOpenTypeEq(typeof(IEnumerable<>)))
         {
@@ -520,7 +542,7 @@ internal static class ReflectionUtils
 
         return interfaces.Length > 0;
     }
-    
+
     public static bool IsICollection(this Type type)
     {
         if (type == typeof(ICollection)) return true;

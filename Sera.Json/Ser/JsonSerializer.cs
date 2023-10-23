@@ -645,10 +645,10 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonFormatter Formatter, 
             => Throw();
 
         public void WriteNone()
-            => Throw();
+            => self.WriteString("");
 
         public void WriteSome<T, S>(T value, S serialize) where S : ISerialize<T>
-            => Throw();
+            => serialize.Write(self, value, self.Options);
 
         public void WriteUnit()
             => Throw();

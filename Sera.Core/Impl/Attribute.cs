@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Sera.Core.Ser;
 
 namespace Sera;
@@ -24,6 +25,10 @@ public enum SeraAs
     Bytes,
     /// <summary>Mark char array | list | memory ... is string semantics</summary>
     String,
+    /// <summary>Mark <see cref="IDictionary{K,V}"/> is seq semantics</summary>
+    Seq,
+    /// <summary>Mark <see cref="IEnumerable{T}"/> of <see cref="KeyValuePair{K,V}"/> is map semantics</summary>
+    Map,
 }
 
 /// <summary>Mark auto-generated serialize and deserialize</summary>

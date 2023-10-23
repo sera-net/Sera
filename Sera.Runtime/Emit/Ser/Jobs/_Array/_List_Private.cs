@@ -1,12 +1,23 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
 using Sera.Core.Impls;
 using Sera.Runtime.Emit.Deps;
+using Sera.Runtime.Utils;
 
 namespace Sera.Runtime.Emit.Ser.Jobs._Array;
 
 internal class _List_Private(Type ItemType) : _Private(ItemType)
 {
+    protected override NullabilityInfo? GetElementNullabilityInfo(EmitMeta target)
+    {
+        if (target.Type.IsOpenTypeEq(typeof(List<>)))
+        {
+            return target.TypeMeta.Nullability?.NullabilityInfo?.GenericTypeArguments[0];
+        }
+        return null;
+    }
+    
     public override void Init(EmitStub stub, EmitMeta target)
     {
         BaseType = typeof(ListSerializeImplBase<,>).MakeGenericType(target.Type, ItemType);
