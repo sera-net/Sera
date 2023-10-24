@@ -92,9 +92,8 @@ internal class SerializeEmitProvider : AEmitProvider
         }
         if (target.Type.IsListBase(out var item_type)) return CreateListJob(target, item_type);
         var job = CreateJobCollectionLike(target);
-        if (job != null) return job;
-        // todo other type
-        return CreateStructJob(target);
+        job ??= CreateJobFSharpTypes(target);
+        return job ?? CreateStructJob(target);
     }
 
     private EmitJob? CreateJobCollectionLike(EmitMeta target)
@@ -155,6 +154,17 @@ internal class SerializeEmitProvider : AEmitProvider
         if (target.Type.IsIDictionary()) return CreateIDictionaryLegacyJob();
         if (target.Type.IsICollection()) return CreateICollectionLegacyJob();
         if (target.Type.IsIEnumerable()) return CreateIEnumerableLegacyJob();
+        return null;
+    }
+
+    private EmitJob? CreateJobFSharpTypes(EmitMeta target)
+    {
+        if (target.Type.IsGenericType)
+        {
+            var generic_def = target.Type.GetGenericTypeDefinition();
+            if (generic_def.FullName == "Microsoft.FSharp.Core.FSharpOption`1")
+                return CreateFSharpOptionJob(target, generic_def);
+        }
         return null;
     }
 
@@ -354,5 +364,12 @@ internal class SerializeEmitProvider : AEmitProvider
         if (target.Type.IsVisible && key_type.IsVisible && item_type.IsVisible)
             return new Jobs._IDictionary._Generic._ReadOnly_Public(key_type, item_type, mapping, direct_get_enumerator);
         return new Jobs._IDictionary._Generic._IReadOnlyCollection_Private(key_type, item_type);
+    }
+
+    private EmitJob CreateFSharpOptionJob(EmitMeta target, Type generic_def)
+    {
+        var item_type = target.Type.GetGenericArguments()[0];
+        if (target.Type.IsVisible) return new Jobs._FSharpOption._Class_Public(item_type);
+        return new Jobs._FSharpOption._Class_Private(generic_def, item_type);
     }
 }

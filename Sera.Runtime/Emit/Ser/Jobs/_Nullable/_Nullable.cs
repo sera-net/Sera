@@ -8,10 +8,9 @@ internal abstract class _Nullable(Type UnderlyingType) : _Base
 {
     public override DepMeta[] CollectDeps(EmitStub stub, EmitMeta target)
     {
-        var item_nullable = target.TypeMeta.Nullability?.NullabilityInfo?.ElementType;
         var transforms = EmitTransform.EmptyTransforms;
         var meta = new DepMeta(
-            new(TypeMetas.GetTypeMeta(UnderlyingType, new NullabilityMeta(item_nullable)), target.Data),
+            new(TypeMetas.GetTypeMeta(UnderlyingType, new NullabilityMeta(null)), target.Data),
             transforms);
         return new[] { meta };
     }
