@@ -4328,4 +4328,230 @@ public class TestRuntime
     }
 
     #endregion
+
+    #region IDictionaryLegacy2
+
+    public class ClassIDictionaryLegacy2
+    {
+        public IDictionary A { get; set; } = new Dictionary<string, int> { { "a", 2 } };
+    }
+
+    [Test]
+    public void TestDictionaryLegacy2()
+    {
+        var obj = new ClassIDictionaryLegacy2();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"A\":[[\"a\",2]]}"));
+    }
+
+    #endregion
+
+    #region IEnumerableMap1
+
+    public class ClassIEnumerableMap1 : IEnumerable<KeyValuePair<string, int>>
+    {
+        public IEnumerator<KeyValuePair<string, int>> GetEnumerator()
+        {
+            yield return new("a", 1);
+            yield return new("b", 2);
+            yield return new("c", 3);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    [Test]
+    public void TestIEnumerableMap1()
+    {
+        var obj = new ClassIEnumerableMap1();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj, new SeraHints(As: SeraAs.Map));
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"a\":1,\"b\":2,\"c\":3}"));
+    }
+
+    #endregion
+
+    #region PrivateIEnumerableMap1
+
+    private class PrivateClassIEnumerableMap1 : IEnumerable<KeyValuePair<string, int>>
+    {
+        public IEnumerator<KeyValuePair<string, int>> GetEnumerator()
+        {
+            yield return new("a", 1);
+            yield return new("b", 2);
+            yield return new("c", 3);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    [Test]
+    public void TestPrivateIEnumerableMap1()
+    {
+        var obj = new PrivateClassIEnumerableMap1();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj, new SeraHints(As: SeraAs.Map));
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"a\":1,\"b\":2,\"c\":3}"));
+    }
+
+    #endregion
+
+    #region ICollectionMap1
+
+    public class ClassICollectionMap1 : ICollection<KeyValuePair<string, int>>
+    {
+        public bool IsReadOnly => true;
+        public int Count => 3;
+
+        public IEnumerator<KeyValuePair<string, int>> GetEnumerator()
+        {
+            yield return new("a", 1);
+            yield return new("b", 2);
+            yield return new("c", 3);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public void Add(KeyValuePair<string, int> item) => throw new NotImplementedException();
+
+        public void Clear() => throw new NotImplementedException();
+
+        public bool Contains(KeyValuePair<string, int> item) => throw new NotImplementedException();
+
+        public void CopyTo(KeyValuePair<string, int>[] array, int arrayIndex) => throw new NotImplementedException();
+
+        public bool Remove(KeyValuePair<string, int> item) => throw new NotImplementedException();
+    }
+
+    [Test]
+    public void TestICollectionMap1()
+    {
+        var obj = new ClassICollectionMap1();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj, new SeraHints(As: SeraAs.Map));
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"a\":1,\"b\":2,\"c\":3}"));
+    }
+
+    #endregion
+
+    #region PrivateICollectionMap1
+
+    private class PrivateClassICollectionMap1 : ICollection<KeyValuePair<string, int>>
+    {
+        public bool IsReadOnly => true;
+        public int Count => 3;
+
+        public IEnumerator<KeyValuePair<string, int>> GetEnumerator()
+        {
+            yield return new("a", 1);
+            yield return new("b", 2);
+            yield return new("c", 3);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public void Add(KeyValuePair<string, int> item) => throw new NotImplementedException();
+
+        public void Clear() => throw new NotImplementedException();
+
+        public bool Contains(KeyValuePair<string, int> item) => throw new NotImplementedException();
+
+        public void CopyTo(KeyValuePair<string, int>[] array, int arrayIndex) => throw new NotImplementedException();
+
+        public bool Remove(KeyValuePair<string, int> item) => throw new NotImplementedException();
+    }
+
+    [Test]
+    public void TestPrivateICollectionMap1()
+    {
+        var obj = new PrivateClassICollectionMap1();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj, new SeraHints(As: SeraAs.Map));
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"a\":1,\"b\":2,\"c\":3}"));
+    }
+
+    #endregion
+
+    #region IReadOnlyCollectionMap1
+
+    public class ClassIReadOnlyCollectionMap1 : IReadOnlyCollection<KeyValuePair<string, int>>
+    {
+        public int Count => 3;
+
+        public IEnumerator<KeyValuePair<string, int>> GetEnumerator()
+        {
+            yield return new("a", 1);
+            yield return new("b", 2);
+            yield return new("c", 3);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    [Test]
+    public void TestIReadOnlyCollectionMap1()
+    {
+        var obj = new ClassIReadOnlyCollectionMap1();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj, new SeraHints(As: SeraAs.Map));
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"a\":1,\"b\":2,\"c\":3}"));
+    }
+
+    #endregion
+
+    #region PrivateIReadOnlyCollectionMap1
+
+    private class PrivateClassIReadOnlyCollectionMap1 : IReadOnlyCollection<KeyValuePair<string, int>>
+    {
+        public int Count => 3;
+
+        public IEnumerator<KeyValuePair<string, int>> GetEnumerator()
+        {
+            yield return new("a", 1);
+            yield return new("b", 2);
+            yield return new("c", 3);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    [Test]
+    public void TestPrivateIReadOnlyCollectionMap1()
+    {
+        var obj = new PrivateClassIReadOnlyCollectionMap1();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj, new SeraHints(As: SeraAs.Map));
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"a\":1,\"b\":2,\"c\":3}"));
+    }
+
+    #endregion
 }

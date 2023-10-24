@@ -57,7 +57,7 @@ internal abstract class _Public(Type KeyType, Type ValueType,
         return Activator.CreateInstance(RuntimeType)!;
     }
 
-    private void EmitWrite(EmitMeta target)
+    protected virtual void EmitWrite(EmitMeta target)
     {
         var write_method = TypeBuilder.DefineMethod(nameof(ISerialize<object>.Write),
             MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.NewSlot);
@@ -129,7 +129,7 @@ internal abstract class _Public(Type KeyType, Type ValueType,
             interface_type.GetMethod(nameof(ISerialize<object>.Write))!);
     }
 
-    private void EmitReceive(EmitMeta target, EmitDeps deps)
+    protected void EmitReceive(EmitMeta target, EmitDeps deps)
     {
         var receive_method =
             TypeBuilder.DefineMethod(nameof(IMapSerializerReceiver<object>.Receive),
