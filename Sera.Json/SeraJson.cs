@@ -1,6 +1,5 @@
 ﻿using System.IO;
 using System.Text;
-using Sera.Core;
 using Sera.Json.Builders;
 using Sera.Json.Builders.Ser;
 using Sera.Json.Ser;
