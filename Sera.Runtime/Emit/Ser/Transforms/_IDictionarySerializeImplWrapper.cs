@@ -17,3 +17,18 @@ internal class _IDictionarySerializeImplWrapper(Type KeyType, Type ValueType) : 
         return ctor.Invoke(new[] { prevInst });
     }
 }
+
+internal class _IReadOnlyDictionarySerializeImplWrapper(Type KeyType, Type ValueType) : EmitTransform
+{
+    public override Type TransformType(EmitMeta target, Type prevType)
+    {
+        return typeof(IReadOnlyDictionarySerializeImplWrapper<,,>).MakeGenericType(target.Type, KeyType, ValueType);
+    }
+
+    public override object TransformInst(EmitMeta target, Type type, Type prevType, object prevInst)
+    {
+        var ctor = type.GetConstructor(new[]
+            { typeof(IReadOnlyDictionarySerializeImplBase<,,>).MakeGenericType(target.Type, KeyType, ValueType) })!;
+        return ctor.Invoke(new[] { prevInst });
+    }
+}

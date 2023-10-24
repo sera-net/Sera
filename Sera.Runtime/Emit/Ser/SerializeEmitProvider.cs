@@ -111,6 +111,11 @@ internal class SerializeEmitProvider : AEmitProvider
                         return CreateICollectionJob(target,
                             typeof(KeyValuePair<,>).MakeGenericType(key_type!, item_type), interface_mapping);
                     return CreateIDictionaryJob(target, key_type!, item_type, interface_mapping);
+                case CollectionLikeKind.IReadOnlyDictionary:
+                    if (target.Data.As is SeraAs.Seq)
+                        return CreateIReadOnlyCollectionJob(target,
+                            typeof(KeyValuePair<,>).MakeGenericType(key_type!, item_type), interface_mapping);
+                    return CreateIReadOnlyDictionaryJob(target, key_type!, item_type, interface_mapping);
                 default:
                     throw new ArgumentOutOfRangeException(nameof(CollectionKind),
                         $"Unknown CollectionKind {CollectionKind}");
@@ -282,5 +287,15 @@ internal class SerializeEmitProvider : AEmitProvider
         if (target.Type.IsVisible && key_type.IsVisible && item_type.IsVisible)
             return new Jobs.IDictionary._Generic._Mutable_Public(key_type, item_type, mapping, direct_get_enumerator);
         return new Jobs.IDictionary._Generic._Mutable_Private(key_type, item_type);
+    }
+    
+    private EmitJob CreateIReadOnlyDictionaryJob(EmitMeta target, Type key_type, Type item_type, InterfaceMapping? mapping)
+    {
+        var direct_get_enumerator = target.Type.GetMethod(nameof(IEnumerable<int>.GetEnumerator),
+            BindingFlags.Public | BindingFlags.Instance,
+            Array.Empty<Type>());
+        if (target.Type.IsVisible && key_type.IsVisible && item_type.IsVisible)
+            return new Jobs.IDictionary._Generic._ReadOnly_Public(key_type, item_type, mapping, direct_get_enumerator);
+        return new Jobs.IDictionary._Generic._ReadOnly_Private(key_type, item_type);
     }
 }

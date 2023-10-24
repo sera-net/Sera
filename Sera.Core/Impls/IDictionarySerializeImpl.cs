@@ -10,7 +10,10 @@ namespace Sera.Core.Impls;
 
 #region Sync
 
-public readonly struct IDictionarySerializeImplWrapper<M, K, V>(IDictionarySerializeImplBase<M, K, V> Serialize) : ISerialize<M>,
+#region Mutable
+
+public readonly struct IDictionarySerializeImplWrapper<M, K, V>(IDictionarySerializeImplBase<M, K, V> Serialize) :
+    ISerialize<M>,
     IMapSerializerReceiver<M>
     where M : IDictionary<K, V>
 {
@@ -33,15 +36,29 @@ public abstract class IDictionarySerializeImplBase<M, K, V> : ISerialize<M>, IMa
     public abstract void Receive<S>(M value, S serializer) where S : IMapSerializer;
 }
 
-public sealed class IDictionarySerializeImpl<M, K, V, SK, SV>(SK KeySerialize, SV ValueSerialize) : IDictionarySerializeImplBase<M, K, V>
+public sealed class IDictionarySerializeImpl<M, K, V, SK, SV>
+    (SK KeySerialize, SV ValueSerialize) : IDictionarySerializeImplBase<M, K, V>
     where M : IDictionary<K, V> where SK : ISerialize<K> where SV : ISerialize<V>
 {
+    public IDictionarySerializeReceiveImpl<M, K, V, SK, SV> ReceiveImpl { get; } = new(KeySerialize, ValueSerialize);
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override void Write<S>(S serializer, M value, ISeraOptions options)
-        => serializer.StartMap<K, V, M, IDictionarySerializeImpl<M, K, V, SK, SV>>((nuint)value.Count, value, this);
+        => serializer.StartMap<K, V, M, IDictionarySerializeReceiveImpl<M, K, V, SK, SV>>(
+            (nuint)value.Count, value, ReceiveImpl
+        );
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override void Receive<S>(M value, S serializer)
+        => ReceiveImpl.Receive(value, serializer);
+}
+
+public readonly struct IDictionarySerializeReceiveImpl<M, K, V, SK, SV>
+    (SK KeySerialize, SV ValueSerialize) : IMapSerializerReceiver<M>
+    where M : IDictionary<K, V> where SK : ISerialize<K> where SV : ISerialize<V>
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Receive<S>(M value, S serializer) where S : IMapSerializer
     {
         foreach (var (k, v) in value)
         {
@@ -49,6 +66,69 @@ public sealed class IDictionarySerializeImpl<M, K, V, SK, SV>(SK KeySerialize, S
         }
     }
 }
+
+#endregion
+
+#region ReadOnly
+
+public readonly struct IReadOnlyDictionarySerializeImplWrapper<M, K, V>(
+    IReadOnlyDictionarySerializeImplBase<M, K, V> Serialize) :
+    ISerialize<M>,
+    IMapSerializerReceiver<M>
+    where M : IReadOnlyDictionary<K, V>
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Write<S>(S serializer, M value, ISeraOptions options) where S : ISerializer
+        => Serialize.Write(serializer, value, options);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Receive<S>(M value, S serializer) where S : IMapSerializer
+        => Serialize.Receive(value, serializer);
+}
+
+public abstract class IReadOnlyDictionarySerializeImplBase<M, K, V> : ISerialize<M>, IMapSerializerReceiver<M>
+    where M : IReadOnlyDictionary<K, V>
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public abstract void Write<S>(S serializer, M value, ISeraOptions options) where S : ISerializer;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public abstract void Receive<S>(M value, S serializer) where S : IMapSerializer;
+}
+
+public sealed class IReadOnlyDictionarySerializeImpl<M, K, V, SK, SV>
+    (SK KeySerialize, SV ValueSerialize) : IReadOnlyDictionarySerializeImplBase<M, K, V>
+    where M : IReadOnlyDictionary<K, V> where SK : ISerialize<K> where SV : ISerialize<V>
+{
+    public IReadOnlyDictionarySerializeReceiveImpl<M, K, V, SK, SV> ReceiveImpl { get; } =
+        new(KeySerialize, ValueSerialize);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public override void Write<S>(S serializer, M value, ISeraOptions options)
+        => serializer.StartMap<K, V, M, IReadOnlyDictionarySerializeReceiveImpl<M, K, V, SK, SV>>(
+            (nuint)value.Count, value, ReceiveImpl
+        );
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public override void Receive<S>(M value, S serializer)
+        => ReceiveImpl.Receive(value, serializer);
+}
+
+public readonly struct IReadOnlyDictionarySerializeReceiveImpl<M, K, V, SK, SV>
+    (SK KeySerialize, SV ValueSerialize) : IMapSerializerReceiver<M>
+    where M : IReadOnlyDictionary<K, V> where SK : ISerialize<K> where SV : ISerialize<V>
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Receive<S>(M value, S serializer) where S : IMapSerializer
+    {
+        foreach (var (k, v) in value)
+        {
+            serializer.WriteEntry(k, v, KeySerialize, ValueSerialize);
+        }
+    }
+}
+
+#endregion
 
 #endregion
 

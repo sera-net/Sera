@@ -1,5 +1,6 @@
 ﻿using System.Buffers;
 using System.Collections;
+using System.Text;
 using JetBrains.Annotations;
 using Sera;
 using Sera.Json;
@@ -4210,7 +4211,7 @@ public class TestRuntime
     }
 
     #endregion
-    
+
     #region PrivateIDictionary2
 
     private class PrivateClassIDictionary2A { }
@@ -4231,6 +4232,82 @@ public class TestRuntime
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"A\":{\"1\":{}}}"));
+    }
+
+    #endregion
+
+    #region IReadOnlyDictionary1
+
+    public class ClassIReadOnlyDictionary1 : IReadOnlyDictionary<int, int>
+    {
+        public IEnumerator<KeyValuePair<int, int>> GetEnumerator()
+        {
+            yield return new(1, 2);
+            yield return new(3, 4);
+            yield return new(5, 6);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public int Count => 3;
+        public bool ContainsKey(int key) => throw new NotImplementedException();
+
+        public bool TryGetValue(int key, out int value) => throw new NotImplementedException();
+
+        public int this[int key] => throw new NotImplementedException();
+        public IEnumerable<int> Keys => throw new NotImplementedException();
+        public IEnumerable<int> Values => throw new NotImplementedException();
+    }
+
+    [Test]
+    public void TestIReadOnlyDictionary1()
+    {
+        var obj = new ClassIReadOnlyDictionary1();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[[1,2],[3,4],[5,6]]"));
+    }
+
+    #endregion
+    
+    #region PrivateIReadOnlyDictionary1
+
+    private class ClassPrivateIReadOnlyDictionary1 : IReadOnlyDictionary<int, int>
+    {
+        public IEnumerator<KeyValuePair<int, int>> GetEnumerator()
+        {
+            yield return new(1, 2);
+            yield return new(3, 4);
+            yield return new(5, 6);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public int Count => 3;
+        public bool ContainsKey(int key) => throw new NotImplementedException();
+
+        public bool TryGetValue(int key, out int value) => throw new NotImplementedException();
+
+        public int this[int key] => throw new NotImplementedException();
+        public IEnumerable<int> Keys => throw new NotImplementedException();
+        public IEnumerable<int> Values => throw new NotImplementedException();
+    }
+
+    [Test]
+    public void TestPrivateIReadOnlyDictionary1()
+    {
+        var obj = new ClassPrivateIReadOnlyDictionary1();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[[1,2],[3,4],[5,6]]"));
     }
 
     #endregion
