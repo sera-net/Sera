@@ -78,9 +78,10 @@ public readonly struct IEnumerableSerializeStaticImpl<E> : ISerialize<E>, ISeqSe
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Receive<S>(E value, S serializer) where S : ISeqSerializer
     {
+        var impl = new NullableReferenceTypeSerializeImpl<object, RawObjectImpl>();
         foreach (var item in value)
         {
-            serializer.WriteElement(item, RawObjectImpl.Instance);
+            serializer.WriteElement(item, impl);
         }
     }
 }

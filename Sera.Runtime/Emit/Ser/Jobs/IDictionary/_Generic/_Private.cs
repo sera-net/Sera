@@ -1,7 +1,7 @@
 ﻿using System;
 using Sera.Runtime.Emit.Deps;
 
-namespace Sera.Runtime.Emit.Ser.Jobs.IDictionary._Generic;
+namespace Sera.Runtime.Emit.Ser.Jobs._IDictionary._Generic;
 
 internal abstract class _Private(Type KeyType, Type ValueType) : _Generic(KeyType, ValueType)
 {

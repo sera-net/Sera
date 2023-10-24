@@ -111,9 +111,10 @@ public readonly struct ICollectionSerializeStaticImpl<C> : ISerialize<C>, ISeqSe
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Receive<S>(C value, S serializer) where S : ISeqSerializer
     {
+        var impl = new NullableReferenceTypeSerializeImpl<object, RawObjectImpl>();
         foreach (var item in value)
         {
-            serializer.WriteElement(item, RawObjectImpl.Instance);
+            serializer.WriteElement(item, impl);
         }
     }
 }

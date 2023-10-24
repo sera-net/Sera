@@ -10,7 +10,7 @@ using System.Runtime.CompilerServices;
 using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Utils;
 
-namespace Sera.Runtime.Emit.Ser.Jobs.IDictionary._Generic;
+namespace Sera.Runtime.Emit.Ser.Jobs._IDictionary._Generic;
 
 internal abstract class _Generic(Type KeyType, Type ValueType) : _IDictionary
 {

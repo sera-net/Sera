@@ -4273,7 +4273,7 @@ public class TestRuntime
     }
 
     #endregion
-    
+
     #region PrivateIReadOnlyDictionary1
 
     private class ClassPrivateIReadOnlyDictionary1 : IReadOnlyDictionary<int, int>
@@ -4308,6 +4308,23 @@ public class TestRuntime
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[[1,2],[3,4],[5,6]]"));
+    }
+
+    #endregion
+
+    #region IDictionaryLegacy1
+
+    [Test]
+    public void TestDictionaryLegacy1()
+    {
+        IDictionary obj = new Dictionary<int, int> { { 1, 2 } };
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[[1,2]]"));
     }
 
     #endregion

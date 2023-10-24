@@ -121,6 +121,7 @@ internal class SerializeEmitProvider : AEmitProvider
                         $"Unknown CollectionKind {CollectionKind}");
             }
         }
+        if (target.Type.IsIDictionary()) return CreateIDictionaryLegacyJob();
         if (target.Type.IsICollection()) return CreateICollectionLegacyJob();
         if (target.Type.IsIEnumerable()) return CreateIEnumerableLegacyJob();
         // todo other type
@@ -285,8 +286,8 @@ internal class SerializeEmitProvider : AEmitProvider
             BindingFlags.Public | BindingFlags.Instance,
             Array.Empty<Type>());
         if (target.Type.IsVisible && key_type.IsVisible && item_type.IsVisible)
-            return new Jobs.IDictionary._Generic._Mutable_Public(key_type, item_type, mapping, direct_get_enumerator);
-        return new Jobs.IDictionary._Generic._Mutable_Private(key_type, item_type);
+            return new Jobs._IDictionary._Generic._Mutable_Public(key_type, item_type, mapping, direct_get_enumerator);
+        return new Jobs._IDictionary._Generic._Mutable_Private(key_type, item_type);
     }
     
     private EmitJob CreateIReadOnlyDictionaryJob(EmitMeta target, Type key_type, Type item_type, InterfaceMapping? mapping)
@@ -295,7 +296,11 @@ internal class SerializeEmitProvider : AEmitProvider
             BindingFlags.Public | BindingFlags.Instance,
             Array.Empty<Type>());
         if (target.Type.IsVisible && key_type.IsVisible && item_type.IsVisible)
-            return new Jobs.IDictionary._Generic._ReadOnly_Public(key_type, item_type, mapping, direct_get_enumerator);
-        return new Jobs.IDictionary._Generic._ReadOnly_Private(key_type, item_type);
+            return new Jobs._IDictionary._Generic._ReadOnly_Public(key_type, item_type, mapping, direct_get_enumerator);
+        return new Jobs._IDictionary._Generic._ReadOnly_Private(key_type, item_type);
     }
+    
+    private EmitJob CreateIDictionaryLegacyJob()
+        => new Jobs._IDictionary._Legacy();
+
 }

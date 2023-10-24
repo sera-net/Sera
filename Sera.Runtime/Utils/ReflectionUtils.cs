@@ -552,4 +552,14 @@ internal static class ReflectionUtils
 
         return interfaces.Length > 0;
     }
+    
+    public static bool IsIDictionary(this Type type)
+    {
+        if (type == typeof(IDictionary)) return true;
+
+        var interfaces =
+            type.FindInterfaces((it, _) => it == typeof(IDictionary), null);
+
+        return interfaces.Length > 0;
+    }
 }

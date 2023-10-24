@@ -130,6 +130,56 @@ public readonly struct IReadOnlyDictionarySerializeReceiveImpl<M, K, V, SK, SV>
 
 #endregion
 
+#region _Legacy
+
+public readonly struct IDictionarySerializeStaticImpl<M> : ISerialize<M>, IMapSerializerReceiver<M>
+    where M : IDictionary
+{
+    public static IDictionarySerializeStaticImpl<M> Instance { get; } = new();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Write<S>(S serializer, M value, ISeraOptions options) where S : ISerializer
+        => serializer.StartMap((nuint)value.Count, value, this);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Receive<S>(M value, S serializer) where S : IMapSerializer
+    {
+        var e = value.GetEnumerator();
+        while (e.MoveNext())
+        {
+            var entry = e.Entry;
+            var impl = new NullableReferenceTypeSerializeImpl<object, RawObjectImpl>();
+            serializer.WriteEntry(entry.Key, entry.Value, impl, impl);
+        }
+    }
+}
+
+public readonly struct IDictionarySerializeRuntimeImpl<M> : ISerialize<M>
+    where M : IDictionary
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Write<S>(S serializer, M value, ISeraOptions options) where S : ISerializer
+        => serializer.StartMap(null, value,
+            new IDictionarySerializeReceiveRuntimeImpl<M>(serializer.RuntimeProvider.GetRuntimeSerialize()));
+}
+
+public readonly struct IDictionarySerializeReceiveRuntimeImpl<M>(ISerialize<object?> Serialize) : IMapSerializerReceiver<M>
+    where M : IDictionary
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Receive<S>(M value, S serializer) where S : IMapSerializer
+    {
+        var e = value.GetEnumerator();
+        while (e.MoveNext())
+        {
+            var entry = e.Entry;
+            serializer.WriteEntry(entry.Key, entry.Value, Serialize, Serialize);
+        }
+    }
+}
+
+#endregion
+
 #endregion
 
 #region Async

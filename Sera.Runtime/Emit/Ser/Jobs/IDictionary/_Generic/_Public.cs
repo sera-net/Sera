@@ -10,7 +10,7 @@ using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Utils;
 using _Public_Base = Sera.Runtime.Emit.Ser.Jobs._ICollection._Generic._Public;
 
-namespace Sera.Runtime.Emit.Ser.Jobs.IDictionary._Generic;
+namespace Sera.Runtime.Emit.Ser.Jobs._IDictionary._Generic;
 
 internal abstract class _Public(Type KeyType, Type ValueType,
         InterfaceMapping? mapping, MethodInfo? DirectGetEnumerator)

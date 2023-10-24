@@ -3,7 +3,7 @@ using System.Reflection;
 using Sera.Core.Impls;
 using Sera.Runtime.Emit.Deps;
 
-namespace Sera.Runtime.Emit.Ser.Jobs.IDictionary._Generic;
+namespace Sera.Runtime.Emit.Ser.Jobs._IDictionary._Generic;
 
 internal class _Mutable_Private(Type KeyType, Type ValueType) : _Private(KeyType, ValueType)
 {
