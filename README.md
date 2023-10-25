@@ -9,10 +9,14 @@ Inspired by [serde-rs](https://github.com/serde-rs/serde)
 - [ ] Core
   - [x] Basic abstract interface
   - [ ] Runtime emit implementation
+    - [x] Serialize emit
+    - [ ] Deserialize emit
   - [ ] Source generator implementation
 
 - [ ] Planned official implementation formats
   - [ ] Json
+    - [x] Serialize
+    - [ ] Deserialize
   - [ ] Toml
   - [ ] Yaml
   - [ ] Xml
