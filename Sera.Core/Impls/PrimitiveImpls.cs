@@ -9,7 +9,7 @@ using Sera.Core.Ser;
 namespace Sera.Core.Impls;
 
 public readonly record struct PrimitiveImpl<T>(SerializerPrimitiveHint? Hint = null) :
-    ISerialize<T>, IDeserialize<T>, IAsyncSerialize<T>, IAsyncDeserialize<T>
+    ISerialize<T>, IDeserialize<T>
 {
     public static PrimitiveImpl<T> Default { get; } = new(new());
 
@@ -18,12 +18,6 @@ public readonly record struct PrimitiveImpl<T>(SerializerPrimitiveHint? Hint = n
 
     public T Read<D>(D deserializer, ISeraOptions options) where D : IDeserializer
         => deserializer.ReadPrimitive<T>();
-
-    public ValueTask WriteAsync<S>(S serializer, T value, ISeraOptions options) where S : IAsyncSerializer
-        => serializer.WritePrimitiveAsync(value, Hint);
-
-    public ValueTask<T> ReadAsync<D>(D deserializer, ISeraOptions options) where D : IAsyncDeserializer
-        => deserializer.ReadPrimitiveAsync<T>();
 }
 
 public static class PrimitiveImpls

@@ -333,43 +333,4 @@ public sealed class IReadOnlyCollectionMapSerializeImpl<M, K, V, SK, SV>
 
 #endregion
 
-#region Async
-
-public record AsyncIDictionaryImpl<M, K, V, SK, SV>(SK KeySerialize, SV ValueSerialize) : IAsyncSerialize<M>,
-    IAsyncMapSerializerReceiver<M>
-    where M : IDictionary<K, V> where SK : IAsyncSerialize<K> where SV : IAsyncSerialize<V>
-{
-    public ValueTask WriteAsync<S>(S serializer, M value, ISeraOptions options) where S : IAsyncSerializer
-        => serializer.StartMapAsync<K, V, M, AsyncIDictionaryImpl<M, K, V, SK, SV>>((nuint)value.Count, value, this);
-
-    public async ValueTask ReceiveAsync<S>(M value, S serializer) where S : IAsyncMapSerializer
-    {
-        foreach (var (k, v) in value)
-        {
-            await serializer.WriteEntryAsync(k, v, KeySerialize, ValueSerialize);
-        }
-    }
-}
-
-public record AsyncIDictionaryImpl<M, SK, SV>(SK KeySerialize, SV ValueSerialize) : IAsyncSerialize<M>,
-    IAsyncMapSerializerReceiver<M>
-    where M : IDictionary where SK : IAsyncSerialize<object?> where SV : IAsyncSerialize<object?>
-{
-    public ValueTask WriteAsync<S>(S serializer, M value, ISeraOptions options) where S : IAsyncSerializer
-        => serializer.StartMapAsync((nuint)value.Count, value, this);
-
-    public async ValueTask ReceiveAsync<S>(M value, S serializer) where S : IAsyncMapSerializer
-    {
-        var enumerator = value.GetEnumerator();
-        while (enumerator.MoveNext())
-        {
-            await serializer.WriteEntryAsync<object?, object?, SK, SV>(
-                enumerator.Key, enumerator.Value, KeySerialize, ValueSerialize
-            );
-        }
-    }
-}
-
-#endregion
-
 #endregion

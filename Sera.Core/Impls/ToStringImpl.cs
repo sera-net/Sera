@@ -1,11 +1,8 @@
-﻿using System;
-using System.Threading.Tasks;
-using Sera.Core.De;
-using Sera.Core.Ser;
+﻿using Sera.Core.Ser;
 
 namespace Sera.Core.Impls;
 
-public struct ToStringSerializeImpl<T> : ISerialize<T>, IAsyncSerialize<T>
+public struct ToStringSerializeImpl<T> : ISerialize<T>
 {
     public static ToStringSerializeImpl<T> Instance { get; } = new();
 
@@ -13,36 +10,5 @@ public struct ToStringSerializeImpl<T> : ISerialize<T>, IAsyncSerialize<T>
     {
         var str = $"{value}";
         serializer.WriteString(str);
-    }
-
-    public ValueTask WriteAsync<S>(S serializer, T value, ISeraOptions options) where S : IAsyncSerializer
-    {
-        var str = $"{value}";
-        return serializer.WriteStringAsync(str);
-    }
-}
-
-public struct SpanParsableSerializeImpl<T> : IDeserialize<T>, IStringDeserializerVisitor<T>, IAsyncDeserialize<T>,
-    IAsyncStringDeserializerVisitor<T>
-    where T : ISpanParsable<T>
-{
-    public static SpanParsableSerializeImpl<T> Instance { get; } = new();
-
-    public T Read<D>(D deserializer, ISeraOptions options) where D : IDeserializer
-        => deserializer.ReadString<T, SpanParsableSerializeImpl<T>>(this);
-
-    public T VisitString<A>(A access) where A : IStringAccess
-    {
-        var memory = access.ReadStringAsReadOnlyMemory();
-        return T.Parse(memory.Span, null);
-    }
-
-    public ValueTask<T> ReadAsync<D>(D deserializer, ISeraOptions options) where D : IAsyncDeserializer
-        => deserializer.ReadStringAsync<T, SpanParsableSerializeImpl<T>>(this);
-
-    public async ValueTask<T> VisitStringAsync<A>(A access) where A : IAsyncStringAccess
-    {
-        var memory = await access.ReadStringAsReadOnlyMemoryAsync();
-        return T.Parse(memory.Span, null);
     }
 }

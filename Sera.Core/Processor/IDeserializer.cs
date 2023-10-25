@@ -120,23 +120,6 @@ public interface IAnyDeserializerVisitor<out R> :
     IUnitDeserializerVisitor<R>, IOptionDeserializerVisitor<R>, ISeqDeserializerVisitor<R>,
     IMapDeserializerVisitor<R>, IStructDeserializerVisitor<R>, IVariantDeserializerVisitor<R>;
 
-public partial interface IAsyncDeserializer : ISeraAbility
-{
-    /// <summary>Peek the next hint</summary>
-    public ValueTask<DeserializerHint> PeekNextAsync(DeserializerHint? need);
-
-    /// <summary>Skip once</summary>
-    public ValueTask SkipAsync();
-
-    public ValueTask<R> ReadAnyAsync<R, V>(DeserializerHint? need, DeserializerPrimitiveHint? need2, V visitor)
-        where V : IAsyncAnyDeserializerVisitor<R>;
-}
-
-public interface IAsyncAnyDeserializerVisitor<R> :
-    IAsyncPrimitiveDeserializerVisitor<R>, IAsyncStringDeserializerVisitor<R>, IAsyncBytesDeserializerVisitor<R>,
-    IAsyncUnitDeserializerVisitor<R>, IAsyncOptionDeserializerVisitor<R>, IAsyncSeqDeserializerVisitor<R>,
-    IAsyncMapDeserializerVisitor<R>, IAsyncStructDeserializerVisitor<R>, IAsyncVariantDeserializerVisitor<R>;
-
 #endregion
 
 #region Primitive
@@ -269,95 +252,11 @@ public interface IPrimitiveDeserializerVisitor<out R>
     protected R Visit(Rune value) => throw DeserializeInvalidTypeException.Unexpected(value);
 }
 
-public partial interface IAsyncDeserializer
-{
-    /// <inheritdoc cref="IDeserializer.PeekPrimitive(DeserializerPrimitiveHint?)"/>
-    public ValueTask<DeserializerPrimitiveHint> PeekPrimitiveAsync(DeserializerPrimitiveHint? need);
-
-    public ValueTask<R> ReadPrimitiveAsync<R, V>(DeserializerPrimitiveHint? need, V visitor)
-        where V : IAsyncPrimitiveDeserializerVisitor<R>;
-
-    public ValueTask<T> ReadPrimitiveAsync<T>()
-        => ReadPrimitiveAsync<T, AsyncIdentityPrimitiveVisitor<T>>(DeserializerEx.ToHint<T>(), new());
-}
-
-public interface IAsyncPrimitiveDeserializerVisitor<R>
-{
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public ValueTask<R> VisitPrimitiveAsync<T>(T value) => value switch
-    {
-        bool v => VisitAsync(v),
-        sbyte v => VisitAsync(v),
-        short v => VisitAsync(v),
-        int v => VisitAsync(v),
-        long v => VisitAsync(v),
-        Int128 v => VisitAsync(v),
-        byte v => VisitAsync(v),
-        ushort v => VisitAsync(v),
-        uint v => VisitAsync(v),
-        ulong v => VisitAsync(v),
-        UInt128 v => VisitAsync(v),
-        nint v => VisitAsync(v),
-        nuint v => VisitAsync(v),
-        Half v => VisitAsync(v),
-        float v => VisitAsync(v),
-        double v => VisitAsync(v),
-        decimal v => VisitAsync(v),
-        BigInteger v => VisitAsync(v),
-        Complex v => VisitAsync(v),
-        TimeSpan v => VisitAsync(v),
-        DateOnly v => VisitAsync(v),
-        TimeOnly v => VisitAsync(v),
-        DateTime v => VisitAsync(v),
-        DateTimeOffset v => VisitAsync(v),
-        Guid v => VisitAsync(v),
-        Range v => VisitAsync(v),
-        Index v => VisitAsync(v),
-        char v => VisitAsync(v),
-        Rune v => VisitAsync(v),
-        _ => throw DeserializeInvalidTypeException.Unexpected(value),
-    };
-
-    protected ValueTask<R> VisitAsync(bool value) => throw DeserializeInvalidTypeException.Unexpected(value);
-    protected ValueTask<R> VisitAsync(sbyte value) => throw DeserializeInvalidTypeException.Unexpected(value);
-    protected ValueTask<R> VisitAsync(short value) => throw DeserializeInvalidTypeException.Unexpected(value);
-    protected ValueTask<R> VisitAsync(int value) => throw DeserializeInvalidTypeException.Unexpected(value);
-    protected ValueTask<R> VisitAsync(long value) => throw DeserializeInvalidTypeException.Unexpected(value);
-    protected ValueTask<R> VisitAsync(Int128 value) => throw DeserializeInvalidTypeException.Unexpected(value);
-    protected ValueTask<R> VisitAsync(byte value) => throw DeserializeInvalidTypeException.Unexpected(value);
-    protected ValueTask<R> VisitAsync(ushort value) => throw DeserializeInvalidTypeException.Unexpected(value);
-    protected ValueTask<R> VisitAsync(uint value) => throw DeserializeInvalidTypeException.Unexpected(value);
-    protected ValueTask<R> VisitAsync(ulong value) => throw DeserializeInvalidTypeException.Unexpected(value);
-    protected ValueTask<R> VisitAsync(UInt128 value) => throw DeserializeInvalidTypeException.Unexpected(value);
-    protected ValueTask<R> VisitAsync(nint value) => throw DeserializeInvalidTypeException.Unexpected(value);
-    protected ValueTask<R> VisitAsync(nuint value) => throw DeserializeInvalidTypeException.Unexpected(value);
-    protected ValueTask<R> VisitAsync(Half value) => throw DeserializeInvalidTypeException.Unexpected(value);
-    protected ValueTask<R> VisitAsync(float value) => throw DeserializeInvalidTypeException.Unexpected(value);
-    protected ValueTask<R> VisitAsync(double value) => throw DeserializeInvalidTypeException.Unexpected(value);
-    protected ValueTask<R> VisitAsync(decimal value) => throw DeserializeInvalidTypeException.Unexpected(value);
-    protected ValueTask<R> VisitAsync(BigInteger value) => throw DeserializeInvalidTypeException.Unexpected(value);
-    protected ValueTask<R> VisitAsync(Complex value) => throw DeserializeInvalidTypeException.Unexpected(value);
-    protected ValueTask<R> VisitAsync(TimeSpan value) => throw DeserializeInvalidTypeException.Unexpected(value);
-    protected ValueTask<R> VisitAsync(DateOnly value) => throw DeserializeInvalidTypeException.Unexpected(value);
-    protected ValueTask<R> VisitAsync(TimeOnly value) => throw DeserializeInvalidTypeException.Unexpected(value);
-    protected ValueTask<R> VisitAsync(DateTime value) => throw DeserializeInvalidTypeException.Unexpected(value);
-    protected ValueTask<R> VisitAsync(DateTimeOffset value) => throw DeserializeInvalidTypeException.Unexpected(value);
-    protected ValueTask<R> VisitAsync(Guid value) => throw DeserializeInvalidTypeException.Unexpected(value);
-    protected ValueTask<R> VisitAsync(Range value) => throw DeserializeInvalidTypeException.Unexpected(value);
-    protected ValueTask<R> VisitAsync(Index value) => throw DeserializeInvalidTypeException.Unexpected(value);
-    protected ValueTask<R> VisitAsync(char value) => throw DeserializeInvalidTypeException.Unexpected(value);
-    protected ValueTask<R> VisitAsync(Rune value) => throw DeserializeInvalidTypeException.Unexpected(value);
-}
-
 public static partial class DeserializerEx
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool PeekIsPrimitive<S>(this S self) where S : IDeserializer
         => (self.PeekNext(DeserializerHint.Primitive) & DeserializerHint.Primitive) != 0;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static async ValueTask<bool> PeekIsPrimitiveAsync<S>(this S self) where S : IAsyncDeserializer
-        => (await self.PeekNextAsync(DeserializerHint.Primitive) & DeserializerHint.Primitive) != 0;
 }
 
 #endregion
@@ -444,93 +343,11 @@ public interface IStringAccess
     public Memory<byte> ReadStringEncodedAsMemory(Encoding encoding) => ReadStringEncoded(encoding);
 }
 
-public partial interface IAsyncDeserializer
-{
-    public ValueTask<R> ReadStringAsync<R, V>(V visitor) where V : IAsyncStringDeserializerVisitor<R>;
-}
-
-public static partial class DeserializerEx
-{
-    public static ValueTask<string> ReadStringAsync<D>(this D self) where D : IAsyncDeserializer
-        => self.ReadStringAsync<string, IdentityStringVisitor>(new());
-
-    public static ValueTask<char[]> ReadStringAsArrayAsync<D>(this D self) where D : IAsyncDeserializer
-        => self.ReadStringAsync<char[], IdentityStringArrayVisitor>(new());
-
-    public static ValueTask<List<char>> ReadStringAsListAsync<D>(this D self) where D : IAsyncDeserializer
-        => self.ReadStringAsync<List<char>, IdentityStringListVisitor>(new());
-
-    public static ValueTask<Memory<char>> ReadStringAsMemoryAsync<D>(this D self) where D : IAsyncDeserializer
-        => self.ReadStringAsync<Memory<char>, IdentityStringMemoryVisitor>(new());
-
-    public static ValueTask<ReadOnlyMemory<char>> ReadStringAsReadOnlyMemoryAsync<D>(this D self)
-        where D : IAsyncDeserializer
-        => self.ReadStringAsync<ReadOnlyMemory<char>, IdentityStringReadOnlyMemoryVisitor>(new());
-}
-
-public interface IAsyncStringDeserializerVisitor<R>
-{
-    public ValueTask<R> VisitStringAsync<A>(A access) where A : IAsyncStringAccess;
-}
-
-public interface IAsyncStringAccess
-{
-    /// <summary>
-    /// Get string length in utf-16.
-    /// </summary>
-    public ValueTask<int> GetLengthAsync() => GetLengthAsync(Encoding.Unicode);
-
-    /// <summary>Get the encoding of string</summary>
-    public ValueTask<Encoding> GetEncodingAsync();
-
-    /// <summary>
-    /// Get string length in the encoding.
-    /// </summary>
-    public ValueTask<int> GetLengthAsync(Encoding encoding);
-
-    /// <summary>Read string as utf-16</summary>
-    public ValueTask<string> ReadStringAsync();
-
-    /// <summary>Read string as utf-16</summary>
-    public async ValueTask<char[]> ReadStringAsArrayAsync() => (await ReadStringAsync()).ToCharArray();
-
-    /// <summary>Read string as utf-16</summary>
-    public async ValueTask<List<char>> ReadStringAsListAsync() => (await ReadStringAsync()).ToList();
-
-    /// <summary>Read string as utf-16</summary>
-    public ValueTask ReadStringAsync(Memory<char> value);
-
-    /// <summary>Read string as utf-16</summary>
-    public async ValueTask<ReadOnlyMemory<char>> ReadStringAsReadOnlyMemoryAsync() =>
-        (await ReadStringAsync()).AsMemory();
-
-    /// <summary>Read string as utf-16</summary>
-    public async ValueTask<Memory<char>> ReadStringAsMemoryAsync() => (await ReadStringAsync()).ToCharArray();
-
-    /// <summary>Read string as encoding</summary>
-    public ValueTask<byte[]> ReadStringEncodedAsync(Encoding encoding);
-
-    /// <summary>Read string as encoding</summary>
-    public ValueTask ReadStringEncodedAsync(Memory<byte> value, Encoding encoding);
-
-    /// <summary>Read string as encoding</summary>
-    public async ValueTask<ReadOnlyMemory<byte>> ReadStringEncodedAsReadOnlyMemoryAsync(Encoding encoding) =>
-        await ReadStringEncodedAsync(encoding);
-
-    /// <summary>Read string as encoding</summary>
-    public async ValueTask<Memory<byte>> ReadStringEncodedAsMemoryAsync(Encoding encoding) =>
-        await ReadStringEncodedAsync(encoding);
-}
-
 public static partial class DeserializerEx
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool PeekIsString<S>(this S self) where S : IDeserializer
         => (self.PeekNext(DeserializerHint.String) & DeserializerHint.String) != 0;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static async ValueTask<bool> PeekIsStringAsync<S>(this S self) where S : IAsyncDeserializer
-        => (await self.PeekNextAsync(DeserializerHint.String) & DeserializerHint.String) != 0;
 }
 
 #endregion
@@ -561,38 +378,11 @@ public interface IBytesAccess
     public ReadOnlySequence<byte> ReadBytesAsSequence();
 }
 
-public partial interface IAsyncDeserializer
-{
-    public ValueTask<R> ReadBytesAsync<R, V>(V visitor) where V : IAsyncBytesDeserializerVisitor<R>;
-
-    public ValueTask<byte[]> ReadBytesAsync() => ReadBytesAsync<byte[], IdentityBytesVisitor>(new());
-}
-
-public interface IAsyncBytesDeserializerVisitor<R>
-{
-    public ValueTask<R> VisitBytesAsync<A>(A access) where A : IAsyncBytesAccess;
-}
-
-public interface IAsyncBytesAccess
-{
-    public ValueTask<int> GetLengthAsync();
-    public ValueTask<byte[]> ReadBytesAsync();
-    public ValueTask<List<byte>> ReadBytesAsListAsync();
-    public ValueTask ReadBytesAsync(Memory<byte> value);
-    public ValueTask<ReadOnlyMemory<byte>> ReadBytesAsMemoryAsync();
-    public ValueTask<Memory<byte>> ReadBytesAsMutableMemoryAsync();
-    public ValueTask<ReadOnlySequence<byte>> ReadBytesAsSequenceAsync();
-}
-
 public static partial class DeserializerEx
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool PeekIsBytes<S>(this S self) where S : IDeserializer
         => (self.PeekNext(DeserializerHint.Bytes) & DeserializerHint.Bytes) != 0;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static async ValueTask<bool> PeekIsBytesAsync<S>(this S self) where S : IAsyncDeserializer
-        => (await self.PeekNextAsync(DeserializerHint.Bytes) & DeserializerHint.Bytes) != 0;
 }
 
 #endregion
@@ -611,27 +401,11 @@ public interface IUnitDeserializerVisitor<out R>
     public R VisitUnit();
 }
 
-public partial interface IAsyncDeserializer
-{
-    public ValueTask<R> ReadUnitAsync<R, V>(V visitor) where V : IAsyncUnitDeserializerVisitor<R>;
-
-    public async ValueTask ReadUnitAsync() => await ReadUnitAsync<Unit, IdentityUnitOrNullVisitor<Unit>>(new());
-}
-
-public interface IAsyncUnitDeserializerVisitor<R>
-{
-    public ValueTask<R> VisitUnitAsync();
-}
-
 public static partial class DeserializerEx
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool PeekIsUnit<S>(this S self) where S : IDeserializer
         => (self.PeekNext(DeserializerHint.Unit) & DeserializerHint.Unit) != 0;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static async ValueTask<bool> PeekIsUnitAsync<S>(this S self) where S : IAsyncDeserializer
-        => (await self.PeekNextAsync(DeserializerHint.Unit) & DeserializerHint.Unit) != 0;
 }
 
 #endregion
@@ -652,29 +426,11 @@ public interface IOptionDeserializerVisitor<out R>
     public R VisitSome<D>(D deserializer, ISeraOptions options) where D : IDeserializer;
 }
 
-public partial interface IAsyncDeserializer
-{
-    public ValueTask<R> ReadOptionAsync<R, V>(V visitor) where V : IAsyncOptionDeserializerVisitor<R>;
-
-    public ValueTask<T?> ReadNullableAsync<T, D>(D deserialize) where T : struct where D : IAsyncDeserialize<T>
-        => ReadOptionAsync<T?, AsyncNullableOptionVisitor<T, D>>(new(deserialize));
-}
-
-public interface IAsyncOptionDeserializerVisitor<R>
-{
-    public ValueTask<R> VisitNoneAsync();
-    public ValueTask<R> VisitSomeAsync<D>(D deserializer, ISeraOptions options) where D : IAsyncDeserializer;
-}
-
 public static partial class DeserializerEx
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool PeekIsOption<S>(this S self) where S : IDeserializer
         => (self.PeekNext(DeserializerHint.Option) & DeserializerHint.Option) != 0;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static async ValueTask<bool> PeekIsOptionAsync<S>(this S self) where S : IAsyncDeserializer
-        => (await self.PeekNextAsync(DeserializerHint.Option) & DeserializerHint.Option) != 0;
 }
 
 #endregion
@@ -700,34 +456,11 @@ public interface ISeqAccess
     public T ReadElement<T, D>(out T result, D deserialize) where D : IDeserialize<T>;
 }
 
-public partial interface IAsyncDeserializer
-{
-    public ValueTask<R> ReadSeqAsync<R, V>(nuint? len, V visitor) where V : IAsyncSeqDeserializerVisitor<R>;
-}
-
-public interface IAsyncSeqDeserializerVisitor<R>
-{
-    public ValueTask<R> VisitSeqAsync<A>(A access) where A : IAsyncSeqAccess;
-}
-
-public interface IAsyncSeqAccess
-{
-    public ValueTask<nuint?> GetLengthAsync();
-
-    public ValueTask<bool> HasNextAsync();
-
-    public ValueTask<T> ReadElementAsync<T, D>(D deserialize) where D : IAsyncDeserialize<T>;
-}
-
 public static partial class DeserializerEx
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool PeekIsSeq<S>(this S self) where S : IDeserializer
         => (self.PeekNext(DeserializerHint.Seq) & DeserializerHint.Seq) != 0;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static async ValueTask<bool> PeekIsSeqAsync<S>(this S self) where S : IAsyncDeserializer
-        => (await self.PeekNextAsync(DeserializerHint.Seq) & DeserializerHint.Seq) != 0;
 }
 
 #endregion
@@ -754,35 +487,11 @@ public interface IMapAccess
         where DK : IDeserialize<K> where DV : IDeserialize<V>;
 }
 
-public partial interface IAsyncDeserializer
-{
-    public ValueTask<R> ReadMapAsync<R, V>(nuint? len, V visitor) where V : IAsyncMapDeserializerVisitor<R>;
-}
-
-public interface IAsyncMapDeserializerVisitor<R>
-{
-    public ValueTask<R> VisitMapAsync<A>(A access) where A : IAsyncMapAccess;
-}
-
-public interface IAsyncMapAccess
-{
-    public ValueTask<nuint?> GetLengthAsync();
-
-    public ValueTask<bool> HasNextAsync();
-
-    public ValueTask<KeyValuePair<K, V>> ReadEntryAsync<K, V, DK, DV>(DK key_deserialize, DV value_deserialize)
-        where DK : IAsyncDeserialize<K> where DV : IAsyncDeserialize<V>;
-}
-
 public static partial class DeserializerEx
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool PeekIsMap<S>(this S self) where S : IDeserializer
         => (self.PeekNext(DeserializerHint.Map) & DeserializerHint.Map) != 0;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static async ValueTask<bool> PeekIsMapAsync<S>(this S self) where S : IAsyncDeserializer
-        => (await self.PeekNextAsync(DeserializerHint.Map) & DeserializerHint.Map) != 0;
 }
 
 #endregion
@@ -827,54 +536,11 @@ public interface IStructMapAccess : IStructAccess
         where D : IDeserialize<T>;
 }
 
-public partial interface IAsyncDeserializer
-{
-    public ValueTask<R> ReadStructAsync<R, V>(string? name, nuint? len, Memory<(string key, nuint? int_key)>? fields,
-        V visitor)
-        where V : IAsyncStructDeserializerVisitor<R>;
-}
-
-public interface IAsyncStructDeserializerVisitor<R>
-{
-    public ValueTask<R> VisitStructSeqAsync<A>(A access) where A : IAsyncStructSeqAccess;
-    public ValueTask<R> VisitStructMapAsync<A>(A access) where A : IAsyncStructMapAccess;
-}
-
-public interface IAsyncStructAccess
-{
-    public ValueTask<nuint?> GetLengthAsync();
-
-    public ValueTask<string?> ViewStructNameAsync();
-}
-
-public interface IAsyncStructSeqAccess : IAsyncStructAccess
-{
-    public ValueTask<bool> HasNextAsync();
-
-    public ValueTask<T> ReadFieldAsync<T, D>(D deserialize)
-        where D : IAsyncDeserialize<T>;
-}
-
-public interface IAsyncStructMapAccess : IAsyncStructAccess
-{
-    public ValueTask<bool> HasNextAsync();
-
-    /// <summary>
-    /// At least one of string key and int key must be provided
-    /// </summary>
-    public ValueTask<(string? key, long? int_key, T result)> ReadFieldAsync<T, D>(D deserialize)
-        where D : IAsyncDeserialize<T>;
-}
-
 public static partial class DeserializerEx
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool PeekIsStruct<S>(this S self) where S : IDeserializer
         => (self.PeekNext(DeserializerHint.Struct) & DeserializerHint.Struct) != 0;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static async ValueTask<bool> PeekIsStructAsync<S>(this S self) where S : IAsyncDeserializer
-        => (await self.PeekNextAsync(DeserializerHint.Struct) & DeserializerHint.Struct) != 0;
 }
 
 #endregion
@@ -901,35 +567,11 @@ public interface IVariantAccess
     public string? ViewUnionName();
 }
 
-public partial interface IAsyncDeserializer
-{
-    public ValueTask<R> ReadVariantAsync<R, V>(string? union_name, Memory<Variant>? variants, V visitor)
-        where V : IAsyncVariantDeserializerVisitor<R>;
-}
-
-public interface IAsyncVariantDeserializerVisitor<R>
-{
-    public ValueTask<R> VisitEmptyUnionAsync();
-    public ValueTask<R> VisitVariantUnitAsync<A>(Variant variant, A access) where A : IAsyncVariantAccess;
-
-    public ValueTask<R> VisitVariantAsync<A, D>(Variant variant, A access, D deserializer, ISeraOptions options)
-        where A : IAsyncVariantAccess where D : IAsyncDeserializer;
-}
-
-public interface IAsyncVariantAccess
-{
-    public ValueTask<string?> ViewUnionNameAsync();
-}
-
 public static partial class DeserializerEx
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool PeekIsVariant<S>(this S self) where S : IDeserializer
         => (self.PeekNext(DeserializerHint.Variant) & DeserializerHint.Variant) != 0;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static async ValueTask<bool> PeekIsVariantAsync<S>(this S self) where S : IAsyncDeserializer
-        => (await self.PeekNextAsync(DeserializerHint.Variant) & DeserializerHint.Variant) != 0;
 }
 
 #endregion

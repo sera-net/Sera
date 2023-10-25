@@ -21,8 +21,4 @@ public interface ISeraAbility
     /// Runtime provider
     /// </summary>
     public IRuntimeProvider RuntimeProvider { get; }
-    /// <summary>
-    /// Async Runtime provider
-    /// </summary>
-    public IAsyncRuntimeProvider AsyncRuntimeProvider { get; }
 }

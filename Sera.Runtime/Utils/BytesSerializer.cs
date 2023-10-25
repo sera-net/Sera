@@ -29,7 +29,6 @@ internal class BytesSerializer : ISerializer, IDisposable, IAsyncDisposable
     public string FormatMIME => "application/octet-stream";
     public SeraFormatType FormatType => SeraFormatType.Binary;
     public IRuntimeProvider RuntimeProvider => EmitRuntimeProvider.Instance;
-    public IAsyncRuntimeProvider AsyncRuntimeProvider => StaticRuntimeProvider.Instance;
 
     public enum TypeToken : byte
     {

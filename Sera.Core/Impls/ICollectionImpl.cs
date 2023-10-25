@@ -132,38 +132,4 @@ public readonly struct ICollectionSerializeRuntimeImpl<C> : ISerialize<C>
 
 #endregion
 
-#region Async
-
-public class AsyncICollectionSerializeImpl<C, T, ST>(ST Serialize) : IAsyncSerialize<C>, IAsyncSeqSerializerReceiver<C>
-    where C : ICollection<T> where ST : IAsyncSerialize<T>
-{
-    public ValueTask WriteAsync<S>(S serializer, C value, ISeraOptions options) where S : IAsyncSerializer
-        => serializer.StartSeqAsync<T, C, AsyncICollectionSerializeImpl<C, T, ST>>((nuint)value.Count, value, this);
-
-    public async ValueTask ReceiveAsync<S>(C value, S serializer) where S : IAsyncSeqSerializer
-    {
-        foreach (var item in value)
-        {
-            await serializer.WriteElementAsync(item, Serialize);
-        }
-    }
-}
-
-public class AsyncICollectionSerializeImpl<C, ST>(ST Serialize) : IAsyncSerialize<C>, IAsyncSeqSerializerReceiver<C>
-    where C : ICollection where ST : IAsyncSerialize<object?>
-{
-    public ValueTask WriteAsync<S>(S serializer, C value, ISeraOptions options) where S : IAsyncSerializer
-        => serializer.StartSeqAsync((nuint)value.Count, value, this);
-
-    public async ValueTask ReceiveAsync<S>(C value, S serializer) where S : IAsyncSeqSerializer
-    {
-        foreach (var item in value)
-        {
-            await serializer.WriteElementAsync(item, Serialize);
-        }
-    }
-}
-
-#endregion
-
 #endregion

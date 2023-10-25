@@ -22,12 +22,6 @@ public partial interface ISerializer : ISeraAbility
     public bool MarkReference<T, S>(T obj, S serialize) where T : class where S : ISerialize<T>;
 }
 
-public partial interface IAsyncSerializer : ISeraAbility
-{
-    /// <inheritdoc cref="ISerializer.MarkReference{T, S}(T, S)"/>
-    public ValueTask<bool> MarkReferenceAsync<T, S>(T obj, S serialize) where T : class where S : IAsyncSerialize<T>;
-}
-
 #endregion
 
 #region Primitive
@@ -127,11 +121,6 @@ public partial interface ISerializer
     public void WritePrimitive<T>(T value, SerializerPrimitiveHint? hint);
 }
 
-public partial interface IAsyncSerializer
-{
-    public ValueTask WritePrimitiveAsync<T>(T value, SerializerPrimitiveHint? hint);
-}
-
 #endregion
 
 #region String
@@ -158,21 +147,6 @@ public partial interface ISerializer
     public void WriteStringEncoded(ReadOnlySpan<byte> value, Encoding encoding);
 }
 
-public partial interface IAsyncSerializer
-{
-    public ValueTask WriteStringAsync(string value) => WriteStringAsync(value.AsMemory());
-    public ValueTask WriteStringAsync(char[] value) => WriteStringAsync(value.AsMemory());
-
-    public ValueTask WriteStringAsync(List<char> value);
-
-    public ValueTask WriteStringAsync(ReadOnlyMemory<char> value);
-
-    public ValueTask WriteStringEncodedAsync(byte[] value, Encoding encoding)
-        => WriteStringEncodedAsync(value.AsMemory(), encoding);
-
-    public ValueTask WriteStringEncodedAsync(ReadOnlyMemory<byte> value, Encoding encoding);
-}
-
 #endregion
 
 #region Bytes
@@ -184,14 +158,6 @@ public partial interface ISerializer
     public void WriteBytes(ReadOnlySequence<byte> value);
     public void WriteBytes(ReadOnlyMemory<byte> value) => WriteBytes(value.Span);
     public void WriteBytes(ReadOnlySpan<byte> value);
-}
-
-public partial interface IAsyncSerializer
-{
-    public ValueTask WriteBytesAsync(byte[] value) => WriteBytesAsync(value.AsMemory());
-    public ValueTask WriteBytesAsync(List<byte> value);
-    public ValueTask WriteBytesAsync(ReadOnlySequence<byte> value);
-    public ValueTask WriteBytesAsync(ReadOnlyMemory<byte> value);
 }
 
 #endregion
@@ -214,18 +180,6 @@ public partial interface ISerializer
     public void WriteArray<T, S>(ReadOnlySpan<T> value, S serialize) where S : ISerialize<T>;
 }
 
-public partial interface IAsyncSerializer
-{
-    public ValueTask WriteArrayAsync<T, S>(T[] value, S serialize) where S : IAsyncSerialize<T>
-        => WriteArrayAsync<T, S>(value.AsMemory(), serialize);
-
-    public ValueTask WriteArrayAsync<T, S>(List<T> value, S serialize) where S : IAsyncSerialize<T>;
-
-    public ValueTask WriteArrayAsync<T, S>(ReadOnlySequence<T> value, S serialize) where S : IAsyncSerialize<T>;
-
-    public ValueTask WriteArrayAsync<T, S>(ReadOnlyMemory<T> value, S serialize) where S : IAsyncSerialize<T>;
-}
-
 #endregion
 
 #region Unit
@@ -233,11 +187,6 @@ public partial interface IAsyncSerializer
 public partial interface ISerializer
 {
     public void WriteUnit();
-}
-
-public partial interface IAsyncSerializer
-{
-    public ValueTask WriteUnitAsync();
 }
 
 #endregion
@@ -251,15 +200,6 @@ public partial interface ISerializer
     public void WriteNone<T>() => WriteNone();
 
     public void WriteSome<T, S>(T value, S serialize) where S : ISerialize<T>;
-}
-
-public partial interface IAsyncSerializer
-{
-    public ValueTask WriteNoneAsync();
-
-    public ValueTask WriteNoneAsync<T>() => WriteNoneAsync();
-
-    public ValueTask WriteSomeAsync<T, S>(T value, S serialize) where S : IAsyncSerialize<T>;
 }
 
 #endregion
@@ -282,24 +222,6 @@ public interface ISeqSerializerReceiver<in T>
 public interface ISeqSerializer
 {
     public void WriteElement<T, S>(T value, S serialize) where S : ISerialize<T>;
-}
-
-public partial interface IAsyncSerializer
-{
-    public ValueTask StartSeqAsync<T, R>(nuint? len, T value, R receiver) where R : IAsyncSeqSerializerReceiver<T>;
-
-    public ValueTask StartSeqAsync<I, T, R>(nuint? len, T value, R receiver) where R : IAsyncSeqSerializerReceiver<T>
-        => StartSeqAsync(len, value, receiver);
-}
-
-public interface IAsyncSeqSerializerReceiver<in T>
-{
-    public ValueTask ReceiveAsync<S>(T value, S serializer) where S : IAsyncSeqSerializer;
-}
-
-public interface IAsyncSeqSerializer
-{
-    public ValueTask WriteElementAsync<T, S>(T value, S serialize) where S : IAsyncSerialize<T>;
 }
 
 #endregion
@@ -330,33 +252,6 @@ public interface IMapSerializer
     {
         WriteKey(key, key_serialize);
         WriteValue(value, value_serialize);
-    }
-}
-
-public partial interface IAsyncSerializer
-{
-    public ValueTask StartMapAsync<T, R>(nuint? len, T value, R receiver) where R : IAsyncMapSerializerReceiver<T>;
-
-    public ValueTask StartMapAsync<K, V, T, R>(nuint? len, T value, R receiver) where R : IAsyncMapSerializerReceiver<T>
-        => StartMapAsync(len, value, receiver);
-}
-
-public interface IAsyncMapSerializerReceiver<in T>
-{
-    public ValueTask ReceiveAsync<S>(T value, S serializer) where S : IAsyncMapSerializer;
-}
-
-public interface IAsyncMapSerializer
-{
-    public ValueTask WriteKeyAsync<K, SK>(K key, SK key_serializer) where SK : IAsyncSerialize<K>;
-    public ValueTask WriteValueAsync<V, SV>(V value, SV value_serializer) where SV : IAsyncSerialize<V>;
-
-
-    public async ValueTask WriteEntryAsync<K, V, SK, SV>(K key, V value, SK key_serializer, SV value_serializer)
-        where SK : IAsyncSerialize<K> where SV : IAsyncSerialize<V>
-    {
-        await WriteKeyAsync(key, key_serializer);
-        await WriteValueAsync(value, value_serializer);
     }
 }
 
@@ -391,30 +286,6 @@ public interface IStructSerializer
     public void WriteField<T, S>(ReadOnlySpan<char> key, long? int_key, T value, S serialize) where S : ISerialize<T>;
 }
 
-public partial interface IAsyncSerializer
-{
-    public ValueTask StartStructAsync<T, R>(string? name, nuint len, T value, R receiver)
-        where R : IAsyncStructSerializerReceiver<T>;
-
-    public ValueTask StartStructAsync<S, T, R>(string? name, nuint len, T value, R receiver)
-        where R : IAsyncStructSerializerReceiver<T>
-        => StartStructAsync(name, len, value, receiver);
-}
-
-public interface IAsyncStructSerializerReceiver<in T>
-{
-    public ValueTask ReceiveAsync<S>(T value, S serializer) where S : IAsyncStructSerializer;
-}
-
-public interface IAsyncStructSerializer
-{
-    public ValueTask WriteFieldAsync<T, S>(string key, long? int_key, T value, S serialize) where S : IAsyncSerialize<T>
-        => WriteFieldAsync(key.AsMemory(), int_key, value, serialize);
-
-    public ValueTask WriteFieldAsync<T, S>(ReadOnlyMemory<char> key, long? int_key, T value, S serialize)
-        where S : IAsyncSerialize<T>;
-}
-
 #endregion
 
 #region Variant
@@ -447,27 +318,6 @@ public partial interface ISerializer
         SerializerVariantHint? hint)
         where S : ISerialize<T>
         => WriteVariant(union_name, variant, value, serialize, hint);
-}
-
-public partial interface IAsyncSerializer
-{
-    public ValueTask WriteEmptyUnionAsync(string? union_name);
-
-    public ValueTask WriteVariantUnitAsync(string? union_name, Variant variant, SerializerVariantHint? hint);
-
-    public ValueTask WriteVariantAsync<T, S>(string? union_name, Variant variant, T value, S serialize,
-        SerializerVariantHint? hint)
-        where S : IAsyncSerialize<T>;
-
-    public ValueTask WriteEmptyUnionAsync<U>(string? union_name) => WriteEmptyUnionAsync(union_name);
-
-    public ValueTask WriteVariantUnitAsync<U>(string? union_name, Variant variant, SerializerVariantHint? hint)
-        => WriteVariantUnitAsync(union_name, variant, hint);
-
-    public ValueTask WriteVariantAsync<U, T, S>(string? union_name, Variant variant, T value, S serialize,
-        SerializerVariantHint? hint)
-        where S : IAsyncSerialize<T>
-        => WriteVariantAsync(union_name, variant, value, serialize, hint);
 }
 
 #endregion

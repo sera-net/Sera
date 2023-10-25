@@ -19,12 +19,9 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonFormatter Formatter, 
     public SeraFormatType FormatType => SeraFormatType.HumanReadableText;
 
     public IRuntimeProvider? RuntimeProviderOverride { get; set; }
-    public IAsyncRuntimeProvider? AsyncRuntimeProviderOverride { get; set; }
 
 #pragma warning disable CS0618
     public IRuntimeProvider RuntimeProvider => RuntimeProviderOverride ?? Options.RuntimeProvider;
-
-    public IAsyncRuntimeProvider AsyncRuntimeProvider => AsyncRuntimeProviderOverride ?? Options.AsyncRuntimeProvider;
 #pragma warning restore CS0618
 
 
@@ -607,9 +604,7 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonFormatter Formatter, 
         public SeraFormatType FormatType => self.FormatType;
 
         public IRuntimeProvider RuntimeProvider => self.RuntimeProvider;
-
-        public IAsyncRuntimeProvider AsyncRuntimeProvider => self.AsyncRuntimeProvider;
-
+        
         public void WriteString(ReadOnlySpan<char> value)
             => self.WriteString(value);
 

@@ -12,13 +12,3 @@ public readonly struct ReferenceTypeWrapperSerializeImpl<T, ST>(ST Serialize) : 
         Serialize.Write(serializer, value, options);
     }
 }
-
-public readonly struct AsyncReferenceTypeWrapperSerializeImpl<T, ST>(ST Serialize) : IAsyncSerialize<T>
-    where T : class where ST : IAsyncSerialize<T>
-{
-    public async ValueTask WriteAsync<S>(S serializer, T value, ISeraOptions options) where S : IAsyncSerializer
-    {
-        if (await serializer.MarkReferenceAsync(value, Serialize)) return;
-        await Serialize.WriteAsync(serializer, value, options);
-    }
-}

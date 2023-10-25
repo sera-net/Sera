@@ -6,8 +6,6 @@ namespace Sera.Core.Impls;
 
 #region ValueType
 
-#region Sync
-
 public readonly struct NullableSerializeImplWrapper<T>(NullableSerializeImplBase<T> Serialize) : ISerialize<T?>
     where T : struct
 {
@@ -35,19 +33,6 @@ public sealed class NullableSerializeImpl<T, ST>(ST Serialize) : NullableSeriali
 
 #endregion
 
-#region Async
-
-public readonly struct AsyncNullableSerializeImpl<T, ST>(ST Serialize) : IAsyncSerialize<T?>
-    where T : struct where ST : IAsyncSerialize<T>
-{
-    public ValueTask WriteAsync<S>(S serializer, T? value, ISeraOptions options) where S : IAsyncSerializer
-        => value == null ? serializer.WriteNoneAsync<T>() : serializer.WriteSomeAsync(value.Value, Serialize);
-}
-
-#endregion
-
-#endregion
-
 #region ReferenceType
 
 public readonly struct NullableReferenceTypeSerializeImpl<T, ST>(ST Serialize) : ISerialize<T?>
@@ -58,13 +43,6 @@ public readonly struct NullableReferenceTypeSerializeImpl<T, ST>(ST Serialize) :
         if (value == null) serializer.WriteNone<T>();
         else serializer.WriteSome(value, Serialize);
     }
-}
-
-public readonly struct AsyncNullableReferenceTypeSerializeImpl<T, ST>(ST Serialize) : IAsyncSerialize<T?>
-    where T : class where ST : IAsyncSerialize<T>
-{
-    public ValueTask WriteAsync<S>(S serializer, T? value, ISeraOptions options) where S : IAsyncSerializer
-        => value == null ? serializer.WriteNoneAsync<T>() : serializer.WriteSomeAsync(value, Serialize);
 }
 
 #endregion

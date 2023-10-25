@@ -11,10 +11,4 @@ public static class SeraReflectionUtils
 
     public static MethodInfo IDeserializable_GetDeserialize { get; } =
         typeof(IDeserializable<,>).GetMethod(nameof(IDeserializable<Unit>.GetDeserialize))!;
-
-    public static MethodInfo IAsyncSerializable_GetAsyncSerialize { get; } =
-        typeof(IAsyncSerializable<,>).GetMethod(nameof(IAsyncSerializable<Unit>.GetAsyncSerialize))!;
-
-    public static MethodInfo IAsyncDeserializable_GetAsyncDeserialize { get; } =
-        typeof(IAsyncDeserializable<,>).GetMethod(nameof(IAsyncDeserializable<Unit>.GetAsyncDeserialize))!;
 }

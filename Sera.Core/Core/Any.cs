@@ -25,8 +25,7 @@ public enum SeraAnyKind : byte
 }
 
 public readonly struct SeraAny : IEquatable<SeraAny>,
-    ISerializable<SeraAny, AnyImpl>, IDeserializable<SeraAny, AnyImpl>,
-    IAsyncSerializable<SeraAny, AnyImpl>, IAsyncDeserializable<SeraAny, AnyImpl>
+    ISerializable<SeraAny, AnyImpl>, IDeserializable<SeraAny, AnyImpl>
 {
     public static AnyImpl GetSerialize() => AnyImpl.Instance;
     public static AnyImpl GetDeserialize() => AnyImpl.Instance;

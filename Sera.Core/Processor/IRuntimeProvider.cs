@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Sera.Core;
+﻿namespace Sera.Core;
 
 public interface IRuntimeProvider
 {
@@ -27,31 +25,4 @@ public interface IRuntimeProvider
     
     /// <summary>Get the deserializer dynamically</summary>
     public bool TryGetDeserialize<T>(out IDeserialize<T> deserialize);
-}
-
-public interface IAsyncRuntimeProvider
-{
-    /// <summary>Get the serializer dynamically</summary>
-    public IAsyncSerialize<object?> GetRuntimeAsyncSerialize();
-    
-    /// <summary>Get the serializer dynamically</summary>
-    public bool TryGetRuntimeAsyncSerialize(out IAsyncSerialize<object?> serialize);
-
-    /// <summary>Get the serializer dynamically</summary>
-    public IAsyncSerialize<T> GetAsyncSerialize<T>();
-    
-    /// <summary>Get the serializer dynamically</summary>
-    public bool TryGetAsyncSerialize<T>(out IAsyncSerialize<T> serialize);
-
-    /// <summary>Get the deserializer dynamically</summary>
-    public IAsyncDeserialize<object?> GetRuntimeAsyncDeserialize();
-    
-    /// <summary>Get the deserializer dynamically</summary>
-    public bool TryGetRuntimeAsyncDeserialize(out IAsyncDeserialize<object?> deserialize);
-    
-    /// <summary>Get the deserializer dynamically</summary>
-    public IAsyncDeserialize<T> GetAsyncDeserialize<T>();
-    
-    /// <summary>Get the deserializer dynamically</summary>
-    public bool TryGetAsyncDeserialize<T>(out IAsyncDeserialize<T> deserialize);
 }
