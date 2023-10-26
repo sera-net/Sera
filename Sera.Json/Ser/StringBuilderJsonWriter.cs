@@ -11,7 +11,7 @@ using Sera.Utils;
 
 namespace Sera.Json.Ser;
 
-public record StringBuilderJsonWriter
+public class StringBuilderJsonWriter
     (SeraJsonOptions Options, AJsonFormatter Formatter, StringBuilder Builder) : AJsonWriter(Options, Formatter)
 {
     public static StringBuilderJsonWriter Create(Builder<ToString> self, StringBuilder builder) =>

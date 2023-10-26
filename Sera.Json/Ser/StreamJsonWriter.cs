@@ -10,13 +10,13 @@ using Sera.Utils;
 
 namespace Sera.Json.Ser;
 
-public record StreamJsonWriter
+public class StreamJsonWriter
     (SeraJsonOptions Options, AJsonFormatter Formatter, Stream Stream) : AJsonWriter(Options, Formatter)
 {
     public static StreamJsonWriter Create(Builder<ToStream> self) =>
         new(self.Options, self.Formatter, self.Value.Stream);
 
-    private static Stream? tmpStream;
+    private Stream? tmpStream;
 
     public override Stream StartBase64()
     {

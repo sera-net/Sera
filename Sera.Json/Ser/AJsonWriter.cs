@@ -5,13 +5,14 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using Sera.Json.Utils;
-using Sera.Utils;
 
 namespace Sera.Json.Ser;
 
-public abstract record AJsonWriter(SeraJsonOptions Options, AJsonFormatter Formatter)
+public abstract class AJsonWriter(SeraJsonOptions options, AJsonFormatter formatter)
 {
-    public Encoding Encoding => Options.Encoding;
+    public SeraJsonOptions Options { get; } = options;
+    public AJsonFormatter Formatter { get; } = formatter;
+    public Encoding Encoding => options.Encoding;
 
     public abstract Stream StartBase64();
     public abstract void EndBase64();
@@ -91,7 +92,7 @@ public abstract record AJsonWriter(SeraJsonOptions Options, AJsonFormatter Forma
                 n = 0;
             }
             else if (
-                (Formatter.EscapeAllNonAsciiChar && !rune.IsAscii) ||
+                (formatter.EscapeAllNonAsciiChar && !rune.IsAscii) ||
                 Rune.GetUnicodeCategory(rune) is
                     UnicodeCategory.Control or
                     UnicodeCategory.Format or
@@ -133,7 +134,7 @@ public abstract record AJsonWriter(SeraJsonOptions Options, AJsonFormatter Forma
                 n = 0;
             }
             else if (
-                (Formatter.EscapeAllNonAsciiChar && !rune.IsAscii) ||
+                (formatter.EscapeAllNonAsciiChar && !rune.IsAscii) ||
                 Rune.GetUnicodeCategory(rune) is
                     UnicodeCategory.Control or
                     UnicodeCategory.Format or
@@ -160,7 +161,7 @@ public abstract record AJsonWriter(SeraJsonOptions Options, AJsonFormatter Forma
         if (encoding.Equals(Encoding.UTF8)) WriteEscapeUtf8(str);
         else
         {
-            var encode = Options.Encoding;
+            var encode = options.Encoding;
             var char_count = encode.GetMaxCharCount(str.Length);
             var chars = ArrayPool<char>.Shared.Rent(char_count);
             try
