@@ -1,5 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Sera.Core.De;
 using Sera.Core.Ser;
@@ -8,37 +8,55 @@ namespace Sera.Core.Impls;
 
 #region Serialize
 
-public record ArraySerializeImpl<T, ST>(ST Serialize) : ISerialize<T[]>, ISeqSerializerReceiver<T[]>
+#region Sync
+
+public readonly struct ArraySerializeImplWrapper<T>(ArraySerializeImplBase<T> Serialize) : ISerialize<T[]>
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Write<S>(S serializer, T[] value, ISeraOptions options) where S : ISerializer
+        => Serialize.Write(serializer, value, options);
+}
+
+public abstract class ArraySerializeImplBase<T> : ISerialize<T[]>
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public abstract void Write<S>(S serializer, T[] value, ISeraOptions options) where S : ISerializer;
+}
+
+public sealed class ArraySerializeImpl<T, ST>(ST Serialize) : ArraySerializeImplBase<T>
     where ST : ISerialize<T>
 {
-    public void Write<S>(S serializer, T[] value, SeraOptions options) where S : ISerializer
-    {
-        serializer.StartSeq<T, T[], ArraySerializeImpl<T, ST>>((nuint)value.Length, value, this);
-    }
-
-    public void Receive<S>(T[] value, S serialize) where S : ISeqSerializer
-    {
-        foreach (ref readonly var item in value.AsSpan())
-        {
-            serialize.WriteElement(item, Serialize);
-        }
-    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public override void Write<S>(S serializer, T[] value, ISeraOptions options)
+        => serializer.WriteArray(value, Serialize);
 }
 
-public record AsyncArraySerializeImpl<T, ST>(ST Serialize) : IAsyncSerialize<T[]>, IAsyncSeqSerializerReceiver<T[]>
+#endregion
+
+#region Async
+
+public readonly struct AsyncArraySerializeImplWrapper<T>(AsyncArraySerializeImplBase<T> Serialize) : IAsyncSerialize<T[]>
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ValueTask WriteAsync<S>(S serializer, T[] value, ISeraOptions options) where S : IAsyncSerializer
+        => Serialize.WriteAsync(serializer, value, options);
+}
+
+public abstract record AsyncArraySerializeImplBase<T> : IAsyncSerialize<T[]>
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public abstract ValueTask WriteAsync<S>(S serializer, T[] value, ISeraOptions options) where S : IAsyncSerializer;
+}
+
+public record AsyncArraySerializeImpl<T, ST>(ST Serialize) : AsyncArraySerializeImplBase<T>
     where ST : IAsyncSerialize<T>
 {
-    public ValueTask WriteAsync<S>(S serializer, T[] value, SeraOptions options) where S : IAsyncSerializer
-        => serializer.StartSeqAsync<T, T[], AsyncArraySerializeImpl<T, ST>>((nuint)value.Length, value, this);
-
-    public async ValueTask ReceiveAsync<S>(T[] value, S serialize) where S : IAsyncSeqSerializer
-    {
-        foreach (var item in value)
-        {
-            await serialize.WriteElementAsync(item, Serialize);
-        }
-    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public override ValueTask WriteAsync<S>(S serializer, T[] value, ISeraOptions options)
+        => serializer.WriteArrayAsync(value, Serialize);
 }
+
+#endregion
 
 #endregion
 
@@ -47,7 +65,7 @@ public record AsyncArraySerializeImpl<T, ST>(ST Serialize) : IAsyncSerialize<T[]
 public record ArrayDeserializeImpl<T, DT>(DT Deserialize) : IDeserialize<T[]>, ISeqDeserializerVisitor<T[]>
     where DT : IDeserialize<T>
 {
-    public T[] Read<D>(D deserializer, SeraOptions options) where D : IDeserializer
+    public T[] Read<D>(D deserializer, ISeraOptions options) where D : IDeserializer
         => deserializer.ReadSeq<T[], ArrayDeserializeImpl<T, DT>>(null, this);
 
     public T[] VisitSeq<A>(A access) where A : ISeqAccess
@@ -79,7 +97,7 @@ public record AsyncArrayDeserializeImpl<T, DT>(DT Deserialize) : IAsyncDeseriali
     IAsyncSeqDeserializerVisitor<T[]>
     where DT : IAsyncDeserialize<T>
 {
-    public ValueTask<T[]> ReadAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer
+    public ValueTask<T[]> ReadAsync<D>(D deserializer, ISeraOptions options) where D : IAsyncDeserializer
         => deserializer.ReadSeqAsync<T[], AsyncArrayDeserializeImpl<T, DT>>(null, this);
 
     public async ValueTask<T[]> VisitSeqAsync<A>(A access) where A : IAsyncSeqAccess

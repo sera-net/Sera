@@ -2,12 +2,14 @@
 
     <PropertyGroup>
         <Nullable>enable</Nullable>
-        <LangVersion>11.0</LangVersion>
-        <TargetFramework>net7.0</TargetFramework>
+        <LangVersion>12.0</LangVersion>
+        <TargetFramework>net8.0</TargetFramework>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\Sera.Core\Sera.Core.csproj" />
     </ItemGroup>
+
 
 </Project>

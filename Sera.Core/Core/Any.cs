@@ -4,6 +4,7 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
+using Sera.Core.De;
 using Sera.Core.Impls;
 
 namespace Sera.Core;
@@ -20,6 +21,7 @@ public enum SeraAnyKind : byte
     Map,
     Struct,
     Variant,
+    EmptyUnion,
 }
 
 public readonly struct SeraAny : IEquatable<SeraAny>,
@@ -31,8 +33,8 @@ public readonly struct SeraAny : IEquatable<SeraAny>,
     public static AnyImpl GetAsyncSerialize() => AnyImpl.Instance;
     public static AnyImpl GetAsyncDeserialize() => AnyImpl.Instance;
 
-    private readonly _union_ _union;
     private readonly object? _ref_object;
+    private readonly _union_ _union;
     public SeraPrimitiveTypes PrimitiveType { get; }
     public SeraAnyKind Kind { get; }
 
@@ -76,7 +78,11 @@ public readonly struct SeraAny : IEquatable<SeraAny>,
         [FieldOffset(0)]
         public Complex Complex;
         [FieldOffset(0)]
+        public TimeSpan TimeSpan;
+        [FieldOffset(0)]
         public DateOnly DateOnly;
+        [FieldOffset(0)]
+        public TimeOnly TimeOnly;
         [FieldOffset(0)]
         public DateTime DateTime;
         [FieldOffset(0)]
@@ -114,7 +120,9 @@ public readonly struct SeraAny : IEquatable<SeraAny>,
     public decimal PrimitiveDecimal => _union.Decimal;
     public BigInteger PrimitiveBigInteger => ((SeraBoxed<BigInteger>)_ref_object!).Value;
     public Complex PrimitiveComplex => _union.Complex;
+    public TimeSpan PrimitiveTimeSpan => _union.TimeSpan;
     public DateOnly PrimitiveDateOnly => _union.DateOnly;
+    public TimeOnly PrimitiveTimeOnly => _union.TimeOnly;
     public DateTime PrimitiveDateTime => _union.DateTime;
     public DateTimeOffset PrimitiveDateTimeOffset => _union.DateTimeOffset;
     public Guid PrimitiveGuid => _union.Guid;
@@ -206,8 +214,14 @@ public readonly struct SeraAny : IEquatable<SeraAny>,
     public static SeraAny MakePrimitive(Complex v)
         => new(new() { Complex = v }, null, SeraPrimitiveTypes.Complex, SeraAnyKind.Primitive);
 
+    public static SeraAny MakePrimitive(TimeSpan v)
+        => new(new() { TimeSpan = v }, null, SeraPrimitiveTypes.TimeSpan, SeraAnyKind.Primitive);
+
     public static SeraAny MakePrimitive(DateOnly v)
         => new(new() { DateOnly = v }, null, SeraPrimitiveTypes.DateOnly, SeraAnyKind.Primitive);
+
+    public static SeraAny MakePrimitive(TimeOnly v)
+        => new(new() { TimeOnly = v }, null, SeraPrimitiveTypes.TimeOnly, SeraAnyKind.Primitive);
 
     public static SeraAny MakePrimitive(DateTime v)
         => new(new() { DateTime = v }, null, SeraPrimitiveTypes.DateTime, SeraAnyKind.Primitive);
@@ -258,6 +272,9 @@ public readonly struct SeraAny : IEquatable<SeraAny>,
     public static SeraAny MakeVariant(SeraAnyVariant v)
         => new(default, v, SeraPrimitiveTypes.Unknown, SeraAnyKind.Variant);
 
+    public static SeraAny MakeEmptyUnion()
+        => new(default, null, SeraPrimitiveTypes.Unknown, SeraAnyKind.EmptyUnion);
+    
     #endregion
 
     #region Equals
@@ -289,7 +306,9 @@ public readonly struct SeraAny : IEquatable<SeraAny>,
                 SeraPrimitiveTypes.Decimal => PrimitiveDecimal == other.PrimitiveDecimal,
                 SeraPrimitiveTypes.BigInteger => PrimitiveBigInteger == other.PrimitiveBigInteger,
                 SeraPrimitiveTypes.Complex => PrimitiveComplex.Equals(other.PrimitiveComplex),
+                SeraPrimitiveTypes.TimeSpan => PrimitiveTimeSpan == other.PrimitiveTimeSpan,
                 SeraPrimitiveTypes.DateOnly => PrimitiveDateOnly == other.PrimitiveDateOnly,
+                SeraPrimitiveTypes.TimeOnly => PrimitiveTimeOnly == other.PrimitiveTimeOnly,
                 SeraPrimitiveTypes.DateTime => PrimitiveDateTime == other.PrimitiveDateTime,
                 SeraPrimitiveTypes.DateTimeOffset => PrimitiveDateTimeOffset == other.PrimitiveDateTimeOffset,
                 SeraPrimitiveTypes.Guid => PrimitiveGuid == other.PrimitiveGuid,
@@ -307,6 +326,7 @@ public readonly struct SeraAny : IEquatable<SeraAny>,
             SeraAnyKind.Map => other.Map.DictEq(other.Map),
             SeraAnyKind.Struct => Struct == other.Struct,
             SeraAnyKind.Variant => Variant == other.Variant,
+            SeraAnyKind.EmptyUnion => true,
             _ => false,
         };
     }
@@ -338,7 +358,9 @@ public readonly struct SeraAny : IEquatable<SeraAny>,
             SeraPrimitiveTypes.Decimal => HashCode.Combine(Kind, PrimitiveType, PrimitiveDecimal),
             SeraPrimitiveTypes.BigInteger => HashCode.Combine(Kind, PrimitiveType, PrimitiveBigInteger),
             SeraPrimitiveTypes.Complex => HashCode.Combine(Kind, PrimitiveType, PrimitiveComplex),
+            SeraPrimitiveTypes.TimeSpan => HashCode.Combine(Kind, PrimitiveType, PrimitiveTimeSpan),
             SeraPrimitiveTypes.DateOnly => HashCode.Combine(Kind, PrimitiveType, PrimitiveDateOnly),
+            SeraPrimitiveTypes.TimeOnly => HashCode.Combine(Kind, PrimitiveType, PrimitiveTimeOnly),
             SeraPrimitiveTypes.DateTime => HashCode.Combine(Kind, PrimitiveType, PrimitiveDateTime),
             SeraPrimitiveTypes.DateTimeOffset => HashCode.Combine(Kind, PrimitiveType, PrimitiveDateTimeOffset),
             SeraPrimitiveTypes.Guid => HashCode.Combine(Kind, PrimitiveType, PrimitiveGuid),
@@ -356,6 +378,7 @@ public readonly struct SeraAny : IEquatable<SeraAny>,
         SeraAnyKind.Map => HashCode.Combine(Kind, Map.DictHash()),
         SeraAnyKind.Struct => HashCode.Combine(Kind, Struct),
         SeraAnyKind.Variant => HashCode.Combine(Kind, Variant),
+        SeraAnyKind.EmptyUnion => HashCode.Combine(Kind),
         _ => 0
     };
 
@@ -392,7 +415,9 @@ public readonly struct SeraAny : IEquatable<SeraAny>,
             SeraPrimitiveTypes.Decimal => $"{PrimitiveDecimal}",
             SeraPrimitiveTypes.BigInteger => $"{PrimitiveBigInteger}",
             SeraPrimitiveTypes.Complex => $"{PrimitiveComplex}",
+            SeraPrimitiveTypes.TimeSpan => $"{PrimitiveTimeSpan}",
             SeraPrimitiveTypes.DateOnly => $"{PrimitiveDateOnly}",
+            SeraPrimitiveTypes.TimeOnly => $"{PrimitiveTimeOnly}",
             SeraPrimitiveTypes.DateTime => $"{PrimitiveDateTime}",
             SeraPrimitiveTypes.DateTimeOffset => $"{PrimitiveDateTimeOffset}",
             SeraPrimitiveTypes.Guid => $"{PrimitiveGuid}",
@@ -410,6 +435,7 @@ public readonly struct SeraAny : IEquatable<SeraAny>,
         SeraAnyKind.Map => $"{{ {string.Join(", ", Map.Select(static kv => $"{kv.Key}: {kv.Value}"))} }}",
         SeraAnyKind.Struct => $"{Struct}",
         SeraAnyKind.Variant => $"{Variant}",
+        SeraAnyKind.EmptyUnion => "union { }",
         _ => $"{nameof(SeraAny)}({Kind})",
     };
 
@@ -425,25 +451,28 @@ public record SeraBoxed<T>(T Value) : IEquatable<T>
     public override string ToString() => $"{Value}";
 }
 
-public record SeraAnyStruct(Dictionary<string, SeraAny> Fields)
+public record SeraAnyStruct(List<(string key, long? int_key, SeraAny value)> Fields)
 {
+    public List<(string key, long? int_key, SeraAny value)> Fields { get; set; } = Fields;
     public string? StructName { get; set; }
 
     public virtual bool Equals(SeraAnyStruct? other)
     {
         if (ReferenceEquals(null, other)) return false;
         if (ReferenceEquals(this, other)) return true;
-        return StructName == other.StructName && Fields.DictEq(other.Fields);
+        return StructName == other.StructName && Fields.SequenceEqual(other.Fields);
     }
 
     public override int GetHashCode()
     {
         // ReSharper disable once NonReadonlyMemberInGetHashCode
-        return HashCode.Combine(StructName, Fields.DictHash());
+        return HashCode.Combine(StructName, 
+            // ReSharper disable once NonReadonlyMemberInGetHashCode
+            Fields.SeqHash());
     }
 
     public override string ToString() =>
-        $"struct {StructName ?? "_"} {{ {string.Join(", ", Fields.Select(static kv => $"{kv.Key} = {kv.Value}"))} }}";
+        $"struct {StructName ?? "_"} {{ {string.Join(", ", Fields.Select(static kv => $"{kv.key} = {kv.value}"))} }}";
 }
 
 public record SeraAnyVariant(Variant Variant, SeraAny? Value)

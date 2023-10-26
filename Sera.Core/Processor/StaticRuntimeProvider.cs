@@ -1,7 +1,12 @@
 ﻿using System;
+using System.Buffers;
+using System.Collections.Frozen;
+using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text;
 using Sera.Core.Impls;
 
 namespace Sera.Core;
@@ -15,6 +20,7 @@ public class StaticRuntimeProvider : IRuntimeProvider, IAsyncRuntimeProvider
 
     private static readonly ConditionalWeakTable<Type, object> AsyncSerializeCache = new();
     private static readonly ConditionalWeakTable<Type, object> AsyncDeserializeCache = new();
+
 
     #region Serialize
 
@@ -38,7 +44,7 @@ public class StaticRuntimeProvider : IRuntimeProvider, IAsyncRuntimeProvider
         }
         r = CreateSerialize(type, static () => SkipImpl<T>.Instance);
         add:
-        SerializeCache.Add(type, r);
+        SerializeCache.TryAdd(type, r);
         return (ISerialize<T>)r;
     }
 
@@ -53,7 +59,7 @@ public class StaticRuntimeProvider : IRuntimeProvider, IAsyncRuntimeProvider
         }
         r = CreateSerialize(type, static () => null!);
         add:
-        SerializeCache.Add(type, r);
+        SerializeCache.TryAdd(type, r);
         ret:
         if (r == null!)
         {
@@ -114,7 +120,7 @@ public class StaticRuntimeProvider : IRuntimeProvider, IAsyncRuntimeProvider
         }
         r = CreateDeserialize(type, static () => SkipImpl<T>.Instance);
         add:
-        DeserializeCache.Add(type, r);
+        DeserializeCache.TryAdd(type, r);
         return (IDeserialize<T>)r;
     }
 
@@ -129,7 +135,7 @@ public class StaticRuntimeProvider : IRuntimeProvider, IAsyncRuntimeProvider
         }
         r = CreateDeserialize(type, static () => null!);
         add:
-        DeserializeCache.Add(type, r);
+        DeserializeCache.TryAdd(type, r);
         ret:
         if (r == null!)
         {
@@ -190,7 +196,7 @@ public class StaticRuntimeProvider : IRuntimeProvider, IAsyncRuntimeProvider
         }
         r = CreateAsyncSerialize(type, static () => SkipImpl<T>.Instance);
         add:
-        AsyncSerializeCache.Add(type, r);
+        AsyncSerializeCache.TryAdd(type, r);
         return (IAsyncSerialize<T>)r;
     }
 
@@ -205,7 +211,7 @@ public class StaticRuntimeProvider : IRuntimeProvider, IAsyncRuntimeProvider
         }
         r = CreateAsyncSerialize(type, static () => null!);
         add:
-        AsyncSerializeCache.Add(type, r);
+        AsyncSerializeCache.TryAdd(type, r);
         ret:
         if (r == null!)
         {
@@ -266,7 +272,7 @@ public class StaticRuntimeProvider : IRuntimeProvider, IAsyncRuntimeProvider
         }
         r = CreateAsyncDeserialize(type, static () => SkipImpl<T>.Instance);
         add:
-        AsyncDeserializeCache.Add(type, r);
+        AsyncDeserializeCache.TryAdd(type, r);
         return (IAsyncDeserialize<T>)r;
     }
 
@@ -281,7 +287,7 @@ public class StaticRuntimeProvider : IRuntimeProvider, IAsyncRuntimeProvider
         }
         r = CreateAsyncDeserialize(type, static () => null!);
         add:
-        AsyncDeserializeCache.Add(type, r);
+        AsyncDeserializeCache.TryAdd(type, r);
         ret:
         if (r == null!)
         {

@@ -15,7 +15,7 @@ public interface ISerialize<in T>
     /// Serialize this value into the given serializer.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Write<S>(S serializer, T value, SeraOptions options) where S : ISerializer;
+    public void Write<S>(S serializer, T value, ISeraOptions options) where S : ISerializer;
 }
 
 /// <summary>
@@ -27,7 +27,7 @@ public interface IAsyncSerialize<in T>
     /// Serialize this value into the given serializer.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ValueTask WriteAsync<S>(S serializer, T value, SeraOptions options) where S : IAsyncSerializer;
+    public ValueTask WriteAsync<S>(S serializer, T value, ISeraOptions options) where S : IAsyncSerializer;
 }
 
 /// <summary>
@@ -39,7 +39,7 @@ public interface IDeserialize<out T>
     /// Deserialize this value from the given deserializer.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public T Read<D>(D deserializer, SeraOptions options) where D : IDeserializer;
+    public T Read<D>(D deserializer, ISeraOptions options) where D : IDeserializer;
 }
 
 /// <summary>
@@ -51,5 +51,5 @@ public interface IAsyncDeserialize<T>
     /// Deserialize this value from the given deserializer.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public ValueTask<T> ReadAsync<D>(D deserializer, SeraOptions options) where D : IAsyncDeserializer;
+    public ValueTask<T> ReadAsync<D>(D deserializer, ISeraOptions options) where D : IAsyncDeserializer;
 }

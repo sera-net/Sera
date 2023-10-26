@@ -48,8 +48,12 @@ public struct IdentityPrimitiveVisitor<R> : IPrimitiveDeserializerVisitor<R>
     public R Visit(BigInteger value) => value is R r ? r : throw DeserializeInvalidTypeException.Unexpected(value);
 
     public R Visit(Complex value) => value is R r ? r : throw DeserializeInvalidTypeException.Unexpected(value);
+    
+    public R Visit(TimeSpan value) => value is R r ? r : throw DeserializeInvalidTypeException.Unexpected(value);
 
     public R Visit(DateOnly value) => value is R r ? r : throw DeserializeInvalidTypeException.Unexpected(value);
+    
+    public R Visit(TimeOnly value) => value is R r ? r : throw DeserializeInvalidTypeException.Unexpected(value);
 
     public R Visit(DateTime value) => value is R r ? r : throw DeserializeInvalidTypeException.Unexpected(value);
 
@@ -128,7 +132,13 @@ public struct AsyncIdentityPrimitiveVisitor<R> : IAsyncPrimitiveDeserializerVisi
     public ValueTask<R> VisitAsync(Complex value)
         => value is R r ? ValueTask.FromResult(r) : throw DeserializeInvalidTypeException.Unexpected(value);
 
+    public ValueTask<R> VisitAsync(TimeSpan value)
+        => value is R r ? ValueTask.FromResult(r) : throw DeserializeInvalidTypeException.Unexpected(value);
+    
     public ValueTask<R> VisitAsync(DateOnly value)
+        => value is R r ? ValueTask.FromResult(r) : throw DeserializeInvalidTypeException.Unexpected(value);
+    
+    public ValueTask<R> VisitAsync(TimeOnly value)
         => value is R r ? ValueTask.FromResult(r) : throw DeserializeInvalidTypeException.Unexpected(value);
 
     public ValueTask<R> VisitAsync(DateTime value)
