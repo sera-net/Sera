@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using Sera.Core;
 using Sera.Core.Ser;
+using Sera.Core.SerDe;
 
 namespace Sera.Json.Ser;
 
@@ -17,11 +18,12 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonFormatter Formatter, 
     public string FormatName => "json";
     public string FormatMIME => "application/json";
     public SeraFormatType FormatType => SeraFormatType.HumanReadableText;
+    ISeraOptions ISeraAbility.Options => Options;
 
     public IRuntimeProvider? RuntimeProviderOverride { get; set; }
 
 #pragma warning disable CS0618
-    public IRuntimeProvider RuntimeProvider => RuntimeProviderOverride ?? Options.RuntimeProvider;
+    public IRuntimeProvider RuntimeProvider => RuntimeProviderOverride ?? StaticRuntimeProvider.Instance;
 #pragma warning restore CS0618
 
 
@@ -602,9 +604,10 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonFormatter Formatter, 
         public string FormatName => self.FormatName;
         public string FormatMIME => self.FormatMIME;
         public SeraFormatType FormatType => self.FormatType;
+        public ISeraOptions Options => self.Options;
 
         public IRuntimeProvider RuntimeProvider => self.RuntimeProvider;
-        
+
         public void WriteString(ReadOnlySpan<char> value)
             => self.WriteString(value);
 

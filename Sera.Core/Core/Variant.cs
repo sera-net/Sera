@@ -261,3 +261,10 @@ public enum VariantKind : byte
     Tag,
     NameAndTag,
 }
+
+public enum VariantPriority : byte
+{
+    Any,
+    TagFirst,
+    NameFirst,
+}

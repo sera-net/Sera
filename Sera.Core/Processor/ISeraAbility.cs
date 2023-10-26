@@ -16,6 +16,11 @@ public interface ISeraAbility
     /// Get what type of format the current (de)serializer is
     /// </summary>
     public SeraFormatType FormatType { get; }
+    
+    /// <summary>
+    /// Get options
+    /// </summary>
+    public ISeraOptions Options { get; }
 
     /// <summary>
     /// Runtime provider

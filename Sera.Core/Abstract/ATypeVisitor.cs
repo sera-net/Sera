@@ -1,0 +1,246 @@
+﻿using System;
+using System.Buffers;
+using System.Collections.Generic;
+using System.Numerics;
+using System.Runtime.InteropServices;
+using System.Text;
+
+namespace Sera.Core;
+
+public abstract class ATypeVisitor<R> : SeraBase
+{
+    #region Reference
+
+    public abstract R VReference<V, T>(V vision, T value) where V : ITypeVision<T> where T : class;
+
+    #endregion
+
+    #region Primitive
+
+    public abstract R VPrimitive(bool value, ReadOnlyMemory<Formats> formats = default);
+
+    public abstract R VPrimitive(sbyte value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(byte value, ReadOnlyMemory<Formats> formats = default);
+
+    public abstract R VPrimitive(short value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(ushort value, ReadOnlyMemory<Formats> formats = default);
+
+    public abstract R VPrimitive(int value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(uint value, ReadOnlyMemory<Formats> formats = default);
+
+    public abstract R VPrimitive(long value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(ulong value, ReadOnlyMemory<Formats> formats = default);
+
+    public abstract R VPrimitive(Int128 value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(UInt128 value, ReadOnlyMemory<Formats> formats = default);
+
+    public abstract R VPrimitive(nint value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(nuint value, ReadOnlyMemory<Formats> formats = default);
+
+    public abstract R VPrimitive(Half value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(float value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(double value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(decimal value, ReadOnlyMemory<Formats> formats = default);
+
+    public abstract R VPrimitive(BigInteger value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(Complex value, ReadOnlyMemory<Formats> formats = default);
+
+    public abstract R VPrimitive(TimeSpan value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(DateOnly value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(TimeOnly value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(DateTime value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(DateTimeOffset value, ReadOnlyMemory<Formats> formats = default);
+
+    public abstract R VPrimitive(Guid value, ReadOnlyMemory<Formats> formats = default);
+
+    public abstract R VPrimitive(Range value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(Index value, ReadOnlyMemory<Formats> formats = default);
+
+    public abstract R VPrimitive(char value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(Rune value, ReadOnlyMemory<Formats> formats = default);
+
+    public abstract R VPrimitive(Uri value, ReadOnlyMemory<Formats> formats = default);
+
+    public abstract R VPrimitive(Version value, ReadOnlyMemory<Formats> formats = default);
+
+    #endregion
+
+    #region String
+
+    public virtual R VString(string value) => VString(value.AsSpan());
+    public virtual R VString(char[] value) => VString(value.AsSpan());
+    public virtual R VString(List<char> value) => VString(CollectionsMarshal.AsSpan(value));
+    public virtual R VString(ReadOnlyMemory<char> value) => VString(value.Span);
+    public abstract R VString(ReadOnlySpan<char> value);
+
+    #endregion
+
+    #region String Encoded
+
+    public virtual R VString(byte[] value, Encoding encoding) =>
+        VString(value.AsSpan(), encoding);
+
+    public virtual R VString(List<byte> value, Encoding encoding) =>
+        VString(CollectionsMarshal.AsSpan(value), encoding);
+
+    public virtual R VString(ReadOnlyMemory<byte> value, Encoding encoding) =>
+        VString(value.Span, encoding);
+
+    public abstract R VString(ReadOnlySpan<byte> value, Encoding encoding);
+
+    #endregion
+
+    #region Bytes
+
+    public virtual R VBytes(byte[] value) => VBytes(value.AsSpan());
+    public virtual R VBytes(List<byte> value) => VBytes(CollectionsMarshal.AsSpan(value));
+    public virtual R VBytes(ReadOnlyMemory<byte> value) => VBytes(value.Span);
+    public abstract R VBytes(ReadOnlySequence<byte> value);
+    public abstract R VBytes(ReadOnlySpan<byte> value);
+
+    #endregion
+
+    #region Array
+
+    public virtual R VArray<V, T>(V vision, T[] value) where V : ITypeVision<T> =>
+        VArray<V, T>(vision, value.AsSpan());
+
+    public virtual R VArray<V, T>(V vision, List<T> value) where V : ITypeVision<T> =>
+        VArray<V, T>(vision, CollectionsMarshal.AsSpan(value));
+
+    public virtual R VArray<V, T>(V vision, ReadOnlyMemory<T> value) where V : ITypeVision<T> =>
+        VArray(vision, value.Span);
+
+    public abstract R VArray<V, T>(V vision, ReadOnlySequence<T> value) where V : ITypeVision<T>;
+    public abstract R VArray<V, T>(V vision, ReadOnlySpan<T> value) where V : ITypeVision<T>;
+
+    #endregion
+
+    #region Unit
+
+    public abstract R VUnit();
+
+    #endregion
+
+    #region Option
+
+    public abstract R VNone();
+
+    public virtual R VNone<T>() => VNone();
+
+    public abstract R VSome<V, T>(V vision, T value) where V : ITypeVision<T>;
+
+    #endregion
+
+    #region Entry
+
+    public abstract R VEntry<KV, VV, IK, IV>(KV keyVision, VV valueVision, IK key, IV value)
+        where KV : ITypeVision<IK>
+        where VV : ITypeVision<IV>;
+
+    #endregion
+
+    #region Tuple
+
+    public abstract R VTuple<V, T>(V vision, T value) where V : ITupleTypeVision<T>;
+
+    #endregion
+
+    #region Seq
+
+    public abstract R VSeq<V>(V vision) where V : ISeqTypeVision;
+
+    public virtual R VSeq<V, T>(V vision) where V : ISeqTypeVision
+        => VSeq(vision);
+
+    public virtual R VSeq<V, T, I>(V vision) where V : ISeqTypeVision
+        => VSeq<V, T>(vision);
+
+    #endregion
+
+    #region Map
+
+    public abstract R VMap<V>(V vision) where V : IMapTypeVision;
+
+    public virtual R VMap<V, T>(V vision) where V : IMapTypeVision
+        => VMap(vision);
+
+    public virtual R VMap<V, T, IK, IV>(V vision) where V : IMapTypeVision
+        => VMap<V, T>(vision);
+
+    #endregion
+
+    #region Struct
+
+    public abstract R VStruct<V, T>(V vision, T value) where V : IStructTypeVision<T>;
+
+    #endregion
+
+    #region Union
+
+    public abstract R VUnion<V, T>(V vision, T value) where V : IUnionTypeVision<T>;
+
+    #endregion
+}
+
+#region Tuple
+
+public abstract class ATupleTypeVisitor<R>(ATypeVisitor<R> Base) : SeraBaseForward(Base)
+{
+    public abstract R VItem<T, V>(V Vision, T value)
+        where V : ITypeVision<T>;
+
+    public abstract R VNone();
+}
+
+#endregion
+
+#region Seq
+
+public abstract class ASeqTypeVisitor<R>(ATypeVisitor<R> Base) : SeraBaseForward(Base)
+{
+    public abstract R VItem<T, V>(V Vision, T value)
+        where V : ITypeVision<T>;
+
+    public abstract R VEnd();
+}
+
+#endregion
+
+#region Map
+
+public abstract class AMapTypeVisitor<R>(ATypeVisitor<R> Base) : SeraBaseForward(Base)
+{
+    public abstract R VEntry<KV, VV, IK, IV>(KV keyVision, VV valueVision, IK key, IV value)
+        where KV : ITypeVision<IK>
+        where VV : ITypeVision<IV>;
+
+    public abstract R VEnd();
+}
+
+#endregion
+
+#region Struct
+
+public abstract class AStructTypeVisitor<R>(ATypeVisitor<R> Base) : SeraBaseForward(Base)
+{
+    public abstract R VField<T, V>(T value, V vision, string name, long key) where V : ITypeVision<T>;
+
+    public abstract R VNone();
+}
+
+#endregion
+
+#region Union
+
+public abstract class AUnionTypeVisitor<R>(ATypeVisitor<R> Base) : SeraBaseForward(Base)
+{
+    public abstract R VEmpty();
+
+    public abstract R VVariant(Variant variant, VariantPriority priority);
+
+    public abstract R VVariant<T, V>(T value, V vision, Variant variant, VariantPriority priority)
+        where V : ITypeVision<T>;
+}
+
+#endregion
