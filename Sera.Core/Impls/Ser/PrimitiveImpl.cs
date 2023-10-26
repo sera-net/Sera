@@ -2,10 +2,11 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Sera.Utils;
 
 namespace Sera.Core.Impls.Ser;
 
-public readonly struct PrimitiveImpl(ReadOnlyMemory<Formats> formats = default) :
+public readonly struct PrimitiveImpl(SeraFormats? formats = null) :
     ITypeVision<bool>,
     ITypeVision<sbyte>, ITypeVision<byte>,
     ITypeVision<short>, ITypeVision<ushort>,

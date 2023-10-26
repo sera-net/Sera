@@ -17,51 +17,51 @@ public abstract class ATypeVisitor<R> : SeraBase
 
     #region Primitive
 
-    public abstract R VPrimitive(bool value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(bool value, SeraFormats? formats = null);
 
-    public abstract R VPrimitive(sbyte value, ReadOnlyMemory<Formats> formats = default);
-    public abstract R VPrimitive(byte value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(sbyte value, SeraFormats? formats = null);
+    public abstract R VPrimitive(byte value, SeraFormats? formats = null);
 
-    public abstract R VPrimitive(short value, ReadOnlyMemory<Formats> formats = default);
-    public abstract R VPrimitive(ushort value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(short value, SeraFormats? formats = null);
+    public abstract R VPrimitive(ushort value, SeraFormats? formats = null);
 
-    public abstract R VPrimitive(int value, ReadOnlyMemory<Formats> formats = default);
-    public abstract R VPrimitive(uint value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(int value, SeraFormats? formats = null);
+    public abstract R VPrimitive(uint value, SeraFormats? formats = null);
 
-    public abstract R VPrimitive(long value, ReadOnlyMemory<Formats> formats = default);
-    public abstract R VPrimitive(ulong value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(long value, SeraFormats? formats = null);
+    public abstract R VPrimitive(ulong value, SeraFormats? formats = null);
 
-    public abstract R VPrimitive(Int128 value, ReadOnlyMemory<Formats> formats = default);
-    public abstract R VPrimitive(UInt128 value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(Int128 value, SeraFormats? formats = null);
+    public abstract R VPrimitive(UInt128 value, SeraFormats? formats = null);
 
-    public abstract R VPrimitive(nint value, ReadOnlyMemory<Formats> formats = default);
-    public abstract R VPrimitive(nuint value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(nint value, SeraFormats? formats = null);
+    public abstract R VPrimitive(nuint value, SeraFormats? formats = null);
 
-    public abstract R VPrimitive(Half value, ReadOnlyMemory<Formats> formats = default);
-    public abstract R VPrimitive(float value, ReadOnlyMemory<Formats> formats = default);
-    public abstract R VPrimitive(double value, ReadOnlyMemory<Formats> formats = default);
-    public abstract R VPrimitive(decimal value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(Half value, SeraFormats? formats = null);
+    public abstract R VPrimitive(float value, SeraFormats? formats = null);
+    public abstract R VPrimitive(double value, SeraFormats? formats = null);
+    public abstract R VPrimitive(decimal value, SeraFormats? formats = null);
 
-    public abstract R VPrimitive(BigInteger value, ReadOnlyMemory<Formats> formats = default);
-    public abstract R VPrimitive(Complex value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(BigInteger value, SeraFormats? formats = null);
+    public abstract R VPrimitive(Complex value, SeraFormats? formats = null);
 
-    public abstract R VPrimitive(TimeSpan value, ReadOnlyMemory<Formats> formats = default);
-    public abstract R VPrimitive(DateOnly value, ReadOnlyMemory<Formats> formats = default);
-    public abstract R VPrimitive(TimeOnly value, ReadOnlyMemory<Formats> formats = default);
-    public abstract R VPrimitive(DateTime value, ReadOnlyMemory<Formats> formats = default);
-    public abstract R VPrimitive(DateTimeOffset value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(TimeSpan value, SeraFormats? formats = null);
+    public abstract R VPrimitive(DateOnly value, SeraFormats? formats = null);
+    public abstract R VPrimitive(TimeOnly value, SeraFormats? formats = null);
+    public abstract R VPrimitive(DateTime value, SeraFormats? formats = null);
+    public abstract R VPrimitive(DateTimeOffset value, SeraFormats? formats = null);
 
-    public abstract R VPrimitive(Guid value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(Guid value, SeraFormats? formats = null);
 
-    public abstract R VPrimitive(Range value, ReadOnlyMemory<Formats> formats = default);
-    public abstract R VPrimitive(Index value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(Range value, SeraFormats? formats = null);
+    public abstract R VPrimitive(Index value, SeraFormats? formats = null);
 
-    public abstract R VPrimitive(char value, ReadOnlyMemory<Formats> formats = default);
-    public abstract R VPrimitive(Rune value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(char value, SeraFormats? formats = null);
+    public abstract R VPrimitive(Rune value, SeraFormats? formats = null);
 
-    public abstract R VPrimitive(Uri value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(Uri value, SeraFormats? formats = null);
 
-    public abstract R VPrimitive(Version value, ReadOnlyMemory<Formats> formats = default);
+    public abstract R VPrimitive(Version value, SeraFormats? formats = null);
 
     #endregion
 
@@ -185,9 +185,9 @@ public abstract class ATypeVisitor<R> : SeraBase
 
 #region Tuple
 
-public abstract class ATupleTypeVisitor<R>(ATypeVisitor<R> Base) : SeraBaseForward(Base)
+public abstract class ATupleTypeVisitor<R>(SeraBase Base) : SeraBaseForward(Base)
 {
-    public abstract R VItem<T, V>(V Vision, T value)
+    public abstract R VItem<T, V>(V vision, T value)
         where V : ITypeVision<T>;
 
     public abstract R VNone();
@@ -197,9 +197,9 @@ public abstract class ATupleTypeVisitor<R>(ATypeVisitor<R> Base) : SeraBaseForwa
 
 #region Seq
 
-public abstract class ASeqTypeVisitor<R>(ATypeVisitor<R> Base) : SeraBaseForward(Base)
+public abstract class ASeqTypeVisitor<R>(SeraBase Base) : SeraBaseForward(Base)
 {
-    public abstract R VItem<T, V>(V Vision, T value)
+    public abstract R VItem<T, V>(V vision, T value)
         where V : ITypeVision<T>;
 
     public abstract R VEnd();
@@ -209,7 +209,7 @@ public abstract class ASeqTypeVisitor<R>(ATypeVisitor<R> Base) : SeraBaseForward
 
 #region Map
 
-public abstract class AMapTypeVisitor<R>(ATypeVisitor<R> Base) : SeraBaseForward(Base)
+public abstract class AMapTypeVisitor<R>(SeraBase Base) : SeraBaseForward(Base)
 {
     public abstract R VEntry<KV, VV, IK, IV>(KV keyVision, VV valueVision, IK key, IV value)
         where KV : ITypeVision<IK>
@@ -222,9 +222,9 @@ public abstract class AMapTypeVisitor<R>(ATypeVisitor<R> Base) : SeraBaseForward
 
 #region Struct
 
-public abstract class AStructTypeVisitor<R>(ATypeVisitor<R> Base) : SeraBaseForward(Base)
+public abstract class AStructTypeVisitor<R>(SeraBase Base) : SeraBaseForward(Base)
 {
-    public abstract R VField<T, V>(T value, V vision, string name, long key) where V : ITypeVision<T>;
+    public abstract R VField<V, T>(V vision, T value, string name, long key) where V : ITypeVision<T>;
 
     public abstract R VNone();
 }
@@ -233,14 +233,17 @@ public abstract class AStructTypeVisitor<R>(ATypeVisitor<R> Base) : SeraBaseForw
 
 #region Union
 
-public abstract class AUnionTypeVisitor<R>(ATypeVisitor<R> Base) : SeraBaseForward(Base)
+public abstract class AUnionTypeVisitor<R>(SeraBase Base) : SeraBaseForward(Base)
 {
     public abstract R VEmpty();
 
-    public abstract R VVariant(Variant variant, VariantPriority priority);
+    public abstract R VVariant(Variant variant, UnionStyle? style = null);
 
-    public abstract R VVariant<T, V>(T value, V vision, Variant variant, VariantPriority priority)
+    public abstract R VVariant<V, T>(V vision, T value, Variant variant, UnionStyle? style = null)
         where V : ITypeVision<T>;
+    
+    public abstract R VVariantStruct<V, T>(V vision, T value, Variant variant, UnionStyle? style = null)
+        where V : IStructTypeVision<T>;
 }
 
 #endregion

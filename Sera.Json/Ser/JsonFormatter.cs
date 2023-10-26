@@ -1,13 +1,11 @@
-﻿using System.Text;
+﻿using Sera.Core;
 
 namespace Sera.Json.Ser;
 
-public abstract record AJsonFormatter
+public abstract record AJsonFormatter : ACommonTextFormatter
 {
     public bool LargeNumberUseString { get; set; } = true;
     public bool DecimalUseString { get; set; } = true;
-    public bool Base64Bytes { get; set; } = true;
-    public bool EscapeAllNonAsciiChar { get; set; } = false;
 }
 
 public record CompactJsonFormatter : AJsonFormatter

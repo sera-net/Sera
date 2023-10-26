@@ -268,3 +268,39 @@ public enum VariantPriority : byte
     TagFirst,
     NameFirst,
 }
+
+public enum UnionFormat
+{
+    /// <summary>
+    /// Json is <code>{ "Tag": Value }</code>
+    /// </summary>
+    External,
+    /// <summary>
+    /// Json is <code>{ "type": Tag, ...Value }</code>
+    /// </summary>
+    Internal,
+    /// <summary>
+    /// Json is <code>{ "t": Tag, "c": Value }</code>
+    /// </summary>
+    Adjacent,
+    /// <summary>
+    /// Json is <code>[Tag, Value]</code>
+    /// </summary>
+    Tuple,
+    /// <summary>
+    /// Json is <code>Value</code>
+    /// </summary>
+    Untagged,
+}
+
+public record UnionStyle(
+    VariantPriority VariantPriority = VariantPriority.Any,
+    SeraFormats? VariantFormats = null,
+    UnionFormat? Format = default,
+    string InternalTagName = "type",
+    string AdjacentTagName = "t",
+    string AdjacentValueName = "c"
+)
+{
+    public static UnionStyle Default { get; } = new();
+}
