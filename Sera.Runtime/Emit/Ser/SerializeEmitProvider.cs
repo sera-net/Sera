@@ -233,8 +233,9 @@ internal class SerializeEmitProvider : AEmitProvider
         var item_type = target.Type.GetElementType()!;
         if (target.IsSZArray)
         {
-            if (target.Type.IsVisible) return new Jobs._Array._SZ_Public(item_type);
-            else return new Jobs._Array._SZ_Private(item_type);
+            return new Jobs._Array._SZ_Private(item_type);
+            // if (target.Type.IsVisible) return new Jobs._Array._SZ_Public(item_type);
+            // else return new Jobs._Array._SZ_Private(item_type);
         }
         throw new NotSupportedException("Multidimensional and non-zero lower bound arrays are not supported");
     }
