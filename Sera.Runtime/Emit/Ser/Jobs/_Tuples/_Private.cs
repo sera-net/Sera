@@ -37,10 +37,10 @@ internal class _Private(bool IsValueTuple, Type[] ItemTypes) : _Tuples(IsValueTu
         else return new EmitTransform[] { wrapper, new Transforms._ReferenceTypeWrapperSerializeImpl() };
     }
 
-    public override Type GetEmitType(EmitStub stub, EmitMeta target, DepItem[] deps)
+    public override Type GetEmitType(EmitStub stub, EmitMeta target, EmitDeps deps)
         => BaseType;
 
-    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, DepItem[] deps)
+    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, RuntimeDeps deps)
         => BaseType;
 
     public override Type GetEmitPlaceholderType(EmitStub stub, EmitMeta target)

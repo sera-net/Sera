@@ -20,6 +20,10 @@ namespace Sera.Runtime.Utils;
 
 internal static class ReflectionUtils
 {
+    public static bool IsTypeBuilder(this Type type) =>
+        type is TypeBuilder ||
+        type is { IsGenericType: true } && type.GetGenericArguments().AsParallel().Any(IsTypeBuilder);
+    
     public static ConstructorInfo NullReferenceException_ctor { get; } =
         typeof(NullReferenceException).GetConstructor(
             BindingFlags.Public | BindingFlags.Instance,

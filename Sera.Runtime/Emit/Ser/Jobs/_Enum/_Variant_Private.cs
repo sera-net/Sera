@@ -57,10 +57,10 @@ internal class _Variant_Private
     public override DepMeta[] CollectDeps(EmitStub stub, EmitMeta target)
         => Array.Empty<DepMeta>();
 
-    public override Type GetEmitType(EmitStub stub, EmitMeta target, DepItem[] deps)
+    public override Type GetEmitType(EmitStub stub, EmitMeta target, EmitDeps deps)
         => ImplType;
 
-    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, DepItem[] deps)
+    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, RuntimeDeps deps)
         => ImplType;
 
     public override Type GetEmitPlaceholderType(EmitStub stub, EmitMeta target)

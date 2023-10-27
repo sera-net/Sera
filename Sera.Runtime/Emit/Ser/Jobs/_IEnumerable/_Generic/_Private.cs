@@ -28,13 +28,13 @@ internal class _Private(Type ItemType) : _Generic(ItemType)
     public override Type GetEmitPlaceholderType(EmitStub stub, EmitMeta target)
         => BaseType;
 
-    public override Type GetEmitType(EmitStub stub, EmitMeta target, DepItem[] deps)
+    public override Type GetEmitType(EmitStub stub, EmitMeta target, EmitDeps deps)
         => BaseType;
 
     public override Type GetRuntimePlaceholderType(EmitStub stub, EmitMeta target)
         => BaseType;
 
-    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, DepItem[] deps)
+    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, RuntimeDeps deps)
         => BaseType;
 
     public override void Emit(EmitStub stub, EmitMeta target, EmitDeps deps) { }

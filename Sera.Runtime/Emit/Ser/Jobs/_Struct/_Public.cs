@@ -31,9 +31,9 @@ internal sealed class _Public(StructMember[] Members) : _Struct(Members)
 
     public override Type GetRuntimePlaceholderType(EmitStub stub, EmitMeta target) => RuntimeType;
 
-    public override Type GetEmitType(EmitStub stub, EmitMeta target, DepItem[] deps) => TypeBuilder;
+    public override Type GetEmitType(EmitStub stub, EmitMeta target, EmitDeps deps) => TypeBuilder;
 
-    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, DepItem[] deps) => RuntimeType;
+    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, RuntimeDeps deps) => RuntimeType;
 
     public override void Emit(EmitStub stub, EmitMeta target, EmitDeps deps)
     {

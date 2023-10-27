@@ -22,10 +22,10 @@ internal class _Private(Type UnderlyingType) : _Nullable(UnderlyingType)
     public override EmitTransform[] CollectTransforms(EmitStub stub, EmitMeta target)
         => Transforms;
     
-    public override Type GetEmitType(EmitStub stub, EmitMeta target, DepItem[] deps)
+    public override Type GetEmitType(EmitStub stub, EmitMeta target, EmitDeps deps)
         => ImplType;
 
-    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, DepItem[] deps)
+    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, RuntimeDeps deps)
         => ImplType;
 
     public override Type GetEmitPlaceholderType(EmitStub stub, EmitMeta target)

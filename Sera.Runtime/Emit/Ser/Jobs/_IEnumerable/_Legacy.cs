@@ -22,13 +22,13 @@ internal class _Legacy : _IEnumerable
     public override Type GetEmitPlaceholderType(EmitStub stub, EmitMeta target)
         => ImplType;
 
-    public override Type GetEmitType(EmitStub stub, EmitMeta target, DepItem[] deps)
+    public override Type GetEmitType(EmitStub stub, EmitMeta target, EmitDeps deps)
         => ImplType;
 
     public override Type GetRuntimePlaceholderType(EmitStub stub, EmitMeta target)
         => ImplType;
 
-    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, DepItem[] deps)
+    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, RuntimeDeps deps)
         => ImplType;
 
     public override void Emit(EmitStub stub, EmitMeta target, EmitDeps deps) { }

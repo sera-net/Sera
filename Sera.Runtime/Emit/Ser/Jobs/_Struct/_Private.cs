@@ -19,10 +19,10 @@ internal class _Private(StructMember[] Members) : _Struct(Members)
         ImplType = typeof(PrivateStructSerializeImpl<>).MakeGenericType(target.Type);
     }
 
-    public override Type GetEmitType(EmitStub stub, EmitMeta target, DepItem[] deps)
+    public override Type GetEmitType(EmitStub stub, EmitMeta target, EmitDeps deps)
         => ImplType;
 
-    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, DepItem[] deps)
+    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, RuntimeDeps deps)
         => ImplType;
 
     public override Type GetEmitPlaceholderType(EmitStub stub, EmitMeta target)

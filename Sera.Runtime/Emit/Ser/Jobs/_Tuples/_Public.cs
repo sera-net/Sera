@@ -31,13 +31,13 @@ internal class _Public(bool IsValueTuple, Type[] ItemTypes) : _Tuples(IsValueTup
         else return SerializeEmitProvider.ReferenceTypeTransforms;
     }
     
-    public override Type GetEmitType(EmitStub stub, EmitMeta target, DepItem[] deps)
+    public override Type GetEmitType(EmitStub stub, EmitMeta target, EmitDeps deps)
         => TypeBuilder;
 
     public override Type GetEmitPlaceholderType(EmitStub stub, EmitMeta target)
         => TypeBuilder;
 
-    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, DepItem[] deps)
+    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, RuntimeDeps deps)
         => RuntimeType;
 
     public override Type GetRuntimePlaceholderType(EmitStub stub, EmitMeta target)

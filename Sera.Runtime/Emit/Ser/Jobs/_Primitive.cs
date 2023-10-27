@@ -23,13 +23,13 @@ internal class _Primitive : _Base
     public override DepMeta[] CollectDeps(EmitStub stub, EmitMeta target)
         => Array.Empty<DepMeta>();
 
-    public override Type GetEmitType(EmitStub stub, EmitMeta target, DepItem[] deps)
+    public override Type GetEmitType(EmitStub stub, EmitMeta target, EmitDeps deps)
         => Type;
 
     public override Type GetEmitPlaceholderType(EmitStub stub, EmitMeta target)
         => Type;
 
-    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, DepItem[] deps)
+    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, RuntimeDeps deps)
         => Type;
 
     public override Type GetRuntimePlaceholderType(EmitStub stub, EmitMeta target)

@@ -28,10 +28,10 @@ internal class _Public(Type UnderlyingType) : _Nullable(UnderlyingType)
     public override Type GetRuntimePlaceholderType(EmitStub stub, EmitMeta target)
         => RuntimeType;
 
-    public override Type GetEmitType(EmitStub stub, EmitMeta target, DepItem[] deps)
+    public override Type GetEmitType(EmitStub stub, EmitMeta target, EmitDeps deps)
         => TypeBuilder;
 
-    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, DepItem[] deps)
+    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, RuntimeDeps deps)
         => RuntimeType;
 
     public override void Emit(EmitStub stub, EmitMeta target, EmitDeps deps)

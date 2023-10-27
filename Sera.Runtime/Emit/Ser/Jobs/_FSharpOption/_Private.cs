@@ -13,10 +13,10 @@ internal abstract class _Private(Type UnderlyingType) : _FSharpOption(Underlying
     public override Type GetRuntimePlaceholderType(EmitStub stub, EmitMeta target)
         => Type;
 
-    public override Type GetEmitType(EmitStub stub, EmitMeta target, DepItem[] deps)
+    public override Type GetEmitType(EmitStub stub, EmitMeta target, EmitDeps deps)
         => Type;
 
-    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, DepItem[] deps)
+    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, RuntimeDeps deps)
         => Type;
 
     public override void Emit(EmitStub stub, EmitMeta target, EmitDeps deps) { }

@@ -52,7 +52,7 @@ public static class EmitDepContainer
                 var t_type = boxed ? typeof(Box<>).MakeGenericType(emit_type) : emit_type;
                 var applied_container = container.MakeGenericType(t_type);
                 MethodInfo applied_get;
-                if (dep.EmitTypeIsTypeBuilder)
+                if (applied_container.IsTypeBuilder())
                 {
                     var get = container.GetMethod(GetImplName, BindingFlags.Public | BindingFlags.Static)!;
                     applied_get = TypeBuilder.GetMethod(applied_container, get);

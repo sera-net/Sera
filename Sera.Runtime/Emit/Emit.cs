@@ -93,8 +93,6 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
     private EmitDeps? emitDeps;
     private RuntimeDeps? runtimeDeps;
 
-    public bool EmitTypeIsTypeBuilder { get; private set; }
-
     public ExceptionDispatchInfo? Exception { get; private set; }
 
     public object? GetResult()
@@ -224,7 +222,6 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
                 ReadyChildDeps(ctx);
                 CheckDepsCircular();
                 BuildEmitType(false);
-                CheckEmitTypeIsTypeBuilder();
                 SetState(EmitStubState.DepsReady);
             }
             catch (Exception e)
@@ -292,26 +289,17 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
         }
         else
         {
-            var deps = Deps;
             if (RawEmitType == null)
             {
                 Deps.AsParallel().ForAll(dep => dep.Stub.BuildEmitType(dep.UsePlaceholder));
                 lock (MakeRawEmitPlaceholderTypeLock)
                 {
-                    RawEmitType ??= Job.GetEmitType(this, Target, deps);
+                    emitDeps = EmitDepContainer.BuildEmitDeps(this, Deps);
+                    RawEmitType ??= Job.GetEmitType(this, Target, emitDeps);
                 }
             }
         }
     }
-
-    private void CheckEmitTypeIsTypeBuilder()
-    {
-        EmitTypeIsTypeBuilder = IsTypeBuilder(RawEmitType!);
-    }
-
-    private bool IsTypeBuilder(Type type) =>
-        type is TypeBuilder ||
-        type is { IsGenericType: true } && type.GetGenericArguments().AsParallel().Any(IsTypeBuilder);
 
     #endregion
 
@@ -343,8 +331,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
 
     private void Emit()
     {
-        var deps = emitDeps = EmitDepContainer.BuildEmitDeps(this, Deps);
-        Job.Emit(this, Target, deps);
+        Job.Emit(this, Target, emitDeps!);
     }
 
     private void EmitDeps(EmitCtx ctx)
@@ -403,13 +390,13 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
         }
         else
         {
-            var deps = Deps;
             if (RawRuntimeType == null)
             {
                 Deps.AsParallel().ForAll(dep => dep.Stub.BuildRuntimeType(dep.UsePlaceholder));
                 lock (MakeRawRuntimePlaceholderTypeLock)
                 {
-                    RawRuntimeType ??= Job.GetRuntimeType(this, Target, deps);
+                    runtimeDeps = EmitDepContainer.BuildRuntimeDeps(emitDeps!);
+                    RawRuntimeType ??= Job.GetRuntimeType(this, Target, runtimeDeps);
                 }
             }
         }
@@ -445,8 +432,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
 
     private void CreateInst()
     {
-        var deps = runtimeDeps = EmitDepContainer.BuildRuntimeDeps(emitDeps!);
-        RawInst = Job.CreateInst(this, Target, deps);
+        RawInst = Job.CreateInst(this, Target, runtimeDeps!);
         Debug.Assert(RawInst != null);
     }
 
@@ -567,10 +553,10 @@ internal abstract class EmitJob
     public abstract Type GetRuntimePlaceholderType(EmitStub stub, EmitMeta target);
 
     /// <summary>Create emit type</summary>
-    public abstract Type GetEmitType(EmitStub stub, EmitMeta target, DepItem[] deps);
+    public abstract Type GetEmitType(EmitStub stub, EmitMeta target, EmitDeps deps);
 
     /// <summary>Create runtime type</summary>
-    public abstract Type GetRuntimeType(EmitStub stub, EmitMeta target, DepItem[] deps);
+    public abstract Type GetRuntimeType(EmitStub stub, EmitMeta target, RuntimeDeps deps);
 
     /// <summary>Emit if need</summary>
     public abstract void Emit(EmitStub stub, EmitMeta target, EmitDeps deps);

@@ -2502,6 +2502,47 @@ public class TestRuntime
 
     #endregion
 
+    #region PrivateArray3
+
+    private class StructPrivateArray3 { }
+
+    [Test]
+    public void TestPrivateArray3()
+    {
+        var obj = new[] { new StructPrivateArray3() };
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[{}]"));
+    }
+
+    #endregion
+
+    #region PrivateArray2
+
+    private class StructPrivateArray4
+    {
+        public StructPrivateArray4?[] A { get; set; } = { null };
+    }
+
+    [Test]
+    public void TestPrivateArray4()
+    {
+        var obj = new StructPrivateArray4();
+
+        var str = SeraJson.Serializer
+            .ToString()
+            .Serialize(obj);
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"A\":[null]}"));
+    }
+
+    #endregion
+
     #region List1
 
     [Test]
