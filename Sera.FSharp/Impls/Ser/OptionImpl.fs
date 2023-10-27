@@ -3,7 +3,7 @@
 open System.Runtime.CompilerServices
 open Sera.Core
 
-[<IsReadOnly; Struct>]
+[<IsReadOnly; Struct; NoEquality; NoComparison>]
 type OptionImpl<'T, 'D when 'D :> ISeraVision<'T>>(dep: 'D) =
     interface ISeraVision<'T option> with
         [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
@@ -15,7 +15,7 @@ type OptionImpl<'T, 'D when 'D :> ISeraVision<'T>>(dep: 'D) =
         | None -> visitor.VNone()
         | Some v -> visitor.VSome(dep, v)
 
-[<IsReadOnly; Struct>]
+[<IsReadOnly; Struct; NoEquality; NoComparison>]
 type ValueOptionImpl<'T, 'D when 'D :> ISeraVision<'T>>(dep: 'D) =
     interface ISeraVision<'T ValueOption> with
         [<MethodImpl(MethodImplOptions.AggressiveInlining)>]
