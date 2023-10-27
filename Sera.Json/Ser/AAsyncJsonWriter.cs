@@ -5,6 +5,7 @@ using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 using Sera.Json.Utils;
+using Sera.Utils;
 
 namespace Sera.Json.Ser;
 
@@ -20,6 +21,9 @@ public abstract class AAsyncJsonWriter(SeraJsonOptions options, AJsonFormatter f
     public virtual ValueTask Write(string str) => Write(str.AsMemory());
     public abstract ValueTask WriteEncoded(ReadOnlyMemory<byte> str, Encoding encoding);
 
+    public virtual ValueTask WriteString(string str, bool escape)
+        => WriteString(str.AsMemory(), escape);
+    
     public virtual async ValueTask WriteString(ReadOnlyMemory<char> str, bool escape)
     {
         await Write("\"");
@@ -27,7 +31,7 @@ public abstract class AAsyncJsonWriter(SeraJsonOptions options, AJsonFormatter f
         else await Write(str);
         await Write("\"");
     }
-
+    
     public virtual async ValueTask WriteStringEncoded(ReadOnlyMemory<byte> str, Encoding encoding, bool escape)
     {
         await Write("\"");
@@ -35,48 +39,40 @@ public abstract class AAsyncJsonWriter(SeraJsonOptions options, AJsonFormatter f
         else await WriteEncoded(str, encoding);
         await Write("\"");
     }
-
-    [ThreadStatic]
-    private static char[]? Chars_2;
-    [ThreadStatic]
-    private static char[]? Chars_12;
-
-    private static char[] GetChars2() => Chars_2 ??= new char[2];
-    private static char[] GetChars12() => Chars_12 ??= new char[12];
-
+    
     protected virtual async ValueTask WriteEscapeHex(Rune rune)
     {
-        var chars = GetChars2();
-        var char_count = rune.EncodeToUtf16(chars);
+        using var chars = RAIIArrayPool<char>.Get(2);
+        var char_count = rune.EncodeToUtf16(chars.Span);
 
 
         if (char_count == 1)
         {
-            var buf = new Memory<char>(GetChars12(), 0, 6);
-            buf.Span[0] = '\\';
-            buf.Span[1] = 'u';
-            var hex = buf[2..];
+            using var buf = RAIIArrayPool<char>.Get(6);
+            buf[0] = '\\';
+            buf[1] = 'u';
+            var hex = buf.Memory[2..];
             var c = (ushort)chars[0];
             var r = c.TryFormat(hex.Span, out var len, "X4");
             if (!r || len != 4) throw new ArgumentOutOfRangeException($"{rune}");
-            await Write(buf);
+            await Write(buf.Memory);
         }
         else if (char_count == 2)
         {
-            var buf = new Memory<char>(GetChars12(), 0, 12);
-            buf.Span[0] = '\\';
-            buf.Span[1] = 'u';
-            buf.Span[6] = '\\';
-            buf.Span[7] = 'u';
-            var hex = buf[2..];
+            using var buf = RAIIArrayPool<char>.Get(12);
+            buf[0] = '\\';
+            buf[1] = 'u';
+            buf[6] = '\\';
+            buf[7] = 'u';
+            var hex = buf.Memory[2..];
             var c1 = (ushort)chars[0];
             var r = c1.TryFormat(hex.Span, out var len, "X4");
             if (!r || len != 4) throw new ArgumentOutOfRangeException($"{rune}");
-            hex = buf[8..];
+            hex = buf.Memory[8..];
             var c2 = (ushort)chars[1];
             r = c2.TryFormat(hex.Span, out len, "X4");
             if (!r || len != 4) throw new ArgumentOutOfRangeException($"{rune}");
-            await Write(buf);
+            await Write(buf.Memory);
         }
         else throw new ArgumentOutOfRangeException($"{rune}");
     }
@@ -97,9 +93,9 @@ public abstract class AAsyncJsonWriter(SeraJsonOptions options, AJsonFormatter f
             {
                 if (n > 0) await Write(str[..n]);
                 await Write("\\");
-                var chars = GetChars2();
+                using var chars = RAIIArrayPool<char>.Get(1);
                 chars[0] = esc;
-                await Write(chars.AsMemory(0, 1));
+                await Write(chars.Memory);
                 str = str[(n + len)..];
                 n = 0;
             }
@@ -141,9 +137,9 @@ public abstract class AAsyncJsonWriter(SeraJsonOptions options, AJsonFormatter f
             {
                 if (n > 0) await WriteEncoded(str[..n], Encoding.UTF8);
                 await Write("\\");
-                var chars = GetChars2();
+                using var chars = RAIIArrayPool<char>.Get(1);
                 chars[0] = esc;
-                await Write(chars.AsMemory(0, 1));
+                await Write(chars.Memory);
                 str = str[(n + len)..];
                 n = 0;
             }

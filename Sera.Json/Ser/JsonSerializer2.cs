@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Buffers;
-using System.Buffers.Text;
-using System.Diagnostics;
 using System.Numerics;
 using System.Text;
 using Sera.Core;
@@ -64,8 +62,8 @@ public class JsonSerializer2(SeraJsonOptions options, AJsonFormatter formatter, 
                 return default;
             }
         }
-        var str = v.ToString(null, null);
-        if (use_string) writer.WriteString(str, false);
+        var str = v.ToString(format, null);
+        if (use_string) writer.WriteString(str, true);
         else writer.Write(str);
         return default;
     }
@@ -355,15 +353,15 @@ public class JsonSerializer2(SeraJsonOptions options, AJsonFormatter formatter, 
 
     #region String
 
-    public override Unit VString(ReadOnlySpan<char> value)
+    public override Unit VString(ReadOnlyMemory<char> value)
     {
-        writer.WriteString(value, true);
+        writer.WriteString(value.Span, true);
         return default;
     }
 
-    public override Unit VString(ReadOnlySpan<byte> value, Encoding encoding)
+    public override Unit VString(ReadOnlyMemory<byte> value, Encoding encoding)
     {
-        writer.WriteStringEncoded(value, encoding, true);
+        writer.WriteStringEncoded(value.Span, encoding, true);
         return default;
     }
 
@@ -395,22 +393,18 @@ public class JsonSerializer2(SeraJsonOptions options, AJsonFormatter formatter, 
         }
     }
 
-    public override Unit VBytes(ReadOnlySpan<byte> value)
+    public override Unit VBytes(ReadOnlyMemory<byte> value)
     {
         if (formatter.Base64Bytes)
         {
-            var init_len = Base64.GetMaxEncodedToUtf8Length(value.Length);
-            var buf = ArrayPool<byte>.Shared.Rent(init_len);
+            var stream = writer.StartBase64();
             try
             {
-                // ReSharper disable once RedundantAssignment
-                var r = Base64.EncodeToUtf8(value, buf, out _, out var len);
-                Debug.Assert(r == OperationStatus.Done);
-                writer.WriteStringEncoded(buf.AsSpan(0, len), Encoding.UTF8, false);
+                stream.Write(value.Span);
             }
             finally
             {
-                ArrayPool<byte>.Shared.Return(buf);
+                writer.EndBase64();
             }
             return default;
         }
@@ -450,7 +444,7 @@ public class JsonSerializer2(SeraJsonOptions options, AJsonFormatter formatter, 
         return default;
     }
 
-    public override Unit VArray<V, T>(V vision, ReadOnlySpan<T> value)
+    public override Unit VArray<V, T>(V vision, ReadOnlyMemory<T> value)
     {
         var len = value.Length;
         if (len is 0)

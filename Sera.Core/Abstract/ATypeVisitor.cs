@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Sera.Core;
@@ -67,52 +65,37 @@ public abstract class ATypeVisitor<R> : SeraBase
 
     #region String
 
-    public virtual R VString(string value) => VString(value.AsSpan());
-    public virtual R VString(char[] value) => VString(value.AsSpan());
-    public virtual R VString(List<char> value) => VString(CollectionsMarshal.AsSpan(value));
-    public virtual R VString(ReadOnlyMemory<char> value) => VString(value.Span);
-    public abstract R VString(ReadOnlySpan<char> value);
+    public virtual R VString(string value) => VString(value.AsMemory());
+    public virtual R VString(char[] value) => VString(value.AsMemory());
+    public abstract R VString(ReadOnlyMemory<char> value);
 
     #endregion
 
     #region String Encoded
 
     public virtual R VString(byte[] value, Encoding encoding) =>
-        VString(value.AsSpan(), encoding);
+        VString(value.AsMemory(), encoding);
 
-    public virtual R VString(List<byte> value, Encoding encoding) =>
-        VString(CollectionsMarshal.AsSpan(value), encoding);
-
-    public virtual R VString(ReadOnlyMemory<byte> value, Encoding encoding) =>
-        VString(value.Span, encoding);
-
-    public abstract R VString(ReadOnlySpan<byte> value, Encoding encoding);
+    public abstract R VString(ReadOnlyMemory<byte> value, Encoding encoding);
 
     #endregion
 
     #region Bytes
 
-    public virtual R VBytes(byte[] value) => VBytes(value.AsSpan());
-    public virtual R VBytes(List<byte> value) => VBytes(CollectionsMarshal.AsSpan(value));
-    public virtual R VBytes(ReadOnlyMemory<byte> value) => VBytes(value.Span);
+    public virtual R VBytes(byte[] value) => VBytes(value.AsMemory());
+    public abstract R VBytes(ReadOnlyMemory<byte> value);
     public abstract R VBytes(ReadOnlySequence<byte> value);
-    public abstract R VBytes(ReadOnlySpan<byte> value);
 
     #endregion
 
     #region Array
 
     public virtual R VArray<V, T>(V vision, T[] value) where V : ITypeVision<T> =>
-        VArray<V, T>(vision, value.AsSpan());
-
-    public virtual R VArray<V, T>(V vision, List<T> value) where V : ITypeVision<T> =>
-        VArray<V, T>(vision, CollectionsMarshal.AsSpan(value));
-
-    public virtual R VArray<V, T>(V vision, ReadOnlyMemory<T> value) where V : ITypeVision<T> =>
-        VArray(vision, value.Span);
+        VArray<V, T>(vision, value.AsMemory());
+    
+    public abstract R VArray<V, T>(V vision, ReadOnlyMemory<T> value) where V : ITypeVision<T>;
 
     public abstract R VArray<V, T>(V vision, ReadOnlySequence<T> value) where V : ITypeVision<T>;
-    public abstract R VArray<V, T>(V vision, ReadOnlySpan<T> value) where V : ITypeVision<T>;
 
     #endregion
 
@@ -241,7 +224,7 @@ public abstract class AUnionTypeVisitor<R>(SeraBase Base) : SeraBaseForward(Base
 
     public abstract R VVariant<V, T>(V vision, T value, Variant variant, UnionStyle? style = null)
         where V : ITypeVision<T>;
-    
+
     public abstract R VVariantStruct<V, T>(V vision, T value, Variant variant, UnionStyle? style = null)
         where V : IStructTypeVision<T>;
 }
