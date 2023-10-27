@@ -10,12 +10,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Compile Include="Impls\OptionSerializeImpl.fs" />
-      <Compile Include="Impls\ValueOptionSerializeImpl.fs" />
+        <Compile Include="Impls\Ser\OptionImpl.fs" />
+        <Compile Include="Impls\OptionSerializeImpl.fs"/>
+        <Compile Include="Impls\ValueOptionSerializeImpl.fs"/>
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Sera.Core\Sera.Core.csproj" />
+        <ProjectReference Include="..\Sera.Core\Sera.Core.csproj"/>
     </ItemGroup>
 
 </Project>

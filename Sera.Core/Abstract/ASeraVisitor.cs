@@ -5,11 +5,11 @@ using System.Text;
 
 namespace Sera.Core;
 
-public abstract class ATypeVisitor<R> : SeraBase
+public abstract class ASeraVisitor<R> : SeraBase
 {
     #region Reference
 
-    public abstract R VReference<V, T>(V vision, T value) where V : ITypeVision<T> where T : class;
+    public abstract R VReference<V, T>(V vision, T value) where V : ISeraVision<T> where T : class;
 
     #endregion
 
@@ -90,12 +90,12 @@ public abstract class ATypeVisitor<R> : SeraBase
 
     #region Array
 
-    public virtual R VArray<V, T>(V vision, T[] value) where V : ITypeVision<T> =>
+    public virtual R VArray<V, T>(V vision, T[] value) where V : ISeraVision<T> =>
         VArray<V, T>(vision, value.AsMemory());
     
-    public abstract R VArray<V, T>(V vision, ReadOnlyMemory<T> value) where V : ITypeVision<T>;
+    public abstract R VArray<V, T>(V vision, ReadOnlyMemory<T> value) where V : ISeraVision<T>;
 
-    public abstract R VArray<V, T>(V vision, ReadOnlySequence<T> value) where V : ITypeVision<T>;
+    public abstract R VArray<V, T>(V vision, ReadOnlySequence<T> value) where V : ISeraVision<T>;
 
     #endregion
 
@@ -111,67 +111,67 @@ public abstract class ATypeVisitor<R> : SeraBase
 
     public virtual R VNone<T>() => VNone();
 
-    public abstract R VSome<V, T>(V vision, T value) where V : ITypeVision<T>;
+    public abstract R VSome<V, T>(V vision, T value) where V : ISeraVision<T>;
 
     #endregion
 
     #region Entry
 
     public abstract R VEntry<KV, VV, IK, IV>(KV keyVision, VV valueVision, IK key, IV value)
-        where KV : ITypeVision<IK>
-        where VV : ITypeVision<IV>;
+        where KV : ISeraVision<IK>
+        where VV : ISeraVision<IV>;
 
     #endregion
 
     #region Tuple
 
-    public abstract R VTuple<V, T>(V vision, T value) where V : ITupleTypeVision<T>;
+    public abstract R VTuple<V, T>(V vision, T value) where V : ITupleSeraVision<T>;
 
     #endregion
 
     #region Seq
 
-    public abstract R VSeq<V>(V vision) where V : ISeqTypeVision;
+    public abstract R VSeq<V>(V vision) where V : ISeqSeraVision;
 
-    public virtual R VSeq<V, T>(V vision) where V : ISeqTypeVision
+    public virtual R VSeq<V, T>(V vision) where V : ISeqSeraVision
         => VSeq(vision);
 
-    public virtual R VSeq<V, T, I>(V vision) where V : ISeqTypeVision
+    public virtual R VSeq<V, T, I>(V vision) where V : ISeqSeraVision
         => VSeq<V, T>(vision);
 
     #endregion
 
     #region Map
 
-    public abstract R VMap<V>(V vision) where V : IMapTypeVision;
+    public abstract R VMap<V>(V vision) where V : IMapSeraVision;
 
-    public virtual R VMap<V, T>(V vision) where V : IMapTypeVision
+    public virtual R VMap<V, T>(V vision) where V : IMapSeraVision
         => VMap(vision);
 
-    public virtual R VMap<V, T, IK, IV>(V vision) where V : IMapTypeVision
+    public virtual R VMap<V, T, IK, IV>(V vision) where V : IMapSeraVision
         => VMap<V, T>(vision);
 
     #endregion
 
     #region Struct
 
-    public abstract R VStruct<V, T>(V vision, T value) where V : IStructTypeVision<T>;
+    public abstract R VStruct<V, T>(V vision, T value) where V : IStructSeraVision<T>;
 
     #endregion
 
     #region Union
 
-    public abstract R VUnion<V, T>(V vision, T value) where V : IUnionTypeVision<T>;
+    public abstract R VUnion<V, T>(V vision, T value) where V : IUnionSeraVision<T>;
 
     #endregion
 }
 
 #region Tuple
 
-public abstract class ATupleTypeVisitor<R>(SeraBase Base) : SeraBaseForward(Base)
+public abstract class ATupleSeraVisitor<R>(SeraBase Base) : SeraBaseForward(Base)
 {
     public abstract R VItem<T, V>(V vision, T value)
-        where V : ITypeVision<T>;
+        where V : ISeraVision<T>;
 
     public abstract R VNone();
 }
@@ -180,10 +180,10 @@ public abstract class ATupleTypeVisitor<R>(SeraBase Base) : SeraBaseForward(Base
 
 #region Seq
 
-public abstract class ASeqTypeVisitor<R>(SeraBase Base) : SeraBaseForward(Base)
+public abstract class ASeqSeraVisitor<R>(SeraBase Base) : SeraBaseForward(Base)
 {
     public abstract R VItem<T, V>(V vision, T value)
-        where V : ITypeVision<T>;
+        where V : ISeraVision<T>;
 
     public abstract R VEnd();
 }
@@ -192,11 +192,11 @@ public abstract class ASeqTypeVisitor<R>(SeraBase Base) : SeraBaseForward(Base)
 
 #region Map
 
-public abstract class AMapTypeVisitor<R>(SeraBase Base) : SeraBaseForward(Base)
+public abstract class AMapSeraVisitor<R>(SeraBase Base) : SeraBaseForward(Base)
 {
     public abstract R VEntry<KV, VV, IK, IV>(KV keyVision, VV valueVision, IK key, IV value)
-        where KV : ITypeVision<IK>
-        where VV : ITypeVision<IV>;
+        where KV : ISeraVision<IK>
+        where VV : ISeraVision<IV>;
 
     public abstract R VEnd();
 }
@@ -205,9 +205,9 @@ public abstract class AMapTypeVisitor<R>(SeraBase Base) : SeraBaseForward(Base)
 
 #region Struct
 
-public abstract class AStructTypeVisitor<R>(SeraBase Base) : SeraBaseForward(Base)
+public abstract class AStructSeraVisitor<R>(SeraBase Base) : SeraBaseForward(Base)
 {
-    public abstract R VField<V, T>(V vision, T value, string name, long key) where V : ITypeVision<T>;
+    public abstract R VField<V, T>(V vision, T value, string name, long key) where V : ISeraVision<T>;
 
     public abstract R VNone();
 }
@@ -216,17 +216,17 @@ public abstract class AStructTypeVisitor<R>(SeraBase Base) : SeraBaseForward(Bas
 
 #region Union
 
-public abstract class AUnionTypeVisitor<R>(SeraBase Base) : SeraBaseForward(Base)
+public abstract class AUnionSeraVisitor<R>(SeraBase Base) : SeraBaseForward(Base)
 {
     public abstract R VEmpty();
 
     public abstract R VVariant(Variant variant, UnionStyle? style = null);
 
     public abstract R VVariant<V, T>(V vision, T value, Variant variant, UnionStyle? style = null)
-        where V : ITypeVision<T>;
+        where V : ISeraVision<T>;
 
     public abstract R VVariantStruct<V, T>(V vision, T value, Variant variant, UnionStyle? style = null)
-        where V : IStructTypeVision<T>;
+        where V : IStructSeraVision<T>;
 }
 
 #endregion

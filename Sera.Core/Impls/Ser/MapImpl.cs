@@ -4,24 +4,24 @@ namespace Sera.Core.Impls.Ser;
 
 #region IEnumerable
 
-public readonly struct MapIEnumerableImpl<T, IK, IV, DK, DV>(DK dk, DV dv) : ITypeVision<T>
+public readonly struct MapIEnumerableImpl<T, IK, IV, DK, DV>(DK dk, DV dv) : ISeraVision<T>
     where T : IEnumerable<KeyValuePair<IK, IV>>
-    where DK : ITypeVision<IK>
-    where DV : ITypeVision<IV>
+    where DK : ISeraVision<IK>
+    where DV : ISeraVision<IV>
 {
-    public R Accept<R, V>(V visitor, T value) where V : ATypeVisitor<R>
+    public R Accept<R, V>(V visitor, T value) where V : ASeraVisitor<R>
         => visitor.VMap<Wrapper, T, IK, IV>(new(new(value, dk, dv)));
 
-    public readonly struct Wrapper(Impl Impl) : IMapTypeVision
+    public readonly struct Wrapper(Impl Impl) : IMapSeraVision
     {
         public int? Count => null;
         public bool HasNext => Impl.HasNext;
 
-        public R AcceptNext<R, V>(V visitor) where V : AMapTypeVisitor<R>
+        public R AcceptNext<R, V>(V visitor) where V : AMapSeraVisitor<R>
             => Impl.AcceptNext<R, V>(visitor);
     }
 
-    public sealed class Impl : IMapTypeVision
+    public sealed class Impl : IMapSeraVision
     {
         private readonly DK dk;
         private readonly DV dv;
@@ -38,7 +38,7 @@ public readonly struct MapIEnumerableImpl<T, IK, IV, DK, DV>(DK dk, DV dv) : ITy
         public int? Count => null;
         public bool HasNext { get; set; }
 
-        public R AcceptNext<R, V>(V visitor) where V : AMapTypeVisitor<R>
+        public R AcceptNext<R, V>(V visitor) where V : AMapSeraVisitor<R>
         {
             if (HasNext)
             {
@@ -56,24 +56,24 @@ public readonly struct MapIEnumerableImpl<T, IK, IV, DK, DV>(DK dk, DV dv) : ITy
 
 #region ICollection
 
-public readonly struct MapICollectionImpl<T, IK, IV, DK, DV>(DK dk, DV dv) : ITypeVision<T>
+public readonly struct MapICollectionImpl<T, IK, IV, DK, DV>(DK dk, DV dv) : ISeraVision<T>
     where T : ICollection<KeyValuePair<IK, IV>>
-    where DK : ITypeVision<IK>
-    where DV : ITypeVision<IV>
+    where DK : ISeraVision<IK>
+    where DV : ISeraVision<IV>
 {
-    public R Accept<R, V>(V visitor, T value) where V : ATypeVisitor<R>
+    public R Accept<R, V>(V visitor, T value) where V : ASeraVisitor<R>
         => visitor.VMap<Wrapper, T, IK, IV>(new(new(value, dk, dv)));
 
-    public readonly struct Wrapper(Impl Impl) : IMapTypeVision
+    public readonly struct Wrapper(Impl Impl) : IMapSeraVision
     {
         public int? Count => Impl.Count;
         public bool HasNext => Impl.HasNext;
 
-        public R AcceptNext<R, V>(V visitor) where V : AMapTypeVisitor<R>
+        public R AcceptNext<R, V>(V visitor) where V : AMapSeraVisitor<R>
             => Impl.AcceptNext<R, V>(visitor);
     }
 
-    public sealed class Impl : IMapTypeVision
+    public sealed class Impl : IMapSeraVision
     {
         private readonly DK dk;
         private readonly DV dv;
@@ -91,7 +91,7 @@ public readonly struct MapICollectionImpl<T, IK, IV, DK, DV>(DK dk, DV dv) : ITy
         public int? Count { get; }
         public bool HasNext { get; set; }
 
-        public R AcceptNext<R, V>(V visitor) where V : AMapTypeVisitor<R>
+        public R AcceptNext<R, V>(V visitor) where V : AMapSeraVisitor<R>
         {
             if (HasNext)
             {

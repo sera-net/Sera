@@ -9,7 +9,7 @@ using Sera.Utils;
 
 namespace Sera.Json.Ser;
 
-public class JsonSerializer2(SeraJsonOptions options, AJsonFormatter formatter, AJsonWriter writer) : ATypeVisitor<Unit>
+public class JsonSerializer2(SeraJsonOptions options, AJsonFormatter formatter, AJsonWriter writer) : ASeraVisitor<Unit>
 {
     public JsonSerializer2(AJsonWriter writer) : this(writer.Options, writer.Formatter, writer) { }
 
@@ -524,7 +524,7 @@ public class JsonSerializer2(SeraJsonOptions options, AJsonFormatter formatter, 
         {
             if (first) first = false;
             else writer.Write(",");
-            var err = vision.AcceptItem<bool, TupleTypeVisitor>(TupleVisitor, value, i);
+            var err = vision.AcceptItem<bool, TupleSeraVisitor>(TupleVisitor, value, i);
             if (err) throw new SerializeException($"Unable to get item {i} of tuple {value}");
         }
         writer.Write("]");
@@ -532,9 +532,9 @@ public class JsonSerializer2(SeraJsonOptions options, AJsonFormatter formatter, 
         return default;
     }
 
-    private TupleTypeVisitor? TupleVisitor;
+    private TupleSeraVisitor? TupleVisitor;
 
-    private class TupleTypeVisitor(JsonSerializer2 Base) : ATupleTypeVisitor<bool>(Base)
+    private class TupleSeraVisitor(JsonSerializer2 Base) : ATupleSeraVisitor<bool>(Base)
     {
         public override bool VItem<T, V>(V vision, T value)
         {
@@ -566,16 +566,16 @@ public class JsonSerializer2(SeraJsonOptions options, AJsonFormatter formatter, 
         {
             if (first) first = false;
             else writer.Write(",");
-            vision.AcceptNext<Unit, SeqTypeVisitor>(SeqVisitor);
+            vision.AcceptNext<Unit, SeqSeraVisitor>(SeqVisitor);
         }
         writer.Write("]");
         state = last_state;
         return default;
     }
 
-    private SeqTypeVisitor? SeqVisitor;
+    private SeqSeraVisitor? SeqVisitor;
 
-    private class SeqTypeVisitor(JsonSerializer2 Base) : ASeqTypeVisitor<Unit>(Base)
+    private class SeqSeraVisitor(JsonSerializer2 Base) : ASeqSeraVisitor<Unit>(Base)
     {
         public override Unit VItem<T, V>(V vision, T value)
             => vision.Accept<Unit, JsonSerializer2>(Base, value);
@@ -604,16 +604,16 @@ public class JsonSerializer2(SeraJsonOptions options, AJsonFormatter formatter, 
         {
             if (first) first = false;
             else writer.Write(",");
-            vision.AcceptNext<Unit, SeqMapTypeVisitor>(SeqMapVisitor);
+            vision.AcceptNext<Unit, SeqMapSeraVisitor>(SeqMapVisitor);
         }
         writer.Write("]");
         state = last_state;
         return default;
     }
 
-    private SeqMapTypeVisitor? SeqMapVisitor;
+    private SeqMapSeraVisitor? SeqMapVisitor;
 
-    private class SeqMapTypeVisitor(JsonSerializer2 Base) : AMapTypeVisitor<Unit>(Base)
+    private class SeqMapSeraVisitor(JsonSerializer2 Base) : AMapSeraVisitor<Unit>(Base)
     {
         public override Unit VEntry<KV, VV, IK, IV>(KV keyVision, VV valueVision, IK key, IV value)
             => Base.VEntry(keyVision, valueVision, key, value);
@@ -643,16 +643,16 @@ public class JsonSerializer2(SeraJsonOptions options, AJsonFormatter formatter, 
         {
             if (first) first = false;
             else writer.Write(",");
-            vision.AcceptNext<Unit, MapTypeVisitor>(MapVisitor);
+            vision.AcceptNext<Unit, MapSeraVisitor>(MapVisitor);
         }
         writer.Write("}");
         state = last_state;
         return default;
     }
 
-    private MapTypeVisitor? MapVisitor;
+    private MapSeraVisitor? MapVisitor;
 
-    private class MapTypeVisitor(JsonSerializer2 Base) : AMapTypeVisitor<Unit>(Base)
+    private class MapSeraVisitor(JsonSerializer2 Base) : AMapSeraVisitor<Unit>(Base)
     {
         public override Unit VEntry<KV, VV, IK, IV>(KV keyVision, VV valueVision, IK key, IV value)
         {
@@ -686,7 +686,7 @@ public class JsonSerializer2(SeraJsonOptions options, AJsonFormatter formatter, 
         {
             if (first) first = false;
             else writer.Write(",");
-            var err = vision.AcceptField<bool, StructTypeVisitor>(StructVisitor, value, i);
+            var err = vision.AcceptField<bool, StructSeraVisitor>(StructVisitor, value, i);
             if (err) throw new SerializeException($"Unable to get field nth {i} of {value}");
         }
         writer.Write("}");
@@ -694,9 +694,9 @@ public class JsonSerializer2(SeraJsonOptions options, AJsonFormatter formatter, 
         return default;
     }
 
-    private StructTypeVisitor? StructVisitor;
+    private StructSeraVisitor? StructVisitor;
 
-    private class StructTypeVisitor(JsonSerializer2 Base) : AStructTypeVisitor<bool>(Base)
+    private class StructSeraVisitor(JsonSerializer2 Base) : AStructSeraVisitor<bool>(Base)
     {
         public override bool VField<V, T>(V vision, T value, string name, long key)
         {
@@ -716,12 +716,12 @@ public class JsonSerializer2(SeraJsonOptions options, AJsonFormatter formatter, 
     public override Unit VUnion<V, T>(V vision, T value)
     {
         UnionVisitor ??= new(this);
-        return vision.Accept<Unit, UnionTypeVisitor>(UnionVisitor, value);
+        return vision.Accept<Unit, UnionSeraVisitor>(UnionVisitor, value);
     }
 
-    private UnionTypeVisitor? UnionVisitor;
+    private UnionSeraVisitor? UnionVisitor;
 
-    private class UnionTypeVisitor(JsonSerializer2 Base) : AUnionTypeVisitor<Unit>(Base)
+    private class UnionSeraVisitor(JsonSerializer2 Base) : AUnionSeraVisitor<Unit>(Base)
     {
         public override Unit VEmpty()
         {
@@ -845,7 +845,7 @@ public class JsonSerializer2(SeraJsonOptions options, AJsonFormatter formatter, 
             for (var i = 0; i < size; i++)
             {
                 Base.writer.Write(",");
-                var err = vision.AcceptField<bool, StructTypeVisitor>(Base.StructVisitor, value, i);
+                var err = vision.AcceptField<bool, StructSeraVisitor>(Base.StructVisitor, value, i);
                 if (err) throw new SerializeException($"Unable to get field nth {i} of {value}");
             }
             Base.writer.Write("}");

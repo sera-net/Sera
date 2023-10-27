@@ -11,7 +11,7 @@ using Sera.Utils;
 namespace Sera.Json.Ser;
 
 public class AsyncJsonSerializer
-    (SeraJsonOptions options, AJsonFormatter formatter, AAsyncJsonWriter writer) : ATypeVisitor<ValueTask>
+    (SeraJsonOptions options, AJsonFormatter formatter, AAsyncJsonWriter writer) : ASeraVisitor<ValueTask>
 {
     public AsyncJsonSerializer(AAsyncJsonWriter writer) : this(writer.Options, writer.Formatter, writer) { }
 
@@ -484,16 +484,16 @@ public class AsyncJsonSerializer
         {
             if (first) first = false;
             else await writer.Write(",");
-            var err = await vision.AcceptItem<ValueTask<bool>, TupleTypeVisitor>(TupleVisitor, value, i);
+            var err = await vision.AcceptItem<ValueTask<bool>, TupleSeraVisitor>(TupleVisitor, value, i);
             if (err) throw new SerializeException($"Unable to get item {i} of tuple {value}");
         }
         await writer.Write("]");
         state = last_state;
     }
 
-    private TupleTypeVisitor? TupleVisitor;
+    private TupleSeraVisitor? TupleVisitor;
 
-    private class TupleTypeVisitor(AsyncJsonSerializer Base) : ATupleTypeVisitor<ValueTask<bool>>(Base)
+    private class TupleSeraVisitor(AsyncJsonSerializer Base) : ATupleSeraVisitor<ValueTask<bool>>(Base)
     {
         public override async ValueTask<bool> VItem<T, V>(V vision, T value)
         {
@@ -525,15 +525,15 @@ public class AsyncJsonSerializer
         {
             if (first) first = false;
             else await writer.Write(",");
-            await vision.AcceptNext<ValueTask, SeqTypeVisitor>(SeqVisitor);
+            await vision.AcceptNext<ValueTask, SeqSeraVisitor>(SeqVisitor);
         }
         await writer.Write("]");
         state = last_state;
     }
 
-    private SeqTypeVisitor? SeqVisitor;
+    private SeqSeraVisitor? SeqVisitor;
 
-    private class SeqTypeVisitor(AsyncJsonSerializer Base) : ASeqTypeVisitor<ValueTask>(Base)
+    private class SeqSeraVisitor(AsyncJsonSerializer Base) : ASeqSeraVisitor<ValueTask>(Base)
     {
         public override ValueTask VItem<T, V>(V vision, T value)
             => vision.Accept<ValueTask, AsyncJsonSerializer>(Base, value);
@@ -561,15 +561,15 @@ public class AsyncJsonSerializer
         {
             if (first) first = false;
             else await writer.Write(",");
-            await vision.AcceptNext<ValueTask, SeqMapTypeVisitor>(SeqMapVisitor);
+            await vision.AcceptNext<ValueTask, SeqMapSeraVisitor>(SeqMapVisitor);
         }
         await writer.Write("]");
         state = last_state;
     }
 
-    private SeqMapTypeVisitor? SeqMapVisitor;
+    private SeqMapSeraVisitor? SeqMapVisitor;
 
-    private class SeqMapTypeVisitor(AsyncJsonSerializer Base) : AMapTypeVisitor<ValueTask>(Base)
+    private class SeqMapSeraVisitor(AsyncJsonSerializer Base) : AMapSeraVisitor<ValueTask>(Base)
     {
         public override ValueTask VEntry<KV, VV, IK, IV>(KV keyVision, VV valueVision, IK key, IV value)
             => Base.VEntry(keyVision, valueVision, key, value);
@@ -603,15 +603,15 @@ public class AsyncJsonSerializer
         {
             if (first) first = false;
             else await writer.Write(",");
-            await vision.AcceptNext<ValueTask, MapTypeVisitor>(MapVisitor);
+            await vision.AcceptNext<ValueTask, MapSeraVisitor>(MapVisitor);
         }
         await writer.Write("}");
         state = last_state;
     }
 
-    private MapTypeVisitor? MapVisitor;
+    private MapSeraVisitor? MapVisitor;
 
-    private class MapTypeVisitor(AsyncJsonSerializer Base) : AMapTypeVisitor<ValueTask>(Base)
+    private class MapSeraVisitor(AsyncJsonSerializer Base) : AMapSeraVisitor<ValueTask>(Base)
     {
         public override async ValueTask VEntry<KV, VV, IK, IV>(KV keyVision, VV valueVision, IK key, IV value)
         {
@@ -645,16 +645,16 @@ public class AsyncJsonSerializer
         {
             if (first) first = false;
             else await writer.Write(",");
-            var err = await vision.AcceptField<ValueTask<bool>, StructTypeVisitor>(StructVisitor, value, i);
+            var err = await vision.AcceptField<ValueTask<bool>, StructSeraVisitor>(StructVisitor, value, i);
             if (err) throw new SerializeException($"Unable to get field nth {i} of {value}");
         }
         await writer.Write("}");
         state = last_state;
     }
 
-    private StructTypeVisitor? StructVisitor;
+    private StructSeraVisitor? StructVisitor;
 
-    private class StructTypeVisitor(AsyncJsonSerializer Base) : AStructTypeVisitor<ValueTask<bool>>(Base)
+    private class StructSeraVisitor(AsyncJsonSerializer Base) : AStructSeraVisitor<ValueTask<bool>>(Base)
     {
         public override async ValueTask<bool> VField<V, T>(V vision, T value, string name, long key)
         {
@@ -674,12 +674,12 @@ public class AsyncJsonSerializer
     public override ValueTask VUnion<V, T>(V vision, T value)
     {
         UnionVisitor ??= new(this);
-        return vision.Accept<ValueTask, UnionTypeVisitor>(UnionVisitor, value);
+        return vision.Accept<ValueTask, UnionSeraVisitor>(UnionVisitor, value);
     }
 
-    private UnionTypeVisitor? UnionVisitor;
+    private UnionSeraVisitor? UnionVisitor;
 
-    private class UnionTypeVisitor(AsyncJsonSerializer Base) : AUnionTypeVisitor<ValueTask>(Base)
+    private class UnionSeraVisitor(AsyncJsonSerializer Base) : AUnionSeraVisitor<ValueTask>(Base)
     {
         public override ValueTask VEmpty()
             => Base.writer.Write("{}");
@@ -797,7 +797,7 @@ public class AsyncJsonSerializer
             for (var i = 0; i < size; i++)
             {
                 await Base.writer.Write(",");
-                var err = await vision.AcceptField<ValueTask<bool>, StructTypeVisitor>(Base.StructVisitor, value, i);
+                var err = await vision.AcceptField<ValueTask<bool>, StructSeraVisitor>(Base.StructVisitor, value, i);
                 if (err) throw new SerializeException($"Unable to get field nth {i} of {value}");
             }
             await Base.writer.Write("}");

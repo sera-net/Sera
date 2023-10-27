@@ -5,22 +5,22 @@ using System.Runtime.CompilerServices;
 namespace Sera.Core.Impls.Ser;
 
 public readonly struct BytesImpl :
-    ITypeVision<byte[]>, ITypeVision<ReadOnlySequence<byte>>,
-    ITypeVision<ReadOnlyMemory<byte>>, ITypeVision<Memory<byte>>
+    ISeraVision<byte[]>, ISeraVision<ReadOnlySequence<byte>>,
+    ISeraVision<ReadOnlyMemory<byte>>, ISeraVision<Memory<byte>>
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R Accept<R, V>(V visitor, byte[] value) where V : ATypeVisitor<R>
+    public R Accept<R, V>(V visitor, byte[] value) where V : ASeraVisitor<R>
         => visitor.VBytes(value);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R Accept<R, V>(V visitor, ReadOnlySequence<byte> value) where V : ATypeVisitor<R>
+    public R Accept<R, V>(V visitor, ReadOnlySequence<byte> value) where V : ASeraVisitor<R>
         => visitor.VBytes(value);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R Accept<R, V>(V visitor, ReadOnlyMemory<byte> value) where V : ATypeVisitor<R>
+    public R Accept<R, V>(V visitor, ReadOnlyMemory<byte> value) where V : ASeraVisitor<R>
         => visitor.VBytes(value);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R Accept<R, V>(V visitor, Memory<byte> value) where V : ATypeVisitor<R>
+    public R Accept<R, V>(V visitor, Memory<byte> value) where V : ASeraVisitor<R>
         => visitor.VBytes(value);
 }
