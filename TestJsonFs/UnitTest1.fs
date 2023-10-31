@@ -1,6 +1,9 @@
 module TestJsonFs.UnitTest1
 
 open System
+open System.IO
+open System.Text
+open System.Threading.Tasks
 open NUnit.Framework
 open Sera
 open Sera.Core.Impls.Ser
@@ -44,3 +47,26 @@ let Test2 () =
     Assert.That(str, Is.EqualTo("\"AQID\""))
 
     ()
+
+[<Test>]
+let Test3 () =
+    task {
+        use stream = new MemoryStream()
+
+        do!
+            SeraJson.Serializer {
+                Serialize 123
+                Use(PrimitiveImpl())
+                Static
+                ToStreamAsync stream
+            }
+
+        stream.Position <- 0
+        use reader = new StreamReader(stream, Encoding.UTF8)
+        let str = reader.ReadToEnd()
+
+        Console.WriteLine(str)
+
+        Assert.That(str, Is.EqualTo("123"))
+    }
+    :> Task

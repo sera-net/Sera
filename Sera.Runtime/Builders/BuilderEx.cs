@@ -18,14 +18,21 @@ public static class SeraBuilderForRuntimeSer
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Unit Accept<VI>(VI visitor) where VI : ASeraVisitor<Unit>
-            => EmitSerImpls.Get<T>(styles).Accept<Unit, VI>(visitor, Value);
+        {
+            EmitSerImpls.Get<T>(styles).Accept<Unit, VI>(visitor, Value);
+            visitor.Flush();
+            return default;
+        }
     }
 
     public readonly struct AsyncRuntimeAccept<T>(T Value, SeraStyles? styles) : AcceptASeraVisitor<ValueTask, ValueTask>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ValueTask Accept<VI>(VI visitor) where VI : ASeraVisitor<ValueTask>
-            => EmitSerImpls.Get<T>(styles).Accept<ValueTask, VI>(visitor, Value);
+        public async ValueTask Accept<VI>(VI visitor) where VI : ASeraVisitor<ValueTask>
+        {
+            await EmitSerImpls.Get<T>(styles).Accept<ValueTask, VI>(visitor, Value);
+            await visitor.Flush();
+        }
     }
 
     #endregion

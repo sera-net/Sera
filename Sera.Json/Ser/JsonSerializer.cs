@@ -29,6 +29,12 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
 
     private JsonSerializerState state;
 
+    public override Unit Flush()
+    {
+        writer.Flush();
+        return default;
+    }
+    
     #region Reference
 
     public override Unit VReference<V, T>(V vision, T value)

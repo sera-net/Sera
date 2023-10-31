@@ -54,6 +54,12 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
         Mid,
     }
 
+    public override Unit Flush()
+    {
+        stream.Flush();
+        return default;
+    }
+
     #region Reference
 
     public override Unit VReference<V, T>(V vision, T value)

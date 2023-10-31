@@ -13,6 +13,8 @@ public class StringBuilderJsonWriter
     private MemoryStream? tmp_mem;
     private static Stream? tmpStream;
 
+    public override void Flush() { }
+
     public override Stream StartBase64()
     {
         Write("\"");

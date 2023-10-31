@@ -10,6 +10,12 @@ namespace Sera.Core;
 
 public abstract class ASeraVisitor<R> : SeraBase
 {
+    #region Flush
+
+    public abstract R Flush();
+
+    #endregion
+    
     #region Reference
 
     public abstract R VReference<V, T>(V vision, T value) where V : ISeraVision<T> where T : class;

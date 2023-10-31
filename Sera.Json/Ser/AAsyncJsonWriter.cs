@@ -14,7 +14,9 @@ public abstract class AAsyncJsonWriter(SeraJsonOptions options, AJsonFormatter f
     public SeraJsonOptions Options { get; } = options;
     public AJsonFormatter Formatter { get; } = formatter;
     public Encoding Encoding => Options.Encoding;
-
+    
+    public abstract ValueTask Flush();
+    
     public abstract ValueTask<Stream> StartBase64();
     public abstract ValueTask EndBase64();
     public abstract ValueTask Write(ReadOnlyMemory<char> str);

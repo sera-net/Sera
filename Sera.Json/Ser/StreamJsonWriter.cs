@@ -12,6 +12,11 @@ public class StreamJsonWriter
 {
     private Stream? tmpStream;
 
+    public override void Flush()
+    {
+        Stream.Flush();
+    }
+
     public override Stream StartBase64()
     {
         Write("\"");

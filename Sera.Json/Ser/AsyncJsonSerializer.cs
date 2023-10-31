@@ -31,6 +31,8 @@ public class AsyncJsonSerializer
 
     private JsonSerializerState state;
 
+    public override ValueTask Flush() => writer.Flush();
+
     #region Reference
 
     public override ValueTask VReference<V, T>(V vision, T value)

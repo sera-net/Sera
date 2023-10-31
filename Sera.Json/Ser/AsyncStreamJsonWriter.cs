@@ -13,6 +13,8 @@ public class AsyncStreamJsonWriter
 
     private Stream? tmpStream;
 
+    public override async ValueTask Flush() => await Writer.FlushAsync();
+
     public override async ValueTask<Stream> StartBase64()
     {
         await Write("\"");

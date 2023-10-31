@@ -25,15 +25,22 @@ public static class SeraBuilderForStaticSer
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Unit Accept<VI>(VI visitor) where VI : ASeraVisitor<Unit>
-            => Vision.Accept<Unit, VI>(visitor, Value);
+        {
+            Vision.Accept<Unit, VI>(visitor, Value);
+            visitor.Flush();
+            return default;
+        }
     }
 
     public readonly struct AsyncStaticAccept<T, V>(T Value, V Vision) : AcceptASeraVisitor<ValueTask, ValueTask>
         where V : ISeraVision<T>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ValueTask Accept<VI>(VI visitor) where VI : ASeraVisitor<ValueTask>
-            => Vision.Accept<ValueTask, VI>(visitor, Value);
+        public async ValueTask Accept<VI>(VI visitor) where VI : ASeraVisitor<ValueTask>
+        {
+            await Vision.Accept<ValueTask, VI>(visitor, Value);
+            await visitor.Flush();
+        }
     }
 
     #endregion

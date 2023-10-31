@@ -14,6 +14,8 @@ public abstract class AJsonWriter(SeraJsonOptions options, AJsonFormatter format
     public AJsonFormatter Formatter { get; } = formatter;
     public Encoding Encoding => Options.Encoding;
 
+    public abstract void Flush();
+
     public abstract Stream StartBase64();
     public abstract void EndBase64();
     public abstract void Write(ReadOnlySpan<char> str);
