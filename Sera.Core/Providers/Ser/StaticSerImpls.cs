@@ -3,6 +3,7 @@ using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using Sera.Core.Impls.Ser;
 
@@ -36,6 +37,7 @@ public readonly struct StaticSerImpls
         { typeof(float), PrimitiveImpl },
         { typeof(double), PrimitiveImpl },
         { typeof(decimal), PrimitiveImpl },
+        { typeof(NFloat), PrimitiveImpl },
         { typeof(BigInteger), PrimitiveImpl },
         { typeof(Complex), PrimitiveImpl },
         { typeof(TimeSpan), PrimitiveImpl },

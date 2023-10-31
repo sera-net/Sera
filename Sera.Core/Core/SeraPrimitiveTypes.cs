@@ -19,6 +19,7 @@ public enum SeraPrimitiveTypes : byte
     Single,
     Double,
     Decimal,
+    NFloat,
     BigInteger,
     Complex,
     TimeSpan,

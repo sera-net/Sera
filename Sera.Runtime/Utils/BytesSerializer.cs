@@ -4,6 +4,7 @@ using System.Buffers.Binary;
 using System.IO;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Sera.Core;
@@ -71,70 +72,80 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
 
     public override Unit VPrimitive(bool value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.Boolean << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.Boolean);
         Writer.Write(value);
         return default;
     }
 
     public override Unit VPrimitive(sbyte value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.SByte << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.SByte);
         Writer.Write(value);
         return default;
     }
 
     public override Unit VPrimitive(byte value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.Byte << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.Byte);
         Writer.Write(value);
         return default;
     }
 
     public override Unit VPrimitive(short value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.Int16 << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.Int16);
         Writer.Write(value);
         return default;
     }
 
     public override Unit VPrimitive(ushort value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.UInt16 << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.UInt16);
         Writer.Write(value);
         return default;
     }
 
     public override Unit VPrimitive(int value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.Int32 << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.Int32);
         Writer.Write(value);
         return default;
     }
 
     public override Unit VPrimitive(uint value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.UInt32 << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.UInt32);
         Writer.Write(value);
         return default;
     }
 
     public override Unit VPrimitive(long value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.Int64 << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.Int64);
         Writer.Write(value);
         return default;
     }
 
     public override Unit VPrimitive(ulong value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.UInt64 << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.UInt64);
         Writer.Write(value);
         return default;
     }
 
     public override Unit VPrimitive(Int128 value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.Int128 << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.Int128);
         Span<byte> span = stackalloc byte[Unsafe.SizeOf<Int128>()];
         BinaryPrimitives.WriteInt128LittleEndian(span, value);
         Writer.Write(span);
@@ -143,7 +154,8 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
 
     public override Unit VPrimitive(UInt128 value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.UInt128 << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.UInt128);
         Span<byte> span = stackalloc byte[Unsafe.SizeOf<UInt128>()];
         BinaryPrimitives.WriteUInt128LittleEndian(span, value);
         Writer.Write(span);
@@ -152,49 +164,64 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
 
     public override Unit VPrimitive(IntPtr value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.IntPtr << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.IntPtr);
         Writer.Write(value);
         return default;
     }
 
     public override Unit VPrimitive(UIntPtr value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.UIntPtr << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.UIntPtr);
         Writer.Write(value);
         return default;
     }
 
     public override Unit VPrimitive(Half value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.Half << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.Half);
         Writer.Write(value);
         return default;
     }
 
     public override Unit VPrimitive(float value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.Single << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.Single);
         Writer.Write(value);
         return default;
     }
 
     public override Unit VPrimitive(double value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.Double << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.Double);
         Writer.Write(value);
         return default;
     }
 
     public override Unit VPrimitive(decimal value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.Decimal << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.Decimal);
         Writer.Write(value);
+        return default;
+    }
+
+    public override Unit VPrimitive(NFloat value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.NFloat);
+        Writer.Write((double)value);
         return default;
     }
 
     public override Unit VPrimitive(BigInteger value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.BigInteger << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.BigInteger);
         var str = value.ToString();
         Writer.Write(str.Length);
         Writer.Write(str);
@@ -203,7 +230,8 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
 
     public override Unit VPrimitive(Complex value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.Complex << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.Complex);
         Writer.Write(value.Real);
         Writer.Write(value.Imaginary);
         return default;
@@ -211,42 +239,48 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
 
     public override Unit VPrimitive(TimeSpan value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.TimeSpan << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.TimeSpan);
         Writer.Write(value.Ticks);
         return default;
     }
 
     public override Unit VPrimitive(DateOnly value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.DateOnly << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.DateOnly);
         Writer.Write(value.DayNumber);
         return default;
     }
 
     public override Unit VPrimitive(TimeOnly value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.TimeOnly << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.TimeOnly);
         Writer.Write(value.Ticks);
         return default;
     }
 
     public override Unit VPrimitive(DateTime value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.DateTime << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.DateTime);
         Writer.Write(value.Ticks);
         return default;
     }
 
     public override Unit VPrimitive(DateTimeOffset value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.DateTimeOffset << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.DateTimeOffset);
         Writer.Write(value.Ticks);
         return default;
     }
 
     public override Unit VPrimitive(Guid value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.Guid << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.Guid);
         Span<byte> bytes = stackalloc byte[sizeof(ulong) * 2];
         value.TryWriteBytes(bytes);
         Writer.Write(bytes);
@@ -255,7 +289,8 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
 
     public override Unit VPrimitive(Range value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.Range << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.Range);
         Writer.Write(value.Start.Value);
         Writer.Write(value.End.Value);
         return default;
@@ -263,28 +298,32 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
 
     public override Unit VPrimitive(Index value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.Index << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.Index);
         Writer.Write(value.Value);
         return default;
     }
 
     public override Unit VPrimitive(char value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.Char << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.Char);
         Writer.Write(value);
         return default;
     }
 
     public override Unit VPrimitive(Rune value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.Rune << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.Rune);
         Writer.Write(value.Value);
         return default;
     }
 
     public override Unit VPrimitive(Uri value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.Uri << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.Uri);
         var str = value.ToString();
         Writer.Write(str.Length);
         Writer.Write(str);
@@ -293,7 +332,8 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
 
     public override Unit VPrimitive(Version value, SeraFormats? formats = null)
     {
-        Writer.Write((byte)((byte)SeraPrimitiveTypes.Version << 3 | (byte)TypeToken.Primitive));
+        Writer.Write((byte)TypeToken.Primitive);
+        Writer.Write((byte)SeraPrimitiveTypes.Version);
         var str = value.ToString();
         Writer.Write(str.Length);
         Writer.Write(str);

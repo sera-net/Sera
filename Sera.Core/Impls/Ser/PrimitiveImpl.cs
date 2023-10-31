@@ -2,6 +2,7 @@
 using System.Collections.Frozen;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using Sera.Utils;
 
@@ -17,6 +18,7 @@ public readonly struct PrimitiveImpl(SeraFormats? formats = null) :
     ISeraVision<nint>, ISeraVision<nuint>,
     ISeraVision<Half>, ISeraVision<float>,
     ISeraVision<double>, ISeraVision<decimal>,
+    ISeraVision<NFloat>,
     ISeraVision<BigInteger>, ISeraVision<Complex>,
     ISeraVision<TimeSpan>,
     ISeraVision<DateOnly>, ISeraVision<TimeOnly>,
@@ -95,6 +97,10 @@ public readonly struct PrimitiveImpl(SeraFormats? formats = null) :
         => visitor.VPrimitive(value, formats);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public R Accept<R, V>(V visitor, NFloat value) where V : ASeraVisitor<R>
+        => visitor.VPrimitive(value, formats);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R Accept<R, V>(V visitor, BigInteger value) where V : ASeraVisitor<R>
         => visitor.VPrimitive(value, formats);
 
@@ -169,6 +175,7 @@ public readonly struct PrimitiveImpl(SeraFormats? formats = null) :
         typeof(float),
         typeof(double),
         typeof(decimal),
+        typeof(NFloat),
         typeof(BigInteger),
         typeof(Complex),
         typeof(TimeSpan),

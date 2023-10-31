@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 using SeraBase = Sera.Core.SeraBase<Sera.Core.ISeraVision<object?>>;
@@ -48,6 +49,7 @@ public abstract class ASeraVisitor<R> : SeraBase
     public abstract R VPrimitive(float value, SeraFormats? formats = null);
     public abstract R VPrimitive(double value, SeraFormats? formats = null);
     public abstract R VPrimitive(decimal value, SeraFormats? formats = null);
+    public abstract R VPrimitive(NFloat value, SeraFormats? formats = null);
 
     public abstract R VPrimitive(BigInteger value, SeraFormats? formats = null);
     public abstract R VPrimitive(Complex value, SeraFormats? formats = null);

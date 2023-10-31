@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Text;
 using Sera.Core;
 using Sera.Core.Formats;
@@ -296,6 +297,9 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
         => WriteNumber(32, value, formats, false);
 
     public override Unit VPrimitive(decimal value, SeraFormats? formats = null)
+        => WriteNumber(32, value, formats, false);
+
+    public override Unit VPrimitive(NFloat value, SeraFormats? formats = null)
         => WriteNumber(32, value, formats, false);
 
     public override Unit VPrimitive(BigInteger value, SeraFormats? formats = null)
