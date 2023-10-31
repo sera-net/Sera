@@ -17,6 +17,8 @@ public readonly struct StaticSerImpls
     private static readonly object StringImpl = new StringImpl();
     private static readonly object objectImpl =
         new NullableClassImpl<object, ReferenceImpl<object, EmptyStructImpl<object>>>();
+    private static readonly object VectorImpl = new VectorImpl();
+    private static readonly object MatrixImpl = new MatrixImpl();
 
     private static readonly FrozenDictionary<Type, object> Builtins = new Dictionary<Type, object>
     {
@@ -60,6 +62,14 @@ public readonly struct StaticSerImpls
         { typeof(DBNull), new UnitImpl<DBNull>() },
         { typeof(Unit), new UnitImpl<Unit>() },
         { typeof(ValueTuple), new TupleImpl() },
+        
+        { typeof(Vector2), VectorImpl },
+        { typeof(Vector3), VectorImpl },
+        { typeof(Vector4), VectorImpl },
+        { typeof(Matrix3x2), MatrixImpl },
+        { typeof(Matrix4x4), MatrixImpl },
+        { typeof(Plane), new PlaneImpl() },
+        { typeof(Quaternion), new QuaternionImpl() },
     }.ToFrozenDictionary();
 
     #endregion
@@ -93,7 +103,7 @@ public readonly struct StaticSerImpls
     #endregion
 
     #region Generic Get
-    
+
     public static bool TryGet<T>(out ISeraVision<T> impl)
     {
         if (Builtins.TryGetValue(typeof(T), out var _impl))
