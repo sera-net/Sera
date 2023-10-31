@@ -8,7 +8,4 @@ public readonly struct EntryImpl<IK, IV, DK, DV>(DK dk, DV dv) :
 {
     public R Accept<R, V>(V visitor, KeyValuePair<IK, IV> value) where V : ASeraVisitor<R>
         => visitor.VEntry(dk, dv, value.Key, value.Value);
-    
-    public R AcceptInMap<R, V>(V visitor, KeyValuePair<IK, IV> value) where V : AMapSeraVisitor<R>
-        => visitor.VEntry(dk, dv, value.Key, value.Value);
 }
