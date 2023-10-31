@@ -1,34 +1,38 @@
 ﻿using System;
 using System.Buffers;
+using System.Buffers.Binary;
 using System.IO;
 using System.Numerics;
-using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Sera.Core;
-using Sera.Core.Ser;
-using Sera.Runtime.Emit;
+using Sera.Runtime.Emit.Ser;
+using Sera.Utils;
 
 namespace Sera.Runtime.Utils;
 
-internal class BytesSerializer : ISerializer, IDisposable, IAsyncDisposable
+internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisitor<Unit>, IDisposable, IAsyncDisposable
 {
-    public Stream Stream { get; }
-    private readonly BinaryWriter Writer;
+    public Stream Stream { get; } = stream;
+    private readonly BinaryWriter Writer = new(stream);
 
-    public ISeraOptions Options { get; set; }
+    public override ISeraOptions Options { get; } = options;
 
-    public BytesSerializer(Stream stream, ISeraOptions options)
+    public override string FormatName => "bytes";
+    public override string FormatMIME => "application/octet-stream";
+    public override SeraFormatType FormatType => SeraFormatType.Binary;
+    public override IRuntimeProvider<ISeraVision<object?>> RuntimeProvider => EmitRuntimeProvider.Instance;
+
+    public void Dispose()
     {
-        Stream = stream;
-        Writer = new(stream);
-        Options = options;
+        Writer.Dispose();
     }
 
-    public string FormatName => "bytes";
-    public string FormatMIME => "application/octet-stream";
-    public SeraFormatType FormatType => SeraFormatType.Binary;
-    public IRuntimeProvider RuntimeProvider => EmitRuntimeProvider.Instance;
+    public async ValueTask DisposeAsync()
+    {
+        await Writer.DisposeAsync();
+    }
 
     public enum TypeToken : byte
     {
@@ -50,150 +54,251 @@ internal class BytesSerializer : ISerializer, IDisposable, IAsyncDisposable
         Mid,
     }
 
-    public bool MarkReference<T, S>(T obj, S serialize) where T : class where S : ISerialize<T>
+    #region Reference
+
+    public override Unit VReference<V, T>(V vision, T value)
+        => vision.Accept<Unit, BytesSerializer>(this, value);
+
+    #endregion
+
+    #region Primitive
+
+    public override Unit VPrimitive(bool value, SeraFormats? formats = null)
     {
-        return false;
-    }
-    
-    public void WritePrimitive<T>(T value, SerializerPrimitiveHint? hint)
-    {
-        switch (value)
-        {
-            case bool v:
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.Boolean << 3 | (byte)TypeToken.Primitive));
-                Writer.Write(v);
-                break;
-            case sbyte v:
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.SByte << 3 | (byte)TypeToken.Primitive));
-                Writer.Write(v);
-                break;
-            case short v:
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.Int16 << 3 | (byte)TypeToken.Primitive));
-                Writer.Write(v);
-                break;
-            case int v:
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.Int32 << 3 | (byte)TypeToken.Primitive));
-                Writer.Write(v);
-                break;
-            case long v:
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.Int64 << 3 | (byte)TypeToken.Primitive));
-                Writer.Write(v);
-                break;
-            case Int128 v:
-            {
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.Int128 << 3 | (byte)TypeToken.Primitive));
-                var span = new Span<Int128>(ref v);
-                Writer.Write(MemoryMarshal.AsBytes(span));
-                break;
-            }
-            case byte v:
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.Byte << 3 | (byte)TypeToken.Primitive));
-                Writer.Write(v);
-                break;
-            case ushort v:
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.UInt16 << 3 | (byte)TypeToken.Primitive));
-                Writer.Write(v);
-                break;
-            case uint v:
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.UInt32 << 3 | (byte)TypeToken.Primitive));
-                Writer.Write(v);
-                break;
-            case ulong v:
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.UInt64 << 3 | (byte)TypeToken.Primitive));
-                Writer.Write(v);
-                break;
-            case UInt128 v:
-            {
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.UInt128 << 3 | (byte)TypeToken.Primitive));
-                var span = new Span<UInt128>(ref v);
-                Writer.Write(MemoryMarshal.AsBytes(span));
-                break;
-            }
-            case nint v:
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.IntPtr << 3 | (byte)TypeToken.Primitive));
-                Writer.Write(v);
-                break;
-            case nuint v:
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.UIntPtr << 3 | (byte)TypeToken.Primitive));
-                Writer.Write(v);
-                break;
-            case Half v:
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.Half << 3 | (byte)TypeToken.Primitive));
-                Writer.Write(v);
-                break;
-            case float v:
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.Single << 3 | (byte)TypeToken.Primitive));
-                Writer.Write(v);
-                break;
-            case double v:
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.Double << 3 | (byte)TypeToken.Primitive));
-                Writer.Write(v);
-                break;
-            case decimal v:
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.Decimal << 3 | (byte)TypeToken.Primitive));
-                Writer.Write(v);
-                break;
-            case BigInteger v:
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.BigInteger << 3 | (byte)TypeToken.Primitive));
-                WriteString(v.ToString());
-                break;
-            case Complex v:
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.Complex << 3 | (byte)TypeToken.Primitive));
-                Writer.Write(v.Real);
-                Writer.Write(v.Imaginary);
-                break;
-            case TimeSpan v:
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.TimeSpan << 3 | (byte)TypeToken.Primitive));
-                Writer.Write(v.Ticks);
-                break;
-            case DateOnly v:
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.DateOnly << 3 | (byte)TypeToken.Primitive));
-                Writer.Write(v.DayNumber);
-                break;
-            case TimeOnly v:
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.TimeOnly << 3 | (byte)TypeToken.Primitive));
-                Writer.Write(v.Ticks);
-                break;
-            case DateTime v:
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.DateTime << 3 | (byte)TypeToken.Primitive));
-                Writer.Write(v.Ticks);
-                break;
-            case DateTimeOffset v:
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.DateTimeOffset << 3 | (byte)TypeToken.Primitive));
-                Writer.Write(v.Ticks);
-                break;
-            case Guid v:
-            {
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.Guid << 3 | (byte)TypeToken.Primitive));
-                Span<byte> bytes = stackalloc byte[sizeof(ulong) * 2];
-                v.TryWriteBytes(bytes);
-                Writer.Write(bytes);
-                break;
-            }
-            case Range v:
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.Range << 3 | (byte)TypeToken.Primitive));
-                Writer.Write(v.Start.Value);
-                Writer.Write(v.End.Value);
-                break;
-            case Index v:
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.Index << 3 | (byte)TypeToken.Primitive));
-                Writer.Write(v.Value);
-                break;
-            case char v:
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.Char << 3 | (byte)TypeToken.Primitive));
-                Writer.Write(v);
-                break;
-            case Rune v:
-                Writer.Write((byte)((byte)SeraPrimitiveTypes.Rune << 3 | (byte)TypeToken.Primitive));
-                Writer.Write(v.Value);
-                break;
-            default:
-                Writer.Write((byte)TypeToken.Primitive);
-                break;
-        }
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.Boolean << 3 | (byte)TypeToken.Primitive));
+        Writer.Write(value);
+        return default;
     }
 
-    public void WriteString(ReadOnlySpan<char> value)
+    public override Unit VPrimitive(sbyte value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.SByte << 3 | (byte)TypeToken.Primitive));
+        Writer.Write(value);
+        return default;
+    }
+
+    public override Unit VPrimitive(byte value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.Byte << 3 | (byte)TypeToken.Primitive));
+        Writer.Write(value);
+        return default;
+    }
+
+    public override Unit VPrimitive(short value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.Int16 << 3 | (byte)TypeToken.Primitive));
+        Writer.Write(value);
+        return default;
+    }
+
+    public override Unit VPrimitive(ushort value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.UInt16 << 3 | (byte)TypeToken.Primitive));
+        Writer.Write(value);
+        return default;
+    }
+
+    public override Unit VPrimitive(int value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.Int32 << 3 | (byte)TypeToken.Primitive));
+        Writer.Write(value);
+        return default;
+    }
+
+    public override Unit VPrimitive(uint value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.UInt32 << 3 | (byte)TypeToken.Primitive));
+        Writer.Write(value);
+        return default;
+    }
+
+    public override Unit VPrimitive(long value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.Int64 << 3 | (byte)TypeToken.Primitive));
+        Writer.Write(value);
+        return default;
+    }
+
+    public override Unit VPrimitive(ulong value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.UInt64 << 3 | (byte)TypeToken.Primitive));
+        Writer.Write(value);
+        return default;
+    }
+
+    public override Unit VPrimitive(Int128 value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.Int128 << 3 | (byte)TypeToken.Primitive));
+        Span<byte> span = stackalloc byte[Unsafe.SizeOf<Int128>()];
+        BinaryPrimitives.WriteInt128LittleEndian(span, value);
+        Writer.Write(span);
+        return default;
+    }
+
+    public override Unit VPrimitive(UInt128 value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.UInt128 << 3 | (byte)TypeToken.Primitive));
+        Span<byte> span = stackalloc byte[Unsafe.SizeOf<UInt128>()];
+        BinaryPrimitives.WriteUInt128LittleEndian(span, value);
+        Writer.Write(span);
+        return default;
+    }
+
+    public override Unit VPrimitive(IntPtr value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.IntPtr << 3 | (byte)TypeToken.Primitive));
+        Writer.Write(value);
+        return default;
+    }
+
+    public override Unit VPrimitive(UIntPtr value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.UIntPtr << 3 | (byte)TypeToken.Primitive));
+        Writer.Write(value);
+        return default;
+    }
+
+    public override Unit VPrimitive(Half value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.Half << 3 | (byte)TypeToken.Primitive));
+        Writer.Write(value);
+        return default;
+    }
+
+    public override Unit VPrimitive(float value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.Single << 3 | (byte)TypeToken.Primitive));
+        Writer.Write(value);
+        return default;
+    }
+
+    public override Unit VPrimitive(double value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.Double << 3 | (byte)TypeToken.Primitive));
+        Writer.Write(value);
+        return default;
+    }
+
+    public override Unit VPrimitive(decimal value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.Decimal << 3 | (byte)TypeToken.Primitive));
+        Writer.Write(value);
+        return default;
+    }
+
+    public override Unit VPrimitive(BigInteger value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.BigInteger << 3 | (byte)TypeToken.Primitive));
+        var str = value.ToString();
+        Writer.Write(str.Length);
+        Writer.Write(str);
+        return default;
+    }
+
+    public override Unit VPrimitive(Complex value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.Complex << 3 | (byte)TypeToken.Primitive));
+        Writer.Write(value.Real);
+        Writer.Write(value.Imaginary);
+        return default;
+    }
+
+    public override Unit VPrimitive(TimeSpan value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.TimeSpan << 3 | (byte)TypeToken.Primitive));
+        Writer.Write(value.Ticks);
+        return default;
+    }
+
+    public override Unit VPrimitive(DateOnly value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.DateOnly << 3 | (byte)TypeToken.Primitive));
+        Writer.Write(value.DayNumber);
+        return default;
+    }
+
+    public override Unit VPrimitive(TimeOnly value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.TimeOnly << 3 | (byte)TypeToken.Primitive));
+        Writer.Write(value.Ticks);
+        return default;
+    }
+
+    public override Unit VPrimitive(DateTime value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.DateTime << 3 | (byte)TypeToken.Primitive));
+        Writer.Write(value.Ticks);
+        return default;
+    }
+
+    public override Unit VPrimitive(DateTimeOffset value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.DateTimeOffset << 3 | (byte)TypeToken.Primitive));
+        Writer.Write(value.Ticks);
+        return default;
+    }
+
+    public override Unit VPrimitive(Guid value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.Guid << 3 | (byte)TypeToken.Primitive));
+        Span<byte> bytes = stackalloc byte[sizeof(ulong) * 2];
+        value.TryWriteBytes(bytes);
+        Writer.Write(bytes);
+        return default;
+    }
+
+    public override Unit VPrimitive(Range value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.Range << 3 | (byte)TypeToken.Primitive));
+        Writer.Write(value.Start.Value);
+        Writer.Write(value.End.Value);
+        return default;
+    }
+
+    public override Unit VPrimitive(Index value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.Index << 3 | (byte)TypeToken.Primitive));
+        Writer.Write(value.Value);
+        return default;
+    }
+
+    public override Unit VPrimitive(char value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.Char << 3 | (byte)TypeToken.Primitive));
+        Writer.Write(value);
+        return default;
+    }
+
+    public override Unit VPrimitive(Rune value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.Rune << 3 | (byte)TypeToken.Primitive));
+        Writer.Write(value.Value);
+        return default;
+    }
+
+    public override Unit VPrimitive(Uri value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.Uri << 3 | (byte)TypeToken.Primitive));
+        var str = value.ToString();
+        Writer.Write(str.Length);
+        Writer.Write(str);
+        return default;
+    }
+
+    public override Unit VPrimitive(Version value, SeraFormats? formats = null)
+    {
+        Writer.Write((byte)((byte)SeraPrimitiveTypes.Version << 3 | (byte)TypeToken.Primitive));
+        var str = value.ToString();
+        Writer.Write(str.Length);
+        Writer.Write(str);
+        return default;
+    }
+
+    #endregion
+
+    #region String
+
+    public override Unit VString(ReadOnlyMemory<char> value)
     {
         var len = value.Length;
         if (len <= 15)
@@ -205,25 +310,32 @@ internal class BytesSerializer : ISerializer, IDisposable, IAsyncDisposable
             Writer.Write((byte)TypeToken.String);
             Writer.Write(value.Length);
         }
-        Writer.Write(value);
+        Writer.Write(value.Span);
+        return default;
     }
-    
-    public void WriteStringEncoded(ReadOnlySpan<byte> value, Encoding encoding)
+
+    public override Unit VString(ReadOnlyMemory<byte> value, Encoding encoding)
     {
         Writer.Write((byte)((byte)TypeToken.String | (1 << 4)));
         Writer.Write(value.Length);
         Writer.Write(encoding.CodePage);
-        Writer.Write(value);
+        Writer.Write(value.Span);
+        return default;
     }
-    
-    public void WriteBytes(ReadOnlySpan<byte> value)
+
+    #endregion
+
+    #region Bytes
+
+    public override Unit VBytes(ReadOnlyMemory<byte> value)
     {
         Writer.Write((byte)TypeToken.Bytes);
         Writer.Write(value.Length);
-        Writer.Write(value);
+        Writer.Write(value.Span);
+        return default;
     }
 
-    public void WriteBytes(ReadOnlySequence<byte> value)
+    public override Unit VBytes(ReadOnlySequence<byte> value)
     {
         var length = value.Length;
         Writer.Write((byte)((byte)TypeToken.Bytes | (1 << 3)));
@@ -232,9 +344,14 @@ internal class BytesSerializer : ISerializer, IDisposable, IAsyncDisposable
         {
             Writer.Write(mem.Span);
         }
+        return default;
     }
 
-    public void WriteArray<T, S>(ReadOnlySpan<T> value, S serialize) where S : ISerialize<T>
+    #endregion
+
+    #region Array
+
+    public override Unit VArray<V, T>(V vision, ReadOnlyMemory<T> value)
     {
         Writer.Write((byte)((byte)TypeToken.Seq | (byte)SplitToken.Start << 3));
         var first = true;
@@ -242,12 +359,13 @@ internal class BytesSerializer : ISerializer, IDisposable, IAsyncDisposable
         {
             if (first) first = false;
             else Writer.Write((byte)((byte)TypeToken.Seq | (byte)SplitToken.Split << 3));
-            serialize.Write(this, item, Options);
+            vision.Accept<Unit, BytesSerializer>(this, item);
         }
         Writer.Write((byte)((byte)TypeToken.Seq | (byte)SplitToken.End << 3));
+        return default;
     }
 
-    public void WriteArray<T, S>(ReadOnlySequence<T> value, S serialize) where S : ISerialize<T>
+    public override Unit VArray<V, T>(V vision, ReadOnlySequence<T> value)
     {
         Writer.Write((byte)((byte)TypeToken.Seq | (byte)SplitToken.Start << 3));
         bool first = true;
@@ -257,190 +375,227 @@ internal class BytesSerializer : ISerializer, IDisposable, IAsyncDisposable
             {
                 if (first) first = false;
                 else Writer.Write((byte)((byte)TypeToken.Seq | (byte)SplitToken.Split << 3));
-                serialize.Write(this, item, Options);
+                vision.Accept<Unit, BytesSerializer>(this, item);
             }
         }
         Writer.Write((byte)((byte)TypeToken.Seq | (byte)SplitToken.End << 3));
+        return default;
     }
 
-    public void WriteUnit()
-    {
-        WriteNone();
-    }
+    #endregion
 
-    public void WriteNone()
+    #region Unit
+
+    public override Unit VUnit() => VNone();
+
+    #endregion
+
+    #region Option
+
+    public override Unit VNone()
     {
         Writer.Write((byte)TypeToken.None);
+        return default;
     }
 
-    public void WriteSome<T, S>(T value, S serialize) where S : ISerialize<T>
+    public override Unit VSome<V, T>(V vision, T value)
     {
         Writer.Write((byte)TypeToken.Some);
-        serialize.Write(this, value, Options);
+        return vision.Accept<Unit, BytesSerializer>(this, value);
     }
 
-    public void StartSeq<T, R>(UIntPtr? len, T value, R receiver) where R : ISeqSerializerReceiver<T>
+    #endregion
+
+    #region Entry
+
+    public override Unit VEntry<KV, VV, IK, IV>(KV keyVision, VV valueVision, IK key, IV value)
     {
         Writer.Write((byte)((byte)TypeToken.Seq | (byte)SplitToken.Start << 3));
-        receiver.Receive(value, new SeqSerializer(this));
+        keyVision.Accept<Unit, BytesSerializer>(this, key);
+        Writer.Write((byte)((byte)TypeToken.Seq | (byte)SplitToken.Split << 3));
+        valueVision.Accept<Unit, BytesSerializer>(this, value);
         Writer.Write((byte)((byte)TypeToken.Seq | (byte)SplitToken.End << 3));
+        return default;
     }
 
-    private record SeqSerializer(BytesSerializer self) : ISeqSerializer
-    {
-        private bool first = true;
+    #endregion
 
-        public void WriteElement<T, S>(T value, S serialize) where S : ISerialize<T>
+    #region Tuple
+
+    public override Unit VTuple<V, T>(V vision, T value)
+    {
+        Writer.Write((byte)((byte)TypeToken.Seq | (byte)SplitToken.Start << 3));
+        var first = true;
+        var size = vision.Size;
+        TupleVisitor ??= new(this);
+        for (var i = 0; i < size; i++)
         {
             if (first) first = false;
-            else self.Writer.Write((byte)((byte)TypeToken.Seq | (byte)SplitToken.Split << 3));
-            serialize.Write(self, value, self.Options);
+            else Writer.Write((byte)((byte)TypeToken.Seq | (byte)SplitToken.Split << 3));
+            vision.AcceptItem<Unit, TupleSeraVisitor>(TupleVisitor, value, i);
         }
+        Writer.Write((byte)((byte)TypeToken.Seq | (byte)SplitToken.End << 3));
+        return default;
     }
 
-    public void StartMap<T, R>(UIntPtr? len, T value, R receiver) where R : IMapSerializerReceiver<T>
+    private TupleSeraVisitor? TupleVisitor;
+
+    private class TupleSeraVisitor(BytesSerializer Base) : ATupleSeraVisitor<Unit>(Base)
+    {
+        public override Unit VItem<T, V>(V vision, T value)
+            => vision.Accept<Unit, BytesSerializer>(Base, value);
+
+        public override Unit VNone() => default;
+    }
+
+    #endregion
+
+    #region Seq
+
+    public override Unit VSeq<V>(V vision)
+    {
+        Writer.Write((byte)((byte)TypeToken.Seq | (byte)SplitToken.Start << 3));
+        var first = true;
+        SeqVisitor ??= new(this);
+        while (vision.HasNext)
+        {
+            if (first) first = false;
+            else Writer.Write((byte)((byte)TypeToken.Seq | (byte)SplitToken.Split << 3));
+            vision.AcceptNext<Unit, SeqSeraVisitor>(SeqVisitor);
+        }
+        Writer.Write((byte)((byte)TypeToken.Seq | (byte)SplitToken.End << 3));
+        return default;
+    }
+
+    private SeqSeraVisitor? SeqVisitor;
+
+    private class SeqSeraVisitor(BytesSerializer Base) : ASeqSeraVisitor<Unit>(Base)
+    {
+        public override Unit VItem<T, V>(V vision, T value)
+            => vision.Accept<Unit, BytesSerializer>(Base, value);
+
+        public override Unit VEnd() => default;
+    }
+
+    #endregion
+
+    #region Map
+
+    public override Unit VMap<V>(V vision)
     {
         Writer.Write((byte)((byte)TypeToken.Map | (byte)SplitToken.Start << 3));
-        receiver.Receive(value, new MapSerializer(this));
+        var first = true;
+        MapVisitor ??= new(this);
+        while (vision.HasNext)
+        {
+            if (first) first = false;
+            else Writer.Write((byte)((byte)TypeToken.Map | (byte)SplitToken.Split << 3));
+            vision.AcceptNext<Unit, MapSeraVisitor>(MapVisitor);
+        }
         Writer.Write((byte)((byte)TypeToken.Map | (byte)SplitToken.End << 3));
+        return default;
     }
 
-    private record MapSerializer(BytesSerializer self) : IMapSerializer
+    private MapSeraVisitor? MapVisitor;
+
+    private class MapSeraVisitor(BytesSerializer Base) : AMapSeraVisitor<Unit>(Base)
     {
-        private bool first = true;
-
-        public void WriteKey<K, SK>(K key, SK key_serialize) where SK : ISerialize<K>
+        public override Unit VEntry<KV, VV, IK, IV>(KV keyVision, VV valueVision, IK key, IV value)
         {
-            if (first) first = false;
-            else self.Writer.Write((byte)((byte)TypeToken.Map | (byte)SplitToken.Split << 3));
-            key_serialize.Write(self, key, self.Options);
-            self.Writer.Write((byte)((byte)TypeToken.Map | (byte)SplitToken.Mid << 3));
+            keyVision.Accept<Unit, BytesSerializer>(Base, key);
+            Base.Writer.Write((byte)((byte)TypeToken.Map | (byte)SplitToken.Mid << 3));
+            return valueVision.Accept<Unit, BytesSerializer>(Base, value);
         }
 
-        public void WriteValue<V, SV>(V value, SV value_serialize) where SV : ISerialize<V>
-        {
-            value_serialize.Write(self, value, self.Options);
-        }
-
-        public void WriteEntry<K, V, SK, SV>(K key, V value, SK key_serialize, SV value_serialize)
-            where SK : ISerialize<K> where SV : ISerialize<V>
-        {
-            if (first) first = false;
-            else self.Writer.Write((byte)((byte)TypeToken.Map | (byte)SplitToken.Split << 3));
-            key_serialize.Write(self, key, self.Options);
-            self.Writer.Write((byte)((byte)TypeToken.Map | (byte)SplitToken.Mid << 3));
-            value_serialize.Write(self, value, self.Options);
-        }
+        public override Unit VEnd() => default;
     }
 
-    public void StartStruct<T, R>(string? name, UIntPtr len, T value, R receiver) where R : IStructSerializerReceiver<T>
+    #endregion
+
+    #region Struct
+
+    public override Unit VStruct<V, T>(V vision, T value)
     {
         Writer.Write((byte)((byte)TypeToken.Map | (byte)SplitToken.Start << 3));
-        receiver.Receive(value, new StructSerializer(this));
-        Writer.Write((byte)((byte)TypeToken.Map | (byte)SplitToken.End << 3));
-    }
-
-    private record StructSerializer(BytesSerializer self) : IStructSerializer
-    {
-        private bool first = true;
-
-        public void WriteField<T, S>(ReadOnlySpan<char> key, long? int_key, T value, S serialize)
-            where S : ISerialize<T>
+        var first = true;
+        StructVisitor ??= new(this);
+        var size = vision.Count;
+        for (var i = 0; i < size; i++)
         {
             if (first) first = false;
-            else self.Writer.Write((byte)((byte)TypeToken.Map | (byte)SplitToken.Split << 3));
-            self.Writer.Write(key);
-            self.Writer.Write((byte)((byte)TypeToken.Map | (byte)SplitToken.Mid << 3));
-            serialize.Write(self, value, self.Options);
+            else Writer.Write((byte)((byte)TypeToken.Map | (byte)SplitToken.Split << 3));
+            vision.AcceptField<Unit, StructSeraVisitor>(StructVisitor, value, i);
         }
-
-        public void WriteField<T, S>(string key, long? int_key, T value, S serialize) where S : ISerialize<T>
-            => WriteField(key.AsMemory(), int_key, value, serialize);
-
-        public void WriteField<T, S>(ReadOnlyMemory<char> key, long? int_key, T value, S serialize)
-            where S : ISerialize<T>
-            => WriteField(key.Span, int_key, value, serialize);
+        Writer.Write((byte)((byte)TypeToken.Map | (byte)SplitToken.End << 3));
+        return default;
     }
 
-    public void WriteEmptyUnion(string? union_name)
-    {
-        Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.Start << 3));
-        WriteUnit();
-        Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.Start << 3));
-    }
+    private StructSeraVisitor? StructVisitor;
 
-    private void WriteVariant(Variant variant)
+    private class StructSeraVisitor(BytesSerializer Base) : AStructSeraVisitor<Unit>(Base)
     {
-        switch (variant.Kind)
+        public override Unit VField<V, T>(V vision, T value, string name, long key)
         {
-            case VariantKind.Name:
-                Writer.Write(variant.Name);
-                break;
-            case VariantKind.NameAndTag:
-                Writer.Write(variant.Name);
-                goto case VariantKind.Tag;
-            case VariantKind.Tag:
-                switch (variant.Tag.Kind)
-                {
-                    case VariantTagKind.SByte:
-                        Writer.Write(variant.Tag.SByte);
-                        break;
-                    case VariantTagKind.Byte:
-                        Writer.Write(variant.Tag.Byte);
-                        break;
-                    case VariantTagKind.Int16:
-                        Writer.Write(variant.Tag.Int16);
-                        break;
-                    case VariantTagKind.UInt16:
-                        Writer.Write(variant.Tag.UInt16);
-                        break;
-                    case VariantTagKind.Int32:
-                        Writer.Write(variant.Tag.Int32);
-                        break;
-                    case VariantTagKind.UInt32:
-                        Writer.Write(variant.Tag.UInt32);
-                        break;
-                    case VariantTagKind.Int64:
-                        Writer.Write(variant.Tag.Int64);
-                        break;
-                    case VariantTagKind.UInt64:
-                        Writer.Write(variant.Tag.UInt64);
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
+            Base.VPrimitive(key);
+            Base.Writer.Write((byte)((byte)TypeToken.Map | (byte)SplitToken.Mid << 3));
+            return vision.Accept<Unit, BytesSerializer>(Base, value);
+        }
+
+        public override Unit VNone() => default;
+    }
+
+    #endregion
+
+    #region Union
+
+    public override Unit VUnion<V, T>(V vision, T value)
+    {
+        UnionVisitor ??= new(this);
+        return vision.Accept<Unit, UnionSeraVisitor>(UnionVisitor, value);
+    }
+
+    private UnionSeraVisitor? UnionVisitor;
+
+    private class UnionSeraVisitor(BytesSerializer Base) : AUnionSeraVisitor<Unit>(Base)
+    {
+        public override Unit VEmpty()
+        {
+            Base.Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.Start << 3));
+            Base.Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.End << 3));
+            return default;
+        }
+
+        public override Unit VVariant(Variant variant, UnionStyle? style = null)
+        {
+            Base.Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.Start << 3));
+            var str = variant.ToString();
+            Base.VString(str);
+            Base.Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.End << 3));
+            return default;
+        }
+
+        public override Unit VVariant<V, T>(V vision, T value, Variant variant, UnionStyle? style = null)
+        {
+            Base.Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.Start << 3));
+            var str = variant.ToString();
+            Base.VString(str);
+            Base.Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.Mid << 3));
+            vision.Accept<Unit, BytesSerializer>(Base, value);
+            Base.Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.End << 3));
+            return default;
+        }
+
+        public override Unit VVariantStruct<V, T>(V vision, T value, Variant variant, UnionStyle? style = null)
+        {
+            Base.Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.Start << 3));
+            var str = variant.ToString();
+            Base.VString(str);
+            Base.Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.Mid << 3));
+            Base.VStruct(vision, value);
+            Base.Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.End << 3));
+            return default;
         }
     }
 
-    public void WriteVariantUnit(string? union_name, Variant variant, SerializerVariantHint? hint)
-    {
-        Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.Start << 3));
-        WriteVariant(variant);
-        Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.Mid << 3));
-        WriteUnit();
-        Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.Start << 3));
-    }
-
-    public void WriteVariant<T, S>(string? union_name, Variant variant, T value, S serializer,
-        SerializerVariantHint? hint) where S : ISerialize<T>
-    {
-        Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.Start << 3));
-        WriteVariant(variant);
-        Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.Mid << 3));
-        serializer.Write(this, value, Options);
-        Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.Start << 3));
-    }
-
-    public void Dispose()
-    {
-        Writer.Dispose();
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        await Writer.DisposeAsync();
-    }
+    #endregion
 }

@@ -6,6 +6,7 @@ namespace Sera.Core.Formats
 
     public enum ToUpperOrLower
     {
+        None,
         /// <summary>
         /// Format in uppercase if possible
         /// </summary>
@@ -18,6 +19,7 @@ namespace Sera.Core.Formats
 
     public enum NumberTextFormat
     {
+        Any,
         /// <summary>
         /// Format numbers in decimal, Use "N"
         /// <code>1234</code>
@@ -35,34 +37,35 @@ namespace Sera.Core.Formats
         Binary,
     }
 
-    public record DateTimeFormat
+    [Flags]
+    public enum DateTimeFormatFlags
     {
-        public static DateTimeFormat Default { get; } = new();
-
+        None,
         /// <summary>
         /// Format date/time as number
         /// </summary>
-        public bool DateAsNumber { get; set; }
+        DateAsNumber = 1 << 0,
         /// <summary>
         /// Convert <see cref="DateOnly"/> to <see cref="DateTime"/> before formatting
         /// </summary>
-        public bool DateOnlyToDateTime { get; set; }
+        DateOnlyToDateTime = 1 << 1,
         /// <summary>
         /// Convert <see cref="DateOnly"/> to <see cref="DateTimeOffset"/> before formatting
         /// </summary>
-        public bool DateOnlyToDateTimeOffset { get; set; }
+        DateOnlyToDateTimeOffset = 1 << 2,
         /// <summary>
         /// Convert <see cref="DateTime"/> to <see cref="DateTimeOffset"/> before formatting
         /// </summary>
-        public bool DateTimeToDateTimeOffset { get; set; }
+        DateTimeToDateTimeOffset = 1 << 3,
         /// <summary>
         /// Convert <see cref="DateTimeOffset"/>'s timezone using <see cref="ISeraOptions.TimeZone"/>
         /// </summary>
-        public bool DateTimeOffsetUseTimeZone { get; set; }
+        DateTimeOffsetUseTimeZone = 1 << 4,
     }
-
+    
     public enum GuidTextFormat
     {
+        Any,
         /// <summary>
         /// Use "N" to format <see cref="Guid"/>
         /// <code>00000000000000000000000000000000</code>
@@ -92,6 +95,7 @@ namespace Sera.Core.Formats
 
     public enum GuidBinaryFormat
     {
+        Any,
         /// <summary>
         /// Use the UUID standard for <see cref="Guid"/> in binary serialization
         /// </summary>
@@ -114,15 +118,15 @@ namespace Sera.Core
 
         public bool BooleanAsNumber { get; set; }
 
-        public ToUpperOrLower? ToUpperOrLower { get; set; }
+        public ToUpperOrLower ToUpperOrLower { get; set; } = ToUpperOrLower.None;
 
-        public NumberTextFormat? NumberTextFormat { get; set; }
+        public NumberTextFormat NumberTextFormat { get; set; } = NumberTextFormat.Any;
         public string? CustomNumberTextFormat { get; set; }
 
-        public DateTimeFormat? DateTimeFormat { get; set; }
+        public DateTimeFormatFlags DateTimeFormat { get; set; } = DateTimeFormatFlags.None;
 
-        public GuidTextFormat? GuidTextFormat { get; set; }
-        public GuidBinaryFormat? GuidBinaryFormat { get; set; }
+        public GuidTextFormat GuidTextFormat { get; set; } = GuidTextFormat.Any;
+        public GuidBinaryFormat GuidBinaryFormat { get; set; } = GuidBinaryFormat.Any;
         public string? CustomGuidTextFormat { get; set; }
     }
 

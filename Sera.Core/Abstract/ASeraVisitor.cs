@@ -3,6 +3,9 @@ using System.Buffers;
 using System.Numerics;
 using System.Text;
 
+using SeraBase = Sera.Core.SeraBase<Sera.Core.ISeraVision<object?>>;
+using SeraBaseForward = Sera.Core.SeraBaseForward<Sera.Core.ISeraVision<object?>>;
+
 namespace Sera.Core;
 
 public abstract class ASeraVisitor<R> : SeraBase

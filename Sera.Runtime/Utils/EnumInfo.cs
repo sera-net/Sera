@@ -7,7 +7,7 @@ using Sera.Core;
 
 namespace Sera.Runtime.Utils;
 
-internal record EnumInfo(string Name, VariantTag Tag, FieldInfo Field, SeraEnumAttribute? EnumAttr);
+internal record EnumInfo(string Name, VariantTag Tag, FieldInfo Field, SeraUnionAttribute? EnumAttr);
 
 internal record struct EnumJumpTable(int Index, EnumInfo Info);
 
@@ -37,7 +37,7 @@ internal static class EnumUtils
             .Select(a => (a.name, a.field, value: (V)a.field.GetValue(null)!))
             .Select(a =>
             {
-                var enum_attr = a.field.GetCustomAttribute<SeraEnumAttribute>();
+                var enum_attr = a.field.GetCustomAttribute<SeraUnionAttribute>();
                 var rename_attr = a.field.GetCustomAttribute<SeraRenameAttribute>();
                 var name = rename_attr?.SerName ?? rename_attr?.Name ?? a.name; // todo auto rename
                 return new EnumInfo(name, a.value.MakeVariantTag(), a.field, enum_attr);

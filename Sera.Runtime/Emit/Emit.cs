@@ -8,13 +8,12 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Threading;
-using Sera.Core.Ser;
 using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Utils;
 
 namespace Sera.Runtime.Emit;
 
-internal readonly record struct EmitMeta(TypeMeta TypeMeta, SeraHints Data)
+internal readonly record struct EmitMeta(TypeMeta TypeMeta, SeraStyles Styles)
 {
     public Type Type => TypeMeta.Type;
 

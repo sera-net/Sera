@@ -3,17 +3,12 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
-using Sera.Json.Builders;
-using Sera.Json.Builders.Ser;
 
 namespace Sera.Json.Ser;
 
 public class AsyncStreamJsonWriter
     (SeraJsonOptions Options, AJsonFormatter Formatter, Stream Stream) : AAsyncJsonWriter(Options, Formatter)
 {
-    public static AsyncStreamJsonWriter Create(Builder<ToStream> self) =>
-        new(self.Options, self.Formatter, self.Value.Stream);
-
     private readonly StreamWriter Writer = new(Stream, Options.Encoding, leaveOpen: true);
 
     private Stream? tmpStream;

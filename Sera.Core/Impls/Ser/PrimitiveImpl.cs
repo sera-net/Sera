@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Frozen;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -148,4 +149,41 @@ public readonly struct PrimitiveImpl(SeraFormats? formats = null) :
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R Accept<R, V>(V visitor, Version value) where V : ASeraVisitor<R>
         => visitor.VPrimitive(value, formats);
+
+    private static readonly FrozenSet<Type> PrimitiveTypes = new[]
+    {
+        typeof(bool),
+        typeof(sbyte),
+        typeof(byte),
+        typeof(short),
+        typeof(ushort),
+        typeof(int),
+        typeof(uint),
+        typeof(long),
+        typeof(ulong),
+        typeof(Int128),
+        typeof(UInt128),
+        typeof(nint),
+        typeof(nuint),
+        typeof(Half),
+        typeof(float),
+        typeof(double),
+        typeof(decimal),
+        typeof(BigInteger),
+        typeof(Complex),
+        typeof(TimeSpan),
+        typeof(DateOnly),
+        typeof(TimeOnly),
+        typeof(DateTime),
+        typeof(DateTimeOffset),
+        typeof(Guid),
+        typeof(Range),
+        typeof(Index),
+        typeof(char),
+        typeof(Rune),
+        typeof(Uri),
+        typeof(Version),
+    }.ToFrozenSet();
+
+    public static bool IsPrimitiveType(Type type) => PrimitiveTypes.Contains(type);
 }

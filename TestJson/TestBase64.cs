@@ -1,6 +1,7 @@
 ﻿using System.Buffers;
 using System.Text;
-using Sera.Core.Impls;
+using Sera;
+using Sera.Core.Impls.Ser;
 using Sera.Json;
 
 namespace TestJson;
@@ -18,8 +19,10 @@ public class TestBase64
         var seq = new ReadOnlySequence<byte>(new byte[] { 1, 2, 3, 4, 5 });
 
         SeraJson.Serializer
-            .ToStream(stream)
-            .SerializeStatic(seq, ReadOnlySequenceBytesImpl.Instance);
+            .Serialize(seq)
+            .Use(new BytesImpl())
+            .Static
+            .To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -37,9 +40,11 @@ public class TestBase64
         var seq = new ReadOnlySequence<byte>(new byte[] { 1, 2, 3, 4, 5 });
 
         SeraJson.Serializer
-            .ToStream(stream)
             .WithOptions(SeraJsonOptions.Default with { Encoding = Encoding.Unicode })
-            .SerializeStatic(seq, ReadOnlySequenceBytesImpl.Instance);
+            .Serialize(seq)
+            .Use(new BytesImpl())
+            .Static
+            .To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.Unicode);
@@ -48,19 +53,20 @@ public class TestBase64
 
         Assert.That(str, Is.EqualTo("\"AQIDBAU=\""));
     }
-    
+
     [Test]
     public void Test3()
     {
         var seq = new ReadOnlySequence<byte>(new byte[] { 1, 2, 3, 4, 5 });
 
         var str = SeraJson.Serializer
-            .ToString()
-            .SerializeStatic(seq, ReadOnlySequenceBytesImpl.Instance);
+            .Serialize(seq)
+            .Use(new BytesImpl())
+            .Static
+            .To.String();
 
         Console.WriteLine(str);
 
         Assert.That(str, Is.EqualTo("\"AQIDBAU=\""));
     }
-    
 }

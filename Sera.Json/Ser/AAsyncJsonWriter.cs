@@ -13,7 +13,7 @@ public abstract class AAsyncJsonWriter(SeraJsonOptions options, AJsonFormatter f
 {
     public SeraJsonOptions Options { get; } = options;
     public AJsonFormatter Formatter { get; } = formatter;
-    public Encoding Encoding => options.Encoding;
+    public Encoding Encoding => Options.Encoding;
 
     public abstract ValueTask<Stream> StartBase64();
     public abstract ValueTask EndBase64();
@@ -100,7 +100,7 @@ public abstract class AAsyncJsonWriter(SeraJsonOptions options, AJsonFormatter f
                 n = 0;
             }
             else if (
-                (formatter.EscapeAllNonAsciiChar && !rune.IsAscii) ||
+                (Formatter.EscapeAllNonAsciiChar && !rune.IsAscii) ||
                 Rune.GetUnicodeCategory(rune) is
                     UnicodeCategory.Control or
                     UnicodeCategory.Format or
@@ -144,7 +144,7 @@ public abstract class AAsyncJsonWriter(SeraJsonOptions options, AJsonFormatter f
                 n = 0;
             }
             else if (
-                (formatter.EscapeAllNonAsciiChar && !rune.IsAscii) ||
+                (Formatter.EscapeAllNonAsciiChar && !rune.IsAscii) ||
                 Rune.GetUnicodeCategory(rune) is
                     UnicodeCategory.Control or
                     UnicodeCategory.Format or
@@ -170,7 +170,7 @@ public abstract class AAsyncJsonWriter(SeraJsonOptions options, AJsonFormatter f
         if (encoding.Equals(Encoding.UTF8)) await WriteEscapeUtf8(str);
         else
         {
-            var encode = options.Encoding;
+            var encode = Options.Encoding;
             var char_count = encode.GetMaxCharCount(str.Length);
             var chars = ArrayPool<char>.Shared.Rent(char_count);
             try

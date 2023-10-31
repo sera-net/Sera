@@ -2,8 +2,9 @@
 
 open System
 open NUnit.Framework
+open Sera
 open Sera.Json
-open Sera.Json.Runtime
+open Sera.Runtime
 
 [<SetUp>]
 let Setup () = ()
@@ -16,7 +17,7 @@ type Record1 = { a: string }
 let TestRecord1 () =
     let obj: Record1 = { a = "asd" }
 
-    let str = SeraJson.Serializer.ToString().Serialize(obj)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
 
     Console.WriteLine(str)
 
@@ -32,7 +33,7 @@ let TestRecord1 () =
 let TestRecord2 () =
     let obj = {| a = 123 |}
 
-    let str = SeraJson.Serializer.ToString().Serialize(obj)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
 
     Console.WriteLine(str)
 
@@ -49,7 +50,7 @@ let TestTuple1 () =
     //==================================================
 
     let obj = Tuple.Create(1)
-    let str = SeraJson.Serializer.ToString().Serialize(obj)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
 
     Console.WriteLine(str)
 
@@ -58,7 +59,7 @@ let TestTuple1 () =
     //==================================================
 
     let obj = (1, 2)
-    let str = SeraJson.Serializer.ToString().Serialize(obj)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
 
     Console.WriteLine(str)
 
@@ -67,7 +68,7 @@ let TestTuple1 () =
     //==================================================
 
     let obj = (1, 2, 3)
-    let str = SeraJson.Serializer.ToString().Serialize(obj)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
 
     Console.WriteLine(str)
 
@@ -76,7 +77,7 @@ let TestTuple1 () =
     //==================================================
 
     let obj = (1, 2, 3, 4)
-    let str = SeraJson.Serializer.ToString().Serialize(obj)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
 
     Console.WriteLine(str)
 
@@ -85,7 +86,7 @@ let TestTuple1 () =
     //==================================================
 
     let obj = (1, 2, 3, 4, 5)
-    let str = SeraJson.Serializer.ToString().Serialize(obj)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
 
     Console.WriteLine(str)
 
@@ -94,7 +95,7 @@ let TestTuple1 () =
     //==================================================
 
     let obj = (1, 2, 3, 4, 5, 6)
-    let str = SeraJson.Serializer.ToString().Serialize(obj)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
 
     Console.WriteLine(str)
 
@@ -103,7 +104,7 @@ let TestTuple1 () =
     //==================================================
 
     let obj = (1, 2, 3, 4, 5, 6, 7)
-    let str = SeraJson.Serializer.ToString().Serialize(obj)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
 
     Console.WriteLine(str)
 
@@ -112,7 +113,7 @@ let TestTuple1 () =
     //==================================================
 
     let obj = (1, 2, 3, 4, 5, 6, 7, 8)
-    let str = SeraJson.Serializer.ToString().Serialize(obj)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
 
     Console.WriteLine(str)
 
@@ -131,7 +132,7 @@ let TestValueTuple1 () =
     //==================================================
 
     let obj = ValueTuple.Create()
-    let str = SeraJson.Serializer.ToString().Serialize(obj)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
 
     Console.WriteLine(str)
 
@@ -140,7 +141,7 @@ let TestValueTuple1 () =
     //==================================================
 
     let obj = ValueTuple.Create(1)
-    let str = SeraJson.Serializer.ToString().Serialize(obj)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
 
     Console.WriteLine(str)
 
@@ -149,7 +150,7 @@ let TestValueTuple1 () =
     //==================================================
 
     let obj = struct (1, 2)
-    let str = SeraJson.Serializer.ToString().Serialize(obj)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
 
     Console.WriteLine(str)
 
@@ -158,7 +159,7 @@ let TestValueTuple1 () =
     //==================================================
 
     let obj = struct (1, 2, 3)
-    let str = SeraJson.Serializer.ToString().Serialize(obj)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
 
     Console.WriteLine(str)
 
@@ -167,7 +168,7 @@ let TestValueTuple1 () =
     //==================================================
 
     let obj = struct (1, 2, 3, 4)
-    let str = SeraJson.Serializer.ToString().Serialize(obj)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
 
     Console.WriteLine(str)
 
@@ -176,7 +177,7 @@ let TestValueTuple1 () =
     //==================================================
 
     let obj = struct (1, 2, 3, 4, 5)
-    let str = SeraJson.Serializer.ToString().Serialize(obj)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
 
     Console.WriteLine(str)
 
@@ -185,7 +186,7 @@ let TestValueTuple1 () =
     //==================================================
 
     let obj = struct (1, 2, 3, 4, 5, 6)
-    let str = SeraJson.Serializer.ToString().Serialize(obj)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
 
     Console.WriteLine(str)
 
@@ -194,7 +195,7 @@ let TestValueTuple1 () =
     //==================================================
 
     let obj = struct (1, 2, 3, 4, 5, 6, 7)
-    let str = SeraJson.Serializer.ToString().Serialize(obj)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
 
     Console.WriteLine(str)
 
@@ -203,7 +204,7 @@ let TestValueTuple1 () =
     //==================================================
 
     let obj = struct (1, 2, 3, 4, 5, 6, 7, 8)
-    let str = SeraJson.Serializer.ToString().Serialize(obj)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
 
     Console.WriteLine(str)
 
@@ -221,7 +222,7 @@ let TestValueTuple1 () =
 let TestList1 () =
     let obj = [ 1; 2; 3 ]
 
-    let str = SeraJson.Serializer.ToString().Serialize(obj)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
 
     Console.WriteLine(str)
 
@@ -237,7 +238,7 @@ let TestList1 () =
 let TestSet1 () =
     let obj = Set [ 1; 2; 3 ]
 
-    let str = SeraJson.Serializer.ToString().Serialize(obj)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
 
     Console.WriteLine(str)
 
@@ -253,7 +254,7 @@ let TestSet1 () =
 let TestOption1 () =
     let obj: int option = None
 
-    let str = SeraJson.Serializer.ToString().Serialize(obj)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
 
     Console.WriteLine(str)
 
@@ -269,7 +270,7 @@ let TestOption1 () =
 let TestOption2 () =
     let obj: int option = Some 1
 
-    let str = SeraJson.Serializer.ToString().Serialize(obj)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
 
     Console.WriteLine(str)
 
@@ -288,7 +289,7 @@ type private TypeTestPrivateOption1 =
 let TestPrivateOption1 () =
     let obj: TypeTestPrivateOption1 option = None
 
-    let str = SeraJson.Serializer.ToString().Serialize(obj)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
 
     Console.WriteLine(str)
 
@@ -307,7 +308,7 @@ type private TypeTestPrivateOption2 =
 let TestPrivateOption2 () =
     let obj = Some(TypeTestPrivateOption2)
 
-    let str = SeraJson.Serializer.ToString().Serialize(obj)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
 
     Console.WriteLine(str)
 

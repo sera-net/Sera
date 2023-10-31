@@ -271,6 +271,7 @@ public enum VariantPriority : byte
 
 public enum UnionFormat
 {
+    Any,
     /// <summary>
     /// Json is <code>{ "Tag": Value }</code>
     /// </summary>
@@ -296,7 +297,7 @@ public enum UnionFormat
 public record UnionStyle(
     VariantPriority VariantPriority = VariantPriority.Any,
     SeraFormats? VariantFormats = null,
-    UnionFormat? Format = default,
+    UnionFormat Format = UnionFormat.Any,
     string InternalTagName = "type",
     string AdjacentTagName = "t",
     string AdjacentValueName = "c"

@@ -12,7 +12,7 @@ public abstract class AJsonWriter(SeraJsonOptions options, AJsonFormatter format
 {
     public SeraJsonOptions Options { get; } = options;
     public AJsonFormatter Formatter { get; } = formatter;
-    public Encoding Encoding => options.Encoding;
+    public Encoding Encoding => Options.Encoding;
 
     public abstract Stream StartBase64();
     public abstract void EndBase64();
@@ -92,7 +92,7 @@ public abstract class AJsonWriter(SeraJsonOptions options, AJsonFormatter format
                 n = 0;
             }
             else if (
-                (formatter.EscapeAllNonAsciiChar && !rune.IsAscii) ||
+                (Formatter.EscapeAllNonAsciiChar && !rune.IsAscii) ||
                 Rune.GetUnicodeCategory(rune) is
                     UnicodeCategory.Control or
                     UnicodeCategory.Format or
@@ -134,7 +134,7 @@ public abstract class AJsonWriter(SeraJsonOptions options, AJsonFormatter format
                 n = 0;
             }
             else if (
-                (formatter.EscapeAllNonAsciiChar && !rune.IsAscii) ||
+                (Formatter.EscapeAllNonAsciiChar && !rune.IsAscii) ||
                 Rune.GetUnicodeCategory(rune) is
                     UnicodeCategory.Control or
                     UnicodeCategory.Format or
@@ -161,7 +161,7 @@ public abstract class AJsonWriter(SeraJsonOptions options, AJsonFormatter format
         if (encoding.Equals(Encoding.UTF8)) WriteEscapeUtf8(str);
         else
         {
-            var encode = options.Encoding;
+            var encode = Options.Encoding;
             var char_count = encode.GetMaxCharCount(str.Length);
             var chars = ArrayPool<char>.Shared.Rent(char_count);
             try

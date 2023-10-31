@@ -1,17 +1,43 @@
 ﻿using System;
 using System.Collections.Generic;
-using Sera.Core.Ser;
+using Sera.Core;
+using Sera.Core.Formats;
 
 namespace Sera;
 
 #region Generator
 
+/// <summary>Mark auto-generated serialize and deserialize</summary>
+[AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Enum, Inherited = false)]
+public sealed class SeraGenAttribute : Attribute
+{
+    public bool NoSer { get; set; }
+    public bool NoDe { get; set; }
+}
+
+/// <summary>Mark auto-generated serialize and deserialize</summary>
+[AttributeUsage(AttributeTargets.Assembly)]
+public class SeraGenForAttribute : Attribute
+{
+    public SeraGenForAttribute(Type target)
+    {
+        Target = target;
+    }
+
+    public Type Target { get; set; }
+
+    public bool NoSer { get; set; }
+    public bool NoDe { get; set; }
+}
+
+/// <summary>Mark auto-generated serialize and deserialize</summary>
+[AttributeUsage(AttributeTargets.Assembly)]
+public sealed class SeraGenForAttribute<T>() : SeraGenForAttribute(typeof(T)) { }
+
 /// <summary>Misc options</summary>
 [AttributeUsage(AttributeTargets.All)]
 public sealed class SeraAttribute : Attribute
 {
-    /// <summary>Hint what format is expected to be serialize</summary>
-    public SerializerPrimitiveHint? SerPrimitive { get; set; }
     /// <summary>Specify special semantics, only for field | property</summary>
     public SeraAs As { get; set; } = SeraAs.None;
 }
@@ -29,30 +55,6 @@ public enum SeraAs
     Seq,
     /// <summary>Mark <see cref="IEnumerable{T}"/> of <see cref="KeyValuePair{K,V}"/> is map semantics</summary>
     Map,
-}
-
-/// <summary>Mark auto-generated serialize and deserialize</summary>
-[AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Enum, Inherited = false)]
-public sealed class SeraGenAttribute : Attribute
-{
-    public bool NoSync { get; set; } = false;
-    public bool NoAsync { get; set; } = false;
-}
-
-/// <summary>Mark auto-generated serialize</summary>
-[AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Enum, Inherited = false)]
-public sealed class SeraGenSerAttribute : Attribute
-{
-    public bool NoSync { get; set; } = false;
-    public bool NoAsync { get; set; } = false;
-}
-
-/// <summary>Mark auto-generated deserialize</summary>
-[AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Enum, Inherited = false)]
-public sealed class SeraGenDeAttribute : Attribute
-{
-    public bool NoSync { get; set; } = false;
-    public bool NoAsync { get; set; } = false;
 }
 
 /// <summary>Mark fields should be included when (de)serializing</summary>
@@ -178,33 +180,45 @@ public enum SeraRenameMode
     SCREAMING_KEBAB_CASE,
 }
 
-public abstract class SeraVariantAttributeBase : Attribute
+[AttributeUsage(AttributeTargets.All)]
+public sealed class SeraFormatsAttribute : Attribute
 {
-    public SerializerVariantHint SerHint { get; set; }
+    public bool BooleanAsNumber { get; set; }
 
-    public bool UseNumberTag
-    {
-        get => SerHint == SerializerVariantHint.UseNumberTag;
-        set
-        {
-            if (value) SerHint |= SerializerVariantHint.UseNumberTag;
-            else SerHint &= ~SerializerVariantHint.UseNumberTag;
-        }
-    }
+    public ToUpperOrLower ToUpperOrLower { get; set; } = ToUpperOrLower.None;
 
-    public bool UseStringTag
+    public NumberTextFormat NumberTextFormat { get; set; } = NumberTextFormat.Any;
+    public string? CustomNumberTextFormat { get; set; }
+
+    public DateTimeFormatFlags DateTimeFormat { get; set; } = DateTimeFormatFlags.None;
+
+    public GuidTextFormat GuidTextFormat { get; set; } = GuidTextFormat.Any;
+    public GuidBinaryFormat GuidBinaryFormat { get; set; } = GuidBinaryFormat.Any;
+    public string? CustomGuidTextFormat { get; set; }
+}
+
+[AttributeUsage(AttributeTargets.Field)]
+public sealed class SeraVariantAttribute : Attribute
+{
+    public VariantPriority Priority { get; set; } = VariantPriority.Any;
+
+    public SeraVariantAttribute() { }
+
+    public SeraVariantAttribute(VariantPriority priority)
     {
-        get => SerHint == SerializerVariantHint.UseStringTag;
-        set
-        {
-            if (value) SerHint |= SerializerVariantHint.UseStringTag;
-            else SerHint &= ~SerializerVariantHint.UseStringTag;
-        }
+        Priority = priority;
     }
 }
 
-[AttributeUsage(AttributeTargets.Enum | AttributeTargets.Field)]
-public sealed class SeraEnumAttribute : SeraVariantAttributeBase { }
+[AttributeUsage(AttributeTargets.Enum | AttributeTargets.Struct | AttributeTargets.Class)]
+public class SeraUnionAttribute : Attribute
+{
+    public VariantPriority Priority { get; set; } = VariantPriority.Any;
+    public UnionFormat Format { get; set; } = UnionFormat.Any;
+    public string InternalTagName { get; set; } = "type";
+    public string AdjacentTagName { get; set; } = "t";
+    public string AdjacentValueName { get; set; } = "c";
+}
 
 [AttributeUsage(AttributeTargets.Enum)]
 public sealed class SeraFlagsAttribute : Attribute
@@ -241,40 +255,31 @@ public enum SeraFlagsMode
 
 #endregion
 
-#region Sync
+#region Mark
 
 [AttributeUsage(AttributeTargets.All)]
-public class SerializeAttribute : Attribute
+public class SeraVisionByAttribute : Attribute
 {
-    public Type ImplType { get; }
-
-    public SerializeAttribute(Type implType)
+    public SeraVisionByAttribute(string methodName)
     {
-        ImplType = implType;
+        TargetType = null;
+        MethodName = methodName;
     }
-}
 
-[AttributeUsage(AttributeTargets.All)]
-public class SerializeAttribute<T> : SerializeAttribute
-{
-    public SerializeAttribute() : base(typeof(T)) { }
-}
-
-[AttributeUsage(AttributeTargets.All)]
-public class DeserializeAttribute : Attribute
-{
-    public Type ImplType { get; }
-
-    public DeserializeAttribute(Type implType)
+    public SeraVisionByAttribute(Type targetType, string methodName)
     {
-        ImplType = implType;
+        TargetType = targetType;
+        MethodName = methodName;
     }
-}
 
-[AttributeUsage(AttributeTargets.All)]
-public class DeserializeAttribute<T> : DeserializeAttribute
-{
-    public DeserializeAttribute() : base(typeof(T)) { }
+    /// <summary>
+    /// The type where the static method is located, null is the type where the attribute is located
+    /// </summary>
+    public Type? TargetType { get; }
+    /// <summary>
+    /// A static method to return <see cref="ISeraVision{T}"/>, the method allows at most one generic type, passing in the type of the target
+    /// </summary>
+    public string MethodName { get; }
 }
 
 #endregion

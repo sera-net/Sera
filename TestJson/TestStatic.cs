@@ -1,8 +1,9 @@
 using System.Numerics;
 using System.Text;
+using Sera;
 using Sera.Core;
-using Sera.Core.Impls;
-using Sera.Core.Ser;
+using Sera.Core.Formats;
+using Sera.Core.Impls.Ser;
 using Sera.Json;
 using Sera.Json.Ser;
 
@@ -18,9 +19,12 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = true;
+
         SeraJson.Serializer
-            .ToStream(stream)
-            .SerializeStatic(true, PrimitiveImpls.Boolean);
+            .Serialize(val)
+            .Use(new PrimitiveImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -35,9 +39,12 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = false;
+
         SeraJson.Serializer
-            .ToStream(stream)
-            .SerializeStatic(false, PrimitiveImpls.Boolean);
+            .Serialize(val)
+            .Use(new PrimitiveImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -52,9 +59,12 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = 123;
+
         SeraJson.Serializer
-            .ToStream(stream)
-            .SerializeStatic(123, PrimitiveImpls.Int32);
+            .Serialize(val)
+            .Use(new PrimitiveImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -69,9 +79,12 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = 123.456;
+
         SeraJson.Serializer
-            .ToStream(stream)
-            .SerializeStatic(123.456, PrimitiveImpls.Double);
+            .Serialize(val)
+            .Use(new PrimitiveImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -86,9 +99,12 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = 123UL;
+
         SeraJson.Serializer
-            .ToStream(stream)
-            .SerializeStatic(123UL, PrimitiveImpls.UInt64);
+            .Serialize(val)
+            .Use(new PrimitiveImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -103,10 +119,13 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = 123UL;
+
         SeraJson.Serializer
-            .ToStream(stream)
             .WithFormatter(CompactJsonFormatter.Default with { LargeNumberUseString = false })
-            .SerializeStatic(123UL, PrimitiveImpls.UInt64);
+            .Serialize(val)
+            .Use(new PrimitiveImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -121,10 +140,12 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = new Complex(1, 2);
+
         SeraJson.Serializer
-            .ToStream(stream)
-            .WithFormatter(CompactJsonFormatter.Default)
-            .SerializeStatic(new Complex(1, 2), PrimitiveImpls.Complex);
+            .Serialize(val)
+            .Use(new PrimitiveImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -139,10 +160,12 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = new BigInteger(12345678);
+
         SeraJson.Serializer
-            .ToStream(stream)
-            .WithFormatter(CompactJsonFormatter.Default)
-            .SerializeStatic(new BigInteger(12345678), PrimitiveImpls.BigInteger);
+            .Serialize(val)
+            .Use(new PrimitiveImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -157,10 +180,13 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = new DateTime(2077, 7, 7, 7, 7, 7, DateTimeKind.Utc);
+
         SeraJson.Serializer
-            .ToStream(stream)
             .WithOptions(SeraJsonOptions.Default with { TimeZone = TimeZoneInfo.Utc })
-            .SerializeStatic(new DateTime(2077, 7, 7, 7, 7, 7, DateTimeKind.Utc), PrimitiveImpls.DateTime);
+            .Serialize(val)
+            .Use(new PrimitiveImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -175,10 +201,13 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = new DateTimeOffset(2077, 7, 7, 7, 7, 7, TimeSpan.Zero);
+
         SeraJson.Serializer
-            .ToStream(stream)
             .WithOptions(SeraJsonOptions.Default with { TimeZone = TimeZoneInfo.Utc })
-            .SerializeStatic(new DateTimeOffset(2077, 7, 7, 7, 7, 7, TimeSpan.Zero), PrimitiveImpls.DateTimeOffset);
+            .Serialize(val)
+            .Use(new PrimitiveImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -193,10 +222,13 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = new DateOnly(2077, 7, 7);
+
         SeraJson.Serializer
-            .ToStream(stream)
             .WithOptions(SeraJsonOptions.Default with { TimeZone = TimeZoneInfo.Utc })
-            .SerializeStatic(new DateOnly(2077, 7, 7), PrimitiveImpls.DateOnly);
+            .Serialize(val)
+            .Use(new PrimitiveImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -211,10 +243,13 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = new TimeOnly(7, 7, 7);
+
         SeraJson.Serializer
-            .ToStream(stream)
             .WithOptions(SeraJsonOptions.Default with { TimeZone = TimeZoneInfo.Utc })
-            .SerializeStatic(new TimeOnly(7, 7, 7), PrimitiveImpls.TimeOnly);
+            .Serialize(val)
+            .Use(new PrimitiveImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -229,10 +264,13 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = new TimeSpan(7, 7, 7, 7);
+
         SeraJson.Serializer
-            .ToStream(stream)
             .WithOptions(SeraJsonOptions.Default with { TimeZone = TimeZoneInfo.Utc })
-            .SerializeStatic(new TimeSpan(7, 7, 7, 7), PrimitiveImpls.TimeSpan);
+            .Serialize(val)
+            .Use(new PrimitiveImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -247,10 +285,12 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = new Guid("189819f1-1db6-4b57-be54-1821339b85f7");
+
         SeraJson.Serializer
-            .ToStream(stream)
-            .WithFormatter(CompactJsonFormatter.Default)
-            .SerializeStatic(new Guid("189819f1-1db6-4b57-be54-1821339b85f7"), PrimitiveImpls.Guid);
+            .Serialize(val)
+            .Use(new PrimitiveImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -265,11 +305,12 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = new Guid("189819f1-1db6-4b57-be54-1821339b85f7");
+
         SeraJson.Serializer
-            .ToStream(stream)
-            .WithFormatter(CompactJsonFormatter.Default)
-            .SerializeStatic(new Guid("189819f1-1db6-4b57-be54-1821339b85f7"),
-                PrimitiveImpls.Guid with { Hint = SerializerPrimitiveHint.GuidFormatShort });
+            .Serialize(val)
+            .Use(new PrimitiveImpl(SeraFormats.Default with { GuidTextFormat = GuidTextFormat.GuidTextShort }))
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -284,11 +325,12 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = new Guid("189819f1-1db6-4b57-be54-1821339b85f7");
+
         SeraJson.Serializer
-            .ToStream(stream)
-            .WithFormatter(CompactJsonFormatter.Default)
-            .SerializeStatic(new Guid("189819f1-1db6-4b57-be54-1821339b85f7"),
-                PrimitiveImpls.Guid with { Hint = SerializerPrimitiveHint.GuidFormatBraces });
+            .Serialize(val)
+            .Use(new PrimitiveImpl(SeraFormats.Default with { GuidTextFormat = GuidTextFormat.GuidTextBraces }))
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -303,11 +345,12 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = new Guid("189819f1-1db6-4b57-be54-1821339b85f7");
+
         SeraJson.Serializer
-            .ToStream(stream)
-            .WithFormatter(CompactJsonFormatter.Default)
-            .SerializeStatic(new Guid("189819f1-1db6-4b57-be54-1821339b85f7"),
-                PrimitiveImpls.Guid with { Hint = SerializerPrimitiveHint.GuidFormatHex });
+            .Serialize(val)
+            .Use(new PrimitiveImpl(SeraFormats.Default with { GuidTextFormat = GuidTextFormat.GuidTextHex }))
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -322,11 +365,12 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = new Guid("189819f1-1db6-4b57-be54-1821339b85f7");
+
         SeraJson.Serializer
-            .ToStream(stream)
-            .WithFormatter(CompactJsonFormatter.Default)
-            .SerializeStatic(new Guid("189819f1-1db6-4b57-be54-1821339b85f7"),
-                PrimitiveImpls.Guid with { Hint = SerializerPrimitiveHint.GuidFormatGuid });
+            .Serialize(val)
+            .Use(new PrimitiveImpl(SeraFormats.Default with { GuidTextFormat = GuidTextFormat.GuidTextGuid }))
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -342,10 +386,12 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = new Range(1, 2);
+
         SeraJson.Serializer
-            .ToStream(stream)
-            .WithFormatter(CompactJsonFormatter.Default)
-            .SerializeStatic(new Range(1, 2), PrimitiveImpls.Range);
+            .Serialize(val)
+            .Use(new PrimitiveImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -360,10 +406,12 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = new Range(1, ^2);
+
         SeraJson.Serializer
-            .ToStream(stream)
-            .WithFormatter(CompactJsonFormatter.Default)
-            .SerializeStatic(new Range(1, ^2), PrimitiveImpls.Range);
+            .Serialize(val)
+            .Use(new PrimitiveImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -378,10 +426,12 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = new Index(1);
+
         SeraJson.Serializer
-            .ToStream(stream)
-            .WithFormatter(CompactJsonFormatter.Default)
-            .SerializeStatic(new Index(1), PrimitiveImpls.Index);
+            .Serialize(val)
+            .Use(new PrimitiveImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -396,10 +446,12 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = ^1;
+
         SeraJson.Serializer
-            .ToStream(stream)
-            .WithFormatter(CompactJsonFormatter.Default)
-            .SerializeStatic(^1, PrimitiveImpls.Index);
+            .Serialize(val)
+            .Use(new PrimitiveImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -414,10 +466,12 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = 'a';
+
         SeraJson.Serializer
-            .ToStream(stream)
-            .WithFormatter(CompactJsonFormatter.Default)
-            .SerializeStatic('a', PrimitiveImpls.Char);
+            .Serialize(val)
+            .Use(new PrimitiveImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -432,10 +486,12 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = '\u2a5f';
+
         SeraJson.Serializer
-            .ToStream(stream)
-            .WithFormatter(CompactJsonFormatter.Default)
-            .SerializeStatic('\u2a5f', PrimitiveImpls.Char);
+            .Serialize(val)
+            .Use(new PrimitiveImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -450,10 +506,13 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = '\u2a5f';
+
         SeraJson.Serializer
-            .ToStream(stream)
             .WithFormatter(CompactJsonFormatter.Default with { EscapeAllNonAsciiChar = true })
-            .SerializeStatic('\u2a5f', PrimitiveImpls.Char);
+            .Serialize(val)
+            .Use(new PrimitiveImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -468,10 +527,13 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = '\n';
+
         SeraJson.Serializer
-            .ToStream(stream)
             .WithFormatter(CompactJsonFormatter.Default with { EscapeAllNonAsciiChar = false })
-            .SerializeStatic('\n', PrimitiveImpls.Char);
+            .Serialize(val)
+            .Use(new PrimitiveImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -486,10 +548,13 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = new Rune('a');
+
         SeraJson.Serializer
-            .ToStream(stream)
             .WithFormatter(CompactJsonFormatter.Default with { EscapeAllNonAsciiChar = true })
-            .SerializeStatic(new Rune('a'), PrimitiveImpls.Rune);
+            .Serialize(val)
+            .Use(new PrimitiveImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -504,10 +569,13 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = new Rune(0x1F602);
+
         SeraJson.Serializer
-            .ToStream(stream)
             .WithFormatter(CompactJsonFormatter.Default with { EscapeAllNonAsciiChar = false })
-            .SerializeStatic(new Rune(0x1F602), PrimitiveImpls.Rune);
+            .Serialize(val)
+            .Use(new PrimitiveImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -522,10 +590,13 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = new Rune(0x1F602);
+
         SeraJson.Serializer
-            .ToStream(stream)
             .WithFormatter(CompactJsonFormatter.Default with { EscapeAllNonAsciiChar = true })
-            .SerializeStatic(new Rune(0x1F602), PrimitiveImpls.Rune);
+            .Serialize(val)
+            .Use(new PrimitiveImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -540,10 +611,13 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = "asd";
+
         SeraJson.Serializer
-            .ToStream(stream)
             .WithFormatter(CompactJsonFormatter.Default with { EscapeAllNonAsciiChar = false })
-            .SerializeStatic("asd", StringImpl.Instance);
+            .Serialize(val)
+            .Use(new StringImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -558,10 +632,13 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = "asd镍😂\n";
+
         SeraJson.Serializer
-            .ToStream(stream)
             .WithFormatter(CompactJsonFormatter.Default with { EscapeAllNonAsciiChar = false })
-            .SerializeStatic("asd镍😂\n", StringImpl.Instance);
+            .Serialize(val)
+            .Use(new StringImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -576,10 +653,13 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = "asd镍😂\n";
+
         SeraJson.Serializer
-            .ToStream(stream)
             .WithFormatter(CompactJsonFormatter.Default with { EscapeAllNonAsciiChar = true })
-            .SerializeStatic("asd镍😂\n", StringImpl.Instance);
+            .Serialize(val)
+            .Use(new StringImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -594,10 +674,13 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = new byte[] { 1, 2, 3, 4, 5 };
+
         SeraJson.Serializer
-            .ToStream(stream)
             .WithFormatter(CompactJsonFormatter.Default with { Base64Bytes = true })
-            .SerializeStatic(new byte[] { 1, 2, 3, 4, 5 }, BytesImpl.Instance);
+            .Serialize(val)
+            .Use(new BytesImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -613,10 +696,13 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = new byte[] { 1, 2, 3, 4, 5 };
+
         SeraJson.Serializer
-            .ToStream(stream)
             .WithFormatter(CompactJsonFormatter.Default with { Base64Bytes = false })
-            .SerializeStatic(new byte[] { 1, 2, 3, 4, 5 }, BytesImpl.Instance);
+            .Serialize(val)
+            .Use(new BytesImpl())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);
@@ -631,10 +717,13 @@ public class Tests
     {
         using var stream = new MemoryStream();
 
+        var val = Unit.New;
+
         SeraJson.Serializer
-            .ToStream(stream)
             .WithFormatter(CompactJsonFormatter.Default)
-            .SerializeStatic(Unit.New, UnitImpl<Unit>.Instance);
+            .Serialize(val)
+            .Use(new UnitImpl<Unit>())
+            .Static.To.Stream(stream);
 
         stream.Position = 0;
         using var reader = new StreamReader(stream, Encoding.UTF8);

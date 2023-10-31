@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Sera.Core;
 using Sera.Core.Formats;
 using Sera.Core.Impls.Ser;
+using Sera.Core.Providers.Ser;
 using Sera.Utils;
 
 namespace Sera.Json.Ser;
@@ -22,9 +23,11 @@ public class AsyncJsonSerializer
     public override string FormatMIME => "application/json";
     public override SeraFormatType FormatType => SeraFormatType.HumanReadableText;
     public override ISeraOptions Options => options;
-    public override IRuntimeProvider RuntimeProvider => RuntimeProviderOverride ?? StaticRuntimeProvider.Instance;
 
-    public IRuntimeProvider? RuntimeProviderOverride { get; set; }
+    public override IRuntimeProvider<ISeraVision<object?>> RuntimeProvider =>
+        RuntimeProviderOverride ?? EmptySerRuntimeProvider.Instance;
+
+    public IRuntimeProvider<ISeraVision<object?>>? RuntimeProviderOverride { get; set; }
 
     private JsonSerializerState state;
 
@@ -76,7 +79,7 @@ public class AsyncJsonSerializer
 
     private ValueTask WriteDate(TimeSpan v, SeraFormats? formats)
     {
-        if (formats?.DateTimeFormat?.DateAsNumber ?? false)
+        if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateAsNumber) ?? false)
         {
             return WriteNumber(32, v.Ticks, formats, formatter.LargeNumberUseString);
         }
@@ -93,18 +96,18 @@ public class AsyncJsonSerializer
 
     private ValueTask WriteDate(DateOnly v, SeraFormats? formats)
     {
-        if (formats?.DateTimeFormat?.DateOnlyToDateTime ?? false)
+        if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateOnlyToDateTime) ?? false)
         {
             var date_time = v.ToDateTime(TimeOnly.MinValue);
             return WriteDate(date_time, formats);
         }
-        if (formats?.DateTimeFormat?.DateOnlyToDateTimeOffset ?? false)
+        if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateOnlyToDateTimeOffset) ?? false)
         {
             var date_time_offset =
                 new DateTimeOffset(TimeZoneInfo.ConvertTime(v.ToDateTime(TimeOnly.MinValue), Options.TimeZone));
             return WriteDate(date_time_offset, formats);
         }
-        if (formats?.DateTimeFormat?.DateAsNumber ?? false)
+        if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateAsNumber) ?? false)
         {
             return WriteNumber(32, v.DayNumber, formats, false);
         }
@@ -121,7 +124,7 @@ public class AsyncJsonSerializer
 
     private ValueTask WriteDate(TimeOnly v, SeraFormats? formats)
     {
-        if (formats?.DateTimeFormat?.DateAsNumber ?? false)
+        if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateAsNumber) ?? false)
         {
             return WriteNumber(32, v.Ticks, formats, formatter.LargeNumberUseString);
         }
@@ -139,12 +142,12 @@ public class AsyncJsonSerializer
     private ValueTask WriteDate(DateTime v, SeraFormats? formats)
     {
         v = TimeZoneInfo.ConvertTime(v, Options.TimeZone);
-        if (formats?.DateTimeFormat?.DateTimeToDateTimeOffset ?? false)
+        if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateTimeToDateTimeOffset) ?? false)
         {
             var date_time_offset = new DateTimeOffset(v);
             return WriteDate(date_time_offset, formats);
         }
-        if (formats?.DateTimeFormat?.DateAsNumber ?? false)
+        if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateAsNumber) ?? false)
         {
             return WriteNumber(32, v.Ticks, formats, formatter.LargeNumberUseString);
         }
@@ -161,11 +164,11 @@ public class AsyncJsonSerializer
 
     private ValueTask WriteDate(DateTimeOffset v, SeraFormats? formats)
     {
-        if (formats?.DateTimeFormat?.DateAsNumber ?? false)
+        if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateAsNumber) ?? false)
         {
             return WriteNumber(32, v.Ticks, formats, formatter.LargeNumberUseString);
         }
-        if (formats?.DateTimeFormat?.DateTimeOffsetUseTimeZone ?? false)
+        if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateTimeOffsetUseTimeZone) ?? false)
         {
             v = TimeZoneInfo.ConvertTime(v, Options.TimeZone);
         }
@@ -744,7 +747,7 @@ public class AsyncJsonSerializer
         public override async ValueTask VVariant<V, T>(V vision, T value, Variant variant, UnionStyle? style = default)
         {
             var s = style ?? Base.formatter.DefaultUnionStyle;
-            var format = s.Format ?? Base.formatter.DefaultUnionFormat;
+            var format = s.Format is not UnionFormat.Any ? s.Format : Base.formatter.DefaultUnionFormat;
             switch (format)
             {
                 case UnionFormat.External:
