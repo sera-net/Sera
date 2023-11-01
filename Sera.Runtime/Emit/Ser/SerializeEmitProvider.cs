@@ -57,18 +57,20 @@ internal class SerializeEmitProvider : AEmitProvider
         var stub = Emit(new(TypeMetas.GetTypeMeta(typeof(T)), styles));
         return (ISeraVision<T>)stub.GetResult()!;
     }
-    
+
     protected override EmitJob CreateJob(EmitMeta target)
     {
         if (target.Type.IsByRefLike || target.Type.IsByRef)
             throw new ArgumentException($"ByRefType is not support; {target.Type}");
-        throw new NotImplementedException();
-        // if (PrimitiveImpl.IsPrimitiveType(target.Type)) return new Jobs._Primitive();
-        // if (TryGetStaticImpl(target.Type, out var inst)) return new Jobs._Static(inst!.GetType(), inst);
-        // if (target.Styles.As is SeraAs.Bytes && bytes_impl.TryGetValue(target.Type, out inst))
-        //     return new Jobs._Static(inst.GetType(), inst);
-        // if (target.Styles.As is SeraAs.String && string_impl.TryGetValue(target.Type, out inst))
-        //     return new Jobs._Static(inst.GetType(), inst);
+        if (PrimitiveImpl.IsPrimitiveType(target.Type)) return new Jobs._Primitive();
+        if (target.Type == typeof(object))
+            return new Jobs._Static(typeof(ReferenceImpl<object, EmptyStructImpl<object>>),
+                new ReferenceImpl<object, EmptyStructImpl<object>>());
+        if (TryGetStaticImpl(target.Type, out var inst)) return new Jobs._Static(inst!.GetType(), inst);
+        if (target.Styles.As is SeraAs.Bytes && bytes_impl.TryGetValue(target.Type, out inst))
+            return new Jobs._Static(inst.GetType(), inst);
+        if (target.Styles.As is SeraAs.String && string_impl.TryGetValue(target.Type, out inst))
+            return new Jobs._Static(inst.GetType(), inst);
         // if (target.IsArray) return CreateArrayJob(target);
         // if (target.IsEnum) return CreateEnumJob(target);
         // if (target.IsTuple(out var is_value_tuple)) return CreateTupleJob(target, is_value_tuple);
@@ -85,6 +87,7 @@ internal class SerializeEmitProvider : AEmitProvider
         // var job = CreateJobCollectionLike(target);
         // job ??= CreateJobFSharpTypes(target);
         // return job ?? CreateStructJob(target);
+        return CreateStructJob(target);
     }
 
     // private EmitJob? CreateJobCollectionLike(EmitMeta target)
@@ -158,20 +161,22 @@ internal class SerializeEmitProvider : AEmitProvider
     //     }
     //     return null;
     // }
-    //
-    // private EmitJob CreateStructJob(EmitMeta target)
-    // {
-    //     var members = StructReflectionUtils.GetStructMembers(target.Type, SerOrDe.Ser);
-    //     if (target.Type.IsVisible && members.All(m => m.Type.IsVisible))
-    //     {
-    //         return new Jobs._Struct._Public(members);
-    //     }
-    //     else
-    //     {
-    //         return new Jobs._Struct._Private(members);
-    //     }
-    // }
-    //
+
+    private EmitJob CreateStructJob(EmitMeta target)
+    {
+        var name = target.Type.Name; // todo rename
+        var members = StructReflectionUtils.GetStructMembers(target.Type, SerOrDe.Ser);
+        if (target.Type.IsVisible && members.All(m => m.Type.IsVisible))
+        {
+            return new Jobs._Struct._Public(name, members);
+        }
+        else
+        {
+            throw new NotImplementedException();
+            // return new Jobs._Struct._Private(name, members);
+        }
+    }
+
     // private EmitJob CreateEnumJob(EmitMeta target)
     // {
     //     var underlying_type = target.Type.GetEnumUnderlyingType();

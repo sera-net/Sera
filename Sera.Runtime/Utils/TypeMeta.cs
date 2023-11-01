@@ -43,7 +43,7 @@ internal record NullabilityMeta
         using var mem = new MemoryStream();
         using var zip = new BrotliStream(mem, CompressionLevel.Optimal);
         using var serer = new BytesSerializer(zip, DefaultSeraOptions.Default);
-        NullabilityInfoBinarySerializeImpl.Instance.Accept<Unit, BytesSerializer>(serer, NullabilityInfo);
+        new NullabilityInfoBinarySerializeImpl().Accept<Unit, BytesSerializer>(serer, NullabilityInfo);
         zip.Flush();
         mem.Position = 0;
         var len = (int)mem.Length;

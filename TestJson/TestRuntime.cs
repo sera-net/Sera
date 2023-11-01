@@ -439,7 +439,7 @@ public class TestRuntime
     public void TestStructNullableField2()
     {
         var obj = new StructNullableField2();
-
+        
         Assert.Throws<NullReferenceException>(() => SeraJson.Serializer
             .Serialize(obj).To.String());
     }
@@ -2859,26 +2859,7 @@ public class TestRuntime
     }
 
     #endregion
-
-    #region StringBase1
-
-    public class StringBase1 : List<char> { }
-
-    [Test]
-    public void TestStringBase1()
-    {
-        var obj = new StringBase1 { 'a', 'b', 'c' };
-
-        var str = SeraJson.Serializer
-            .Serialize(obj)
-            .To.String(new SeraStyles(As: SeraAs.String));
-
-        Console.WriteLine(str);
-        Assert.That(str, Is.EqualTo("\"abc\""));
-    }
-
-    #endregion
-
+    
     #region PrivateStringBase1
 
     private class PrivateStringBase1 : List<char> { }

@@ -8,11 +8,8 @@ namespace Sera.Runtime.Utils;
 internal readonly struct NullabilityInfoBinarySerializeImpl : ISeraVision<NullabilityInfo>,
     ITupleSeraVision<NullabilityInfo>
 {
-    public static NullabilityInfoBinarySerializeImpl Instance { get; } = new();
-    public static NullableClassImpl<NullabilityInfo, NullabilityInfoBinarySerializeImpl> NullableImpl { get; }
-        = new(Instance);
-    public static ArrayImpl<NullabilityInfo, NullabilityInfoBinarySerializeImpl> ArrayImpl { get; }
-        = new(Instance);
+    public static NullableClassImpl<NullabilityInfo, NullabilityInfoBinarySerializeImpl> NullableImpl => default;
+    public static ArrayImpl<NullabilityInfo, NullabilityInfoBinarySerializeImpl> ArrayImpl => default;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R Accept<R, V>(V visitor, NullabilityInfo value) where V : ASeraVisitor<R>

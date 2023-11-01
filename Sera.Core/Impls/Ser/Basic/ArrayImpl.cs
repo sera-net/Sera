@@ -11,7 +11,7 @@ public readonly struct ArrayImpl<T, D>(D dep) :
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R Accept<R, V>(V visitor, T[] value) where V : ASeraVisitor<R>
-        => visitor.VArray(dep, value);
+        => visitor.VArray(dep, value.NotNull());
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R Accept<R, V>(V visitor, ReadOnlySequence<T> value) where V : ASeraVisitor<R>

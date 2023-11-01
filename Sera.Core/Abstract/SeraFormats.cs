@@ -128,6 +128,13 @@ namespace Sera.Core
         public GuidTextFormat GuidTextFormat { get; set; } = GuidTextFormat.Any;
         public GuidBinaryFormat GuidBinaryFormat { get; set; } = GuidBinaryFormat.Any;
         public string? CustomGuidTextFormat { get; set; }
+
+        public static SeraFormats FromAttr(SeraFormatsAttribute? attr)
+        {
+            if (attr == null) return Default;
+            // todo
+            return new() { };
+        }
     }
 
 }

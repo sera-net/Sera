@@ -54,7 +54,7 @@ public class AsyncJsonSerializer
         var format = formats?.CustomNumberTextFormat ?? (formats?.NumberTextFormat is { } ntf
             ? (ntf switch
             {
-                NumberTextFormat.Decimal => "D",
+                NumberTextFormat.Decimal or NumberTextFormat.Any => "D",
                 NumberTextFormat.Hex => "X",
                 NumberTextFormat.Binary => "B",
                 _ => throw new ArgumentOutOfRangeException()
@@ -195,7 +195,7 @@ public class AsyncJsonSerializer
         var format = formats?.CustomGuidTextFormat ?? (formats?.GuidTextFormat is { } gtf
             ? gtf switch
             {
-                GuidTextFormat.GuidTextShort => "N",
+                GuidTextFormat.GuidTextShort or GuidTextFormat.Any => "N",
                 GuidTextFormat.GuidTextGuid => "D",
                 GuidTextFormat.GuidTextBraces => "B",
                 GuidTextFormat.GuidTextParentheses => "P",
@@ -488,7 +488,7 @@ public class AsyncJsonSerializer
         state = JsonSerializerState.None;
         TupleVisitor ??= new(this);
         await writer.Write("[");
-        var first = false;
+        var first = true;
         for (var i = 0; i < size; i++)
         {
             if (first) first = false;
@@ -529,7 +529,7 @@ public class AsyncJsonSerializer
         state = JsonSerializerState.None;
         SeqVisitor ??= new(this);
         await writer.Write("[");
-        var first = false;
+        var first = true;
         while (vision.HasNext)
         {
             if (first) first = false;
@@ -565,7 +565,7 @@ public class AsyncJsonSerializer
         state = JsonSerializerState.None;
         SeqMapVisitor ??= new(this);
         await writer.Write("[");
-        var first = false;
+        var first = true;
         while (vision.HasNext)
         {
             if (first) first = false;
@@ -607,7 +607,7 @@ public class AsyncJsonSerializer
         state = JsonSerializerState.None;
         MapVisitor ??= new(this);
         await writer.Write("{");
-        var first = false;
+        var first = true;
         while (vision.HasNext)
         {
             if (first) first = false;
@@ -649,7 +649,7 @@ public class AsyncJsonSerializer
         state = JsonSerializerState.None;
         StructVisitor ??= new(this);
         await writer.Write("{");
-        var first = false;
+        var first = true;
         for (var i = 0; i < size; i++)
         {
             if (first) first = false;

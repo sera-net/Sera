@@ -21,7 +21,7 @@ internal static class ReflectionUtils
     public static bool IsTypeBuilder(this Type type) =>
         type is TypeBuilder ||
         type is { IsGenericType: true } && type.GetGenericArguments().AsParallel().Any(IsTypeBuilder);
-    
+
     public static ConstructorInfo NullReferenceException_ctor { get; } =
         typeof(NullReferenceException).GetConstructor(
             BindingFlags.Public | BindingFlags.Instance,
@@ -48,7 +48,24 @@ internal static class ReflectionUtils
 
     public static MethodInfo StaticSerImpls_TryGet { get; } =
         typeof(StaticSerImpls).GetMethod(nameof(StaticSerImpls.TryGet))!;
+
+    // public static FrozenDictionary<string, MethodInfo[]> ASeraVisitorMethods { get; } =
+    //     typeof(ASeraVisitor<>).GetMethods(BindingFlags.Public | BindingFlags.Instance)
+    //         .GroupBy(a => a.Name)
+    //         .ToFrozenDictionary(g => g.Key, g => g.ToArray());
+
+    public static MethodInfo ASeraVisitor_VStruct { get; } =
+        typeof(ASeraVisitor<>).GetMethod(nameof(ASeraVisitor<Unit>.VStruct),
+            BindingFlags.Public | BindingFlags.Instance)!;
     
+    public static MethodInfo AStructSeraVisitor_VField { get; } =
+        typeof(AStructSeraVisitor<>).GetMethod(nameof(AStructSeraVisitor<Unit>.VField),
+            BindingFlags.Public | BindingFlags.Instance)!;
+    
+    public static MethodInfo AStructSeraVisitor_VNone { get; } =
+        typeof(AStructSeraVisitor<>).GetMethod(nameof(AStructSeraVisitor<Unit>.VNone),
+            BindingFlags.Public | BindingFlags.Instance)!;
+
     // public static Dictionary<string, MethodInfo[]> ISerializerMethods { get; } =
     //     typeof(ISerializer).GetMethods().GroupBy(a => a.Name)
     //         .ToDictionary(g => g.Key, g => g.ToArray());
@@ -554,7 +571,7 @@ internal static class ReflectionUtils
 
         return interfaces.Length > 0;
     }
-    
+
     public static bool IsIDictionary(this Type type)
     {
         if (type == typeof(IDictionary)) return true;

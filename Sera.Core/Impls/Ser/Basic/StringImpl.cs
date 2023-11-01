@@ -11,11 +11,11 @@ public readonly struct StringImpl :
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R Accept<R, V>(V visitor, string value) where V : ASeraVisitor<R>
-        => visitor.VString(value);
+        => visitor.VString(value.NotNull());
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R Accept<R, V>(V visitor, char[] value) where V : ASeraVisitor<R>
-        => visitor.VString(value);
+        => visitor.VString(value.NotNull());
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R Accept<R, V>(V visitor, ReadOnlyMemory<char> value) where V : ASeraVisitor<R>
@@ -32,7 +32,7 @@ public readonly struct StringEncodedImpl(Encoding encoding) :
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R Accept<R, V>(V visitor, byte[] value) where V : ASeraVisitor<R>
-        => visitor.VString(value, encoding);
+        => visitor.VString(value.NotNull(), encoding);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R Accept<R, V>(V visitor, ReadOnlyMemory<byte> value) where V : ASeraVisitor<R>
