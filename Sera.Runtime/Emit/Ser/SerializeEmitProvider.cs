@@ -172,8 +172,7 @@ internal class SerializeEmitProvider : AEmitProvider
         }
         else
         {
-            throw new NotImplementedException();
-            // return new Jobs._Struct._Private(name, members);
+            return new Jobs._Struct._Private(name, members);
         }
     }
 

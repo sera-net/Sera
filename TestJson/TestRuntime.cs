@@ -258,6 +258,32 @@ public class TestRuntime
 
     #endregion
 
+    #region Struct10
+
+    public interface IStruct10
+    {
+        public int this[int a] { get; }
+    }
+
+    public class Struct10 : IStruct10
+    {
+        public int this[int a] => 123;
+    }
+
+    [Test]
+    public void TestStruct10()
+    {
+        IStruct10 obj = new Struct10();
+
+        var str = SeraJson.Serializer
+            .Serialize(obj).To.String();
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{}"));
+    }
+
+    #endregion
+
     #region StructCircularReference1
 
     public class StructCircularReference1
@@ -439,7 +465,7 @@ public class TestRuntime
     public void TestStructNullableField2()
     {
         var obj = new StructNullableField2();
-        
+
         Assert.Throws<NullReferenceException>(() => SeraJson.Serializer
             .Serialize(obj).To.String());
     }
@@ -2859,7 +2885,7 @@ public class TestRuntime
     }
 
     #endregion
-    
+
     #region PrivateStringBase1
 
     private class PrivateStringBase1 : List<char> { }

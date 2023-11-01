@@ -55,6 +55,9 @@ public static class StructReflectionUtils
                     var get_method = p.GetMethod;
                     if (get_method == null) return null;
 
+                    var args = get_method.GetParameters();
+                    if (args.Length > 0) return null;
+
                     var skip = IsSkipped(p, ser_or_de);
                     var sera_include_attr = p.GetCustomAttribute<SeraIncludeAttribute>();
                     var include = get_method.IsPublic || (sera_include_attr?.Ser ?? false);

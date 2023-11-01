@@ -235,7 +235,7 @@ internal sealed class _Public(string StructName, StructMember[] Members) : _Stru
                         #region access Get(ref value)
 
                         ilg.Emit(OpCodes.Ldsfld, access);
-                        ilg.Emit(OpCodes.Ldarga_S, 1);
+                        ilg.Emit(OpCodes.Ldarga, 2);
                         ilg.Emit(OpCodes.Callvirt, access_invoke);
 
                         #endregion
@@ -280,7 +280,7 @@ internal sealed class _Public(string StructName, StructMember[] Members) : _Stru
                         #region access Get(ref value)
 
                         ilg.Emit(OpCodes.Ldsfld, access);
-                        ilg.Emit(OpCodes.Ldarga_S, 1);
+                        ilg.Emit(OpCodes.Ldarga, 2);
                         ilg.Emit(OpCodes.Callvirt, access_invoke);
 
                         #endregion
