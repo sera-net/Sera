@@ -35,7 +35,7 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
         writer.Flush();
         return default;
     }
-    
+
     #region Reference
 
     public override Unit VReference<V, T>(V vision, T value)
@@ -575,7 +575,7 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
         SeqVisitor ??= new(this);
         writer.Write("[");
         var first = true;
-        while (vision.HasNext)
+        while (vision.MoveNext())
         {
             if (first) first = false;
             else writer.Write(",");
@@ -613,7 +613,7 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
         SeqMapVisitor ??= new(this);
         writer.Write("[");
         var first = true;
-        while (vision.HasNext)
+        while (vision.MoveNext())
         {
             if (first) first = false;
             else writer.Write(",");
@@ -652,7 +652,7 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
         MapVisitor ??= new(this);
         writer.Write("{");
         var first = true;
-        while (vision.HasNext)
+        while (vision.MoveNext())
         {
             if (first) first = false;
             else writer.Write(",");
@@ -729,7 +729,7 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
     public override Unit VUnion<V, T>(V vision, T value)
     {
         UnionVisitor ??= new(this);
-        return vision.Accept<Unit, UnionSeraVisitor>(UnionVisitor, value);
+        return vision.AcceptUnion<Unit, UnionSeraVisitor>(UnionVisitor, value);
     }
 
     private UnionSeraVisitor? UnionVisitor;
@@ -742,13 +742,16 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
             return default;
         }
 
-        private void VVariant(Variant variant, UnionStyle? style, bool mustString)
+        public override Unit VNone() => throw new SeraMatchFailureException();
+
+        private void VVariant(Variant variant, UnionStyle? union_style, VariantStyle? variant_style, bool mustString)
         {
+            var priority = variant_style?.Priority ?? union_style?.VariantPriority;
             switch (variant.Kind)
             {
                 case VariantKind.NameAndTag:
                     if (mustString) goto case VariantKind.Name;
-                    if (style is { VariantPriority: VariantPriority.TagFirst }) goto case VariantKind.Tag;
+                    if (priority is VariantPriority.TagFirst) goto case VariantKind.Tag;
                     else goto case VariantKind.Name;
                 case VariantKind.Name:
                     Base.writer.WriteString(variant.Name, true);
@@ -760,7 +763,9 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
                         Base.writer.WriteString(tag.ToString(), true);
                         return;
                     }
-                    var formats = style?.VariantFormats ?? Base.formatter.DefaultFormats;
+                    var formats = variant_style?.Formats ??
+                                  union_style?.VariantFormats ??
+                                  Base.formatter.DefaultFormats;
                     switch (tag.Kind)
                     {
                         case VariantTagKind.SByte:
@@ -796,21 +801,23 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
             }
         }
 
-        public override Unit VVariant(Variant variant, UnionStyle? style = default)
+        public override Unit VVariant(Variant variant,
+            UnionStyle? union_style = null, VariantStyle? variant_style = null)
         {
-            VVariant(variant, style, false);
+            VVariant(variant, union_style, variant_style, false);
             return default;
         }
 
-        public override Unit VVariant<V, T>(V vision, T value, Variant variant, UnionStyle? style = default)
+        public override Unit VVariantValue<V, T>(V vision, T value, Variant variant,
+            UnionStyle? union_style = null, VariantStyle? variant_style = null)
         {
-            var s = style ?? Base.formatter.DefaultUnionStyle;
+            var s = union_style ?? Base.formatter.DefaultUnionStyle;
             var format = s.Format is not UnionFormat.Any ? s.Format : Base.formatter.DefaultUnionFormat;
             switch (format)
             {
                 case UnionFormat.External:
                     Base.writer.Write("{");
-                    VVariant(variant, style, true);
+                    VVariant(variant, union_style, variant_style, true);
                     Base.writer.Write(":");
                     vision.Accept<Unit, JsonSerializer>(Base, value);
                     Base.writer.Write("}");
@@ -821,7 +828,7 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
                     Base.writer.Write("{");
                     Base.writer.WriteString(s.AdjacentTagName, true);
                     Base.writer.Write(":");
-                    VVariant(variant, style, false);
+                    VVariant(variant, union_style, variant_style, false);
                     Base.writer.Write(",");
                     Base.writer.WriteString(s.AdjacentValueName, true);
                     Base.writer.Write(":");
@@ -830,7 +837,7 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
                     break;
                 case UnionFormat.Tuple:
                     Base.writer.Write("[");
-                    VVariant(variant, style, false);
+                    VVariant(variant, union_style, variant_style, false);
                     Base.writer.Write(",");
                     vision.Accept<Unit, JsonSerializer>(Base, value);
                     Base.writer.Write("]");
@@ -839,14 +846,15 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
                     vision.Accept<Unit, JsonSerializer>(Base, value);
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(style));
+                    throw new ArgumentOutOfRangeException();
             }
             return default;
         }
 
-        public override Unit VVariantStruct<V, T>(V vision, T value, Variant variant, UnionStyle? style = default)
+        public override Unit VVariantStruct<V, T>(V vision, T value, Variant variant,
+            UnionStyle? union_style = null, VariantStyle? variant_style = null)
         {
-            var s = style ?? Base.formatter.DefaultUnionStyle;
+            var s = union_style ?? Base.formatter.DefaultUnionStyle;
             var size = vision.Count;
             var last_state = Base.state;
             Base.state = JsonSerializerState.None;
@@ -854,7 +862,7 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
             Base.writer.Write("{");
             Base.writer.WriteString(s.InternalTagName, true);
             Base.writer.Write(":");
-            VVariant(variant, style, false);
+            VVariant(variant, union_style, variant_style, false);
             for (var i = 0; i < size; i++)
             {
                 Base.writer.Write(",");

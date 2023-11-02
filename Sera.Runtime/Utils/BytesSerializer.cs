@@ -503,7 +503,7 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
         Writer.Write((byte)((byte)TypeToken.Seq | (byte)SplitToken.Start << 3));
         var first = true;
         SeqVisitor ??= new(this);
-        while (vision.HasNext)
+        while (vision.MoveNext())
         {
             if (first) first = false;
             else Writer.Write((byte)((byte)TypeToken.Seq | (byte)SplitToken.Split << 3));
@@ -532,7 +532,7 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
         Writer.Write((byte)((byte)TypeToken.Map | (byte)SplitToken.Start << 3));
         var first = true;
         MapVisitor ??= new(this);
-        while (vision.HasNext)
+        while (vision.MoveNext())
         {
             if (first) first = false;
             else Writer.Write((byte)((byte)TypeToken.Map | (byte)SplitToken.Split << 3));
@@ -597,7 +597,7 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
     public override Unit VUnion<V, T>(V vision, T value)
     {
         UnionVisitor ??= new(this);
-        return vision.Accept<Unit, UnionSeraVisitor>(UnionVisitor, value);
+        return vision.AcceptUnion<Unit, UnionSeraVisitor>(UnionVisitor, value);
     }
 
     private UnionSeraVisitor? UnionVisitor;
@@ -611,7 +611,10 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
             return default;
         }
 
-        public override Unit VVariant(Variant variant, UnionStyle? style = null)
+        public override Unit VNone() => throw new SeraMatchFailureException();
+
+        public override Unit VVariant(Variant variant,
+            UnionStyle? union_style = null, VariantStyle? variant_style = null)
         {
             Base.Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.Start << 3));
             var str = variant.ToString();
@@ -620,7 +623,8 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
             return default;
         }
 
-        public override Unit VVariant<V, T>(V vision, T value, Variant variant, UnionStyle? style = null)
+        public override Unit VVariantValue<V, T>(V vision, T value, Variant variant,
+            UnionStyle? union_style = null, VariantStyle? variant_style = null)
         {
             Base.Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.Start << 3));
             var str = variant.ToString();
@@ -631,7 +635,8 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
             return default;
         }
 
-        public override Unit VVariantStruct<V, T>(V vision, T value, Variant variant, UnionStyle? style = null)
+        public override Unit VVariantStruct<V, T>(V vision, T value, Variant variant,
+            UnionStyle? union_style = null, VariantStyle? variant_style = null)
         {
             Base.Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.Start << 3));
             var str = variant.ToString();

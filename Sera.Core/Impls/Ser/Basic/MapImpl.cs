@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace Sera.Core.Impls.Ser;
 
@@ -9,45 +10,38 @@ public readonly struct MapIEnumerableImpl<T, IK, IV, DK, DV>(DK dk, DV dv) : ISe
     where DK : ISeraVision<IK>
     where DV : ISeraVision<IV>
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R Accept<R, V>(V visitor, T value) where V : ASeraVisitor<R>
         => visitor.VMap<Wrapper, T, IK, IV>(new(new(value, dk, dv)));
 
     public readonly struct Wrapper(Impl Impl) : IMapSeraVision
     {
         public int? Count => null;
-        public bool HasNext => Impl.HasNext;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool MoveNext() => Impl.MoveNext();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public R AcceptNext<R, V>(V visitor) where V : AMapSeraVisitor<R>
             => Impl.AcceptNext<R, V>(visitor);
     }
 
-    public sealed class Impl : IMapSeraVision
+    public sealed class Impl(T value, DK dk, DV dv) : IMapSeraVision
     {
-        private readonly DK dk;
-        private readonly DV dv;
-        private readonly IEnumerator<KeyValuePair<IK, IV>> enumerator;
-
-        public Impl(T value, DK dk, DV dv)
-        {
-            this.dk = dk;
-            this.dv = dv;
-            enumerator = value.GetEnumerator();
-            HasNext = enumerator.MoveNext();
-        }
+        private readonly IEnumerator<KeyValuePair<IK, IV>> enumerator = value.GetEnumerator();
 
         public int? Count => null;
-        public bool HasNext { get; set; }
+        private bool HasNext;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool MoveNext() => HasNext = enumerator.MoveNext();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public R AcceptNext<R, V>(V visitor) where V : AMapSeraVisitor<R>
         {
-            if (HasNext)
-            {
-                var current = enumerator.Current;
-                var r = visitor.VEntry(dk, dv, current.Key, current.Value);
-                HasNext = enumerator.MoveNext();
-                return r;
-            }
-            return visitor.VEnd();
+            if (!HasNext) return visitor.VEnd();
+            var current = enumerator.Current;
+            return visitor.VEntry(dk, dv, current.Key, current.Value);
         }
     }
 }
@@ -61,46 +55,38 @@ public readonly struct MapICollectionImpl<T, IK, IV, DK, DV>(DK dk, DV dv) : ISe
     where DK : ISeraVision<IK>
     where DV : ISeraVision<IV>
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R Accept<R, V>(V visitor, T value) where V : ASeraVisitor<R>
         => visitor.VMap<Wrapper, T, IK, IV>(new(new(value, dk, dv)));
 
     public readonly struct Wrapper(Impl Impl) : IMapSeraVision
     {
         public int? Count => Impl.Count;
-        public bool HasNext => Impl.HasNext;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool MoveNext() => Impl.MoveNext();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public R AcceptNext<R, V>(V visitor) where V : AMapSeraVisitor<R>
             => Impl.AcceptNext<R, V>(visitor);
     }
 
-    public sealed class Impl : IMapSeraVision
+    public sealed class Impl(T value, DK dk, DV dv) : IMapSeraVision
     {
-        private readonly DK dk;
-        private readonly DV dv;
-        private readonly IEnumerator<KeyValuePair<IK, IV>> enumerator;
+        private readonly IEnumerator<KeyValuePair<IK, IV>> enumerator = value.GetEnumerator();
 
-        public Impl(T value, DK dk, DV dv)
-        {
-            this.dk = dk;
-            this.dv = dv;
-            Count = value.Count;
-            enumerator = value.GetEnumerator();
-            HasNext = enumerator.MoveNext();
-        }
+        public int? Count => value.Count;
+        private bool HasNext;
 
-        public int? Count { get; }
-        public bool HasNext { get; set; }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool MoveNext() => HasNext = enumerator.MoveNext();
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public R AcceptNext<R, V>(V visitor) where V : AMapSeraVisitor<R>
         {
-            if (HasNext)
-            {
-                var current = enumerator.Current;
-                var r = visitor.VEntry(dk, dv, current.Key, current.Value);
-                HasNext = enumerator.MoveNext();
-                return r;
-            }
-            return visitor.VEnd();
+            if (!HasNext) return visitor.VEnd();
+            var current = enumerator.Current;
+            return visitor.VEntry(dk, dv, current.Key, current.Value);
         }
     }
 }

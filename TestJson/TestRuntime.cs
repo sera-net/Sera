@@ -34,7 +34,7 @@ public class TestRuntime
 
     #region Struct1
 
-    [SeraIncludeField]
+    [SeraStruct(IncludeFields = true)]
     public class Struct1
     {
         public int Member1 { get; set; } = 123456;
@@ -85,9 +85,9 @@ public class TestRuntime
 
     public class Struct3
     {
-        [SeraRename(1)]
+        [SeraFieldKey(1)]
         public int Member1 { get; set; } = 123456;
-        [SeraRename(2), SeraInclude]
+        [SeraFieldKey(2), SeraInclude]
         public int Member2 = 654321;
     }
 
@@ -107,7 +107,7 @@ public class TestRuntime
 
     #region Struct4
 
-    [SeraIncludeField]
+    [SeraStruct(IncludeFields = true)]
     public struct Struct4
     {
         public int Member1 { get; set; } = 123456;
@@ -132,13 +132,13 @@ public class TestRuntime
 
     #region Struct5
 
-    [SeraIncludeField]
+    [SeraStruct(IncludeFields = true)]
     public struct Struct5
     {
         public Struct5B Member1 { get; set; }
     }
 
-    [SeraIncludeField]
+    [SeraStruct(IncludeFields = true)]
     public struct Struct5B { }
 
     [Test]
@@ -157,13 +157,13 @@ public class TestRuntime
 
     #region Struct6
 
-    [SeraIncludeField]
+    [SeraStruct(IncludeFields = true)]
     public class Struct6
     {
         public Struct6B? Member1 { get; set; } = new();
     }
 
-    [SeraIncludeField]
+    [SeraStruct(IncludeFields = true)]
     public class Struct6B
     {
         public Struct6? Member1 { get; set; } = null;
@@ -632,7 +632,7 @@ public class TestRuntime
     public enum Enum1
     {
         A,
-        [SeraRename("X")]
+        [Sera(Name = "X")]
         B,
         C,
     }
@@ -1574,11 +1574,11 @@ public class TestRuntime
 
     #region Flags4
 
-    [Flags, SeraFlags(SeraFlagsMode.Array)]
+    [Flags, SeraFlags(SeraFlagsMode.Seq)]
     public enum Flags4
     {
         A = 1 << 0,
-        [SeraRename("X")]
+        [Sera(Name = "X")]
         B = 1 << 1,
         C = 1 << 2,
     }
@@ -2747,26 +2747,7 @@ public class TestRuntime
     }
 
     #endregion
-
-    #region BytesBase1
-
-    public class BytesBase1 : List<byte> { }
-
-    [Test]
-    public void TestBytesBase1()
-    {
-        var obj = new BytesBase1 { 1, 2, 3 };
-
-        var str = SeraJson.Serializer
-            .Serialize(obj)
-            .To.String(new SeraStyles(As: SeraAs.Bytes));
-
-        Console.WriteLine(str);
-        Assert.That(str, Is.EqualTo("\"AQID\""));
-    }
-
-    #endregion
-
+    
     #region PrivateBytesBase1
 
     private class PrivateBytesBase1 : List<byte> { }
@@ -3391,7 +3372,7 @@ public class TestRuntime
 
     #region Runtime1
 
-    [SeraIncludeField]
+    [SeraStruct(IncludeFields = true)]
     public class Runtime1
     {
         public int A { get; set; } = 123456;
@@ -3418,7 +3399,7 @@ public class TestRuntime
 
     #region Runtime2
 
-    [SeraIncludeField]
+    [SeraStruct(IncludeFields = true)]
     public struct Runtime2
     {
         public int A { get; set; } = 123456;

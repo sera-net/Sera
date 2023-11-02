@@ -8,7 +8,8 @@ namespace Sera;
 #region Generator
 
 /// <summary>Mark auto-generated serialize and deserialize</summary>
-[AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Enum, Inherited = false)]
+[AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Enum,
+    Inherited = false)]
 public sealed class SeraGenAttribute : Attribute
 {
     public bool NoSer { get; set; }
@@ -35,15 +36,20 @@ public class SeraGenForAttribute : Attribute
 public sealed class SeraGenForAttribute<T>() : SeraGenForAttribute(typeof(T)) { }
 
 /// <summary>Misc options</summary>
-[AttributeUsage(AttributeTargets.All)]
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Interface | AttributeTargets.Enum |
+                AttributeTargets.Field | AttributeTargets.Property)]
 public sealed class SeraAttribute : Attribute
 {
     /// <summary>Specify special semantics, only for field | property</summary>
     public SeraAs As { get; set; } = SeraAs.None;
+    /// <summary>Rename fields | struct name</summary>
+    public string? Name { get; set; }
+    /// <summary>Mark auto rename mode</summary>
+    public SeraRenameMode Rename { get; set; }
 }
 
 /// <summary>Specify special semantics</summary>
-public enum SeraAs
+public enum SeraAs : byte
 {
     /// <summary>No operation</summary>
     None,
@@ -55,11 +61,41 @@ public enum SeraAs
     Seq,
     /// <summary>Mark <see cref="IEnumerable{T}"/> of <see cref="KeyValuePair{K,V}"/> is map semantics</summary>
     Map,
+    /// <summary>Mark ignore like <see cref="IEnumerable{T}"/> or <see cref="IDictionary{K,V}"/></summary>
+    Struct,
 }
 
-/// <summary>Mark fields should be included when (de)serializing</summary>
+/// <summary>Auto renaming mode</summary>
+public enum SeraRenameMode : byte
+{
+    /// <summary>Ignore</summary>
+    None,
+    /// <summary>Don't rename</summary>
+    Dont,
+    /// <summary>Pascal case <c>PascalCase</c> </summary>
+    PascalCase,
+    /// <summary> Camel case <c>camelCase</c> </summary>
+    camelCase,
+    /// <summary> Lower case <c>lowercase</c> </summary>
+    lowercase,
+    /// <summary> Upper case <c>UPPERCASE</c> </summary>
+    UPPERCASE,
+    /// <summary> Snake case <c>snake_case</c> </summary>
+    snake_case,
+    /// <summary> Screaming snake case <c>SCREAMING_SNAKE_CASE</c> </summary>
+    SCREAMING_SNAKE_CASE,
+    /// <summary> Kebab case <c>kebab-case</c> </summary>
+    kebab_case,
+    /// <summary> Screaming kebab case <c>SCREAMING-KEBAB-CASE</c> </summary>
+    SCREAMING_KEBAB_CASE,
+}
+
 [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
-public sealed class SeraIncludeFieldAttribute : Attribute { }
+public sealed class SeraStructAttribute : Attribute
+{
+    /// <summary>Mark fields should be included when (de)serializing</summary>
+    public bool IncludeFields { get; set; }
+}
 
 /// <summary>Mark this member should be ignored when (de)serializing</summary>
 [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
@@ -109,78 +145,16 @@ public sealed class SeraIncludeAttribute : Attribute
     }
 }
 
-/// <summary>Mark fields should be included when (de)serializing</summary>
-[AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Enum
-                | AttributeTargets.Property | AttributeTargets.Field)]
-public sealed class SeraRenameAttribute : Attribute
+/// <summary>Rename fields int key</summary>
+[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
+public sealed class SeraFieldKeyAttribute(long key) : Attribute
 {
-    public string? Name { get; set; }
-    public long? IntKey { get; set; }
-
-    public string? SerName { get; set; }
-    public long? SerIntKey { get; set; }
-
-    public string? DeName { get; set; }
-    public long? DeIntKey { get; set; }
-
-    public SeraRenameAttribute() { }
-
-    public SeraRenameAttribute(string name)
-    {
-        Name = name;
-    }
-
-    public SeraRenameAttribute(long intKey)
-    {
-        IntKey = intKey;
-    }
-
-    public SeraRenameAttribute(string name, long intKey)
-    {
-        Name = name;
-        IntKey = intKey;
-    }
+    /// <summary>Rename fields int key</summary>
+    public long Key { get; } = key;
 }
 
-/// <summary>Mark fields should be included when (de)serializing</summary>
-[AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Enum
-                | AttributeTargets.Property | AttributeTargets.Field)]
-public sealed class SeraAutoRenameAttribute : Attribute
-{
-    public SeraRenameMode? Mode { get; set; }
-
-    public SeraRenameMode? SerMode { get; set; }
-    public SeraRenameMode? DeMode { get; set; }
-
-    public SeraAutoRenameAttribute() { }
-
-    public SeraAutoRenameAttribute(SeraRenameMode mode)
-    {
-        Mode = mode;
-    }
-}
-
-public enum SeraRenameMode
-{
-    /// <summary>Pascal case <c>PascalCase</c> </summary>
-    PascalCase,
-    /// <summary> Camel case <c>camelCase</c> </summary>
-    camelCase,
-    /// <summary> Lower case <c>lowercase</c> </summary>
-    lowercase,
-    /// <summary> Upper case <c>UPPERCASE</c> </summary>
-    UPPERCASE,
-    /// <summary> Snake case <c>snake_case</c> </summary>
-    snake_case,
-    /// <summary> Screaming snake case <c>SCREAMING_SNAKE_CASE</c> </summary>
-    SCREAMING_SNAKE_CASE,
-    /// <summary> Kebab case <c>kebab-case</c> </summary>
-    kebab_case,
-    /// <summary> Screaming kebab case <c>SCREAMING-KEBAB-CASE</c> </summary>
-    SCREAMING_KEBAB_CASE,
-}
-
-[AttributeUsage(AttributeTargets.All)]
+[AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Enum |
+                AttributeTargets.Property | AttributeTargets.Field)]
 public sealed class SeraFormatsAttribute : Attribute
 {
     public bool BooleanAsNumber { get; set; }
@@ -210,14 +184,25 @@ public sealed class SeraVariantAttribute : Attribute
     }
 }
 
-[AttributeUsage(AttributeTargets.Enum | AttributeTargets.Struct | AttributeTargets.Class)]
+[AttributeUsage(AttributeTargets.Enum | AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Interface)]
 public class SeraUnionAttribute : Attribute
 {
+    public SeraUnionMode Mode { get; set; }
     public VariantPriority Priority { get; set; } = VariantPriority.Any;
     public UnionFormat Format { get; set; } = UnionFormat.Any;
     public string InternalTagName { get; set; } = "type";
     public string AdjacentTagName { get; set; } = "t";
     public string AdjacentValueName { get; set; } = "c";
+}
+
+[SeraUnion(Mode = Exhaustive)]
+public enum SeraUnionMode : byte
+{
+    None,
+    /// <summary>No more variants will be added in the future, default value for f# union</summary>
+    Exhaustive,
+    /// <summary>More variations may be added in the future, default value for enum</summary>
+    NonExhaustive,
 }
 
 [AttributeUsage(AttributeTargets.Enum)]
@@ -233,12 +218,12 @@ public sealed class SeraFlagsAttribute : Attribute
     public SeraFlagsAttribute() { }
 }
 
-public enum SeraFlagsMode
+public enum SeraFlagsMode : byte
 {
     /// <summary>
-    /// As <see cref="string"/> array, flags without names will be ignored， default
+    /// As a <see cref="string"/> seq, flags without names will be ignored, default
     /// </summary>
-    Array,
+    Seq,
     /// <summary>
     /// As underlying number
     /// </summary>
@@ -257,7 +242,8 @@ public enum SeraFlagsMode
 
 #region Mark
 
-[AttributeUsage(AttributeTargets.All)]
+[AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Enum |
+                AttributeTargets.Field | AttributeTargets.Property)]
 public class SeraVisionByAttribute : Attribute
 {
     public SeraVisionByAttribute(string methodName)

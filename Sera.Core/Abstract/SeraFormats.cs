@@ -62,7 +62,7 @@ namespace Sera.Core.Formats
         /// </summary>
         DateTimeOffsetUseTimeZone = 1 << 4,
     }
-    
+
     public enum GuidTextFormat
     {
         Any,
@@ -129,12 +129,19 @@ namespace Sera.Core
         public GuidBinaryFormat GuidBinaryFormat { get; set; } = GuidBinaryFormat.Any;
         public string? CustomGuidTextFormat { get; set; }
 
-        public static SeraFormats FromAttr(SeraFormatsAttribute? attr)
-        {
-            if (attr == null) return Default;
-            // todo
-            return new() { };
-        }
+        public static SeraFormats FromAttr(SeraFormatsAttribute? attr) => attr == null
+            ? Default
+            : new()
+            {
+                BooleanAsNumber = attr.BooleanAsNumber,
+                ToUpperOrLower = attr.ToUpperOrLower,
+                NumberTextFormat = attr.NumberTextFormat,
+                CustomNumberTextFormat = attr.CustomNumberTextFormat,
+                DateTimeFormat = attr.DateTimeFormat,
+                GuidTextFormat = attr.GuidTextFormat,
+                GuidBinaryFormat = attr.GuidBinaryFormat,
+                CustomGuidTextFormat = attr.CustomGuidTextFormat,
+            };
     }
 
 }

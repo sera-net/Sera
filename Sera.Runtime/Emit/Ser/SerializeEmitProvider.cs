@@ -71,8 +71,9 @@ internal class SerializeEmitProvider : AEmitProvider
             return new Jobs._Static(inst.GetType(), inst);
         if (target.Styles.As is SeraAs.String && string_impl.TryGetValue(target.Type, out inst))
             return new Jobs._Static(inst.GetType(), inst);
+        var struct_sera_attr = target.Type.GetCustomAttribute<SeraAttribute>();
+        if (target.IsEnum) return CreateEnumJob(target, struct_sera_attr);
         // if (target.IsArray) return CreateArrayJob(target);
-        // if (target.IsEnum) return CreateEnumJob(target);
         // if (target.IsTuple(out var is_value_tuple)) return CreateTupleJob(target, is_value_tuple);
         // if (target.Type.IsGenericType)
         // {
@@ -87,7 +88,7 @@ internal class SerializeEmitProvider : AEmitProvider
         // var job = CreateJobCollectionLike(target);
         // job ??= CreateJobFSharpTypes(target);
         // return job ?? CreateStructJob(target);
-        return CreateStructJob(target);
+        return CreateStructJob(target, struct_sera_attr);
     }
 
     // private EmitJob? CreateJobCollectionLike(EmitMeta target)
@@ -162,10 +163,11 @@ internal class SerializeEmitProvider : AEmitProvider
     //     return null;
     // }
 
-    private EmitJob CreateStructJob(EmitMeta target)
+    private EmitJob CreateStructJob(EmitMeta target, SeraAttribute? struct_sera_attr)
     {
-        var name = target.Type.Name; // todo rename
-        var members = StructReflectionUtils.GetStructMembers(target.Type, SerOrDe.Ser);
+        var struct_attr = target.Type.GetCustomAttribute<SeraStructAttribute>();
+        var name = struct_sera_attr?.Name ?? target.Type.Name; // todo rename
+        var members = StructReflectionUtils.GetStructMembers(target.Type, SerOrDe.Ser, struct_sera_attr, struct_attr);
         if (target.Type.IsVisible && members.All(m => m.Type.IsVisible))
         {
             return new Jobs._Struct._Public(name, members);
@@ -176,40 +178,44 @@ internal class SerializeEmitProvider : AEmitProvider
         }
     }
 
-    // private EmitJob CreateEnumJob(EmitMeta target)
-    // {
-    //     var underlying_type = target.Type.GetEnumUnderlyingType();
-    //     var flags = target.Type.GetCustomAttribute<FlagsAttribute>() != null;
-    //     if (flags)
-    //     {
-    //         var flags_attr = target.Type.GetCustomAttribute<SeraFlagsAttribute>();
-    //         var mode = flags_attr?.Mode ?? SeraFlagsMode.Array;
-    //         return mode switch
-    //         {
-    //             SeraFlagsMode.Array => new Jobs._Enum._Flags_Array(underlying_type,
-    //                 EnumUtils.GetEnumInfo(target.Type, underlying_type, distinct: false)),
-    //             SeraFlagsMode.Number => new Jobs._Enum._Flags_Number(underlying_type),
-    //             SeraFlagsMode.String => new Jobs._Enum._Flags_String(underlying_type),
-    //             SeraFlagsMode.StringSplit => new Jobs._Enum._Flags_StringSplit(underlying_type),
-    //             _ => throw new ArgumentOutOfRangeException()
-    //         };
-    //     }
-    //     else
-    //     {
-    //         var union_attr = target.Type.GetCustomAttribute<SeraUnionAttribute>();
-    //         var items = EnumUtils.GetEnumInfo(target.Type, underlying_type, distinct: true);
-    //         if (target.Type.IsVisible)
-    //         {
-    //             var jump_table = EnumUtils.TryMakeJumpTable(underlying_type, items);
-    //             return new Jobs._Enum._Variant_Public(underlying_type, items, jump_table, union_attr);
-    //         }
-    //         else
-    //         {
-    //             return new Jobs._Enum._Variant_Private(underlying_type, items, union_attr);
-    //         }
-    //     }
-    // }
-    //
+    private EmitJob CreateEnumJob(EmitMeta target, SeraAttribute? struct_sera_attr)
+    {
+        var underlying_type = target.Type.GetEnumUnderlyingType();
+        var name = struct_sera_attr?.Name ?? target.Type.Name; // todo rename
+        var flags = target.Type.GetCustomAttribute<FlagsAttribute>() != null;
+        if (flags)
+        {
+            var flags_attr = target.Type.GetCustomAttribute<SeraFlagsAttribute>();
+            var mode = flags_attr?.Mode ?? SeraFlagsMode.Seq;
+            return mode switch
+            {
+                SeraFlagsMode.Seq => new Jobs._Enum._Flags_Seq(underlying_type,
+                    EnumUtils.GetEnumInfo(target.Type, underlying_type, distinct: false)),
+                SeraFlagsMode.Number => new Jobs._Enum._Flags_Number(underlying_type),
+                SeraFlagsMode.String => new Jobs._Enum._Flags_String(underlying_type),
+                SeraFlagsMode.StringSplit => new Jobs._Enum._Flags_StringSplit(underlying_type),
+                _ => throw new ArgumentOutOfRangeException()
+            };
+        }
+        else
+        {
+            var union_attr = target.Type.GetCustomAttribute<SeraUnionAttribute>();
+            var format_attr = target.Type.GetCustomAttribute<SeraFormatsAttribute>();
+            var mode = union_attr?.Mode ?? SeraUnionMode.None;
+            var style = UnionStyle.FromAttr(union_attr, format_attr);
+            var items = EnumUtils.GetEnumInfo(target.Type, underlying_type, distinct: true);
+            if (target.Type.IsVisible)
+            {
+                var jump_table = EnumUtils.TryMakeJumpTable(underlying_type, items);
+                return new Jobs._Enum._Variant_Public(name, underlying_type, items, jump_table, style, mode);
+            }
+            else
+            {
+                return new Jobs._Enum._Variant_Private(underlying_type, items, style, mode);
+            }
+        }
+    }
+
     // private EmitJob CreateTupleJob(EmitMeta target, bool is_value_tuple)
     // {
     //     var item_types = target.Type.GetGenericArguments();

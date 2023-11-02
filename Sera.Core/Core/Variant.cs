@@ -304,4 +304,32 @@ public record UnionStyle(
 )
 {
     public static UnionStyle Default { get; } = new();
+
+    public static UnionStyle? FromAttr(SeraUnionAttribute? attr, SeraFormatsAttribute? formats) => attr == null
+        ? null
+        : new()
+        {
+            VariantPriority = attr.Priority,
+            VariantFormats = SeraFormats.FromAttr(formats),
+            Format = attr.Format,
+            InternalTagName = attr.InternalTagName,
+            AdjacentTagName = attr.AdjacentTagName,
+            AdjacentValueName = attr.AdjacentValueName,
+        };
+}
+
+public record VariantStyle(
+    VariantPriority Priority = VariantPriority.Any,
+    SeraFormats? Formats = null
+)
+{
+    public static VariantStyle Default { get; } = new();
+    
+    public static VariantStyle? FromAttr(SeraVariantAttribute? attr, SeraFormatsAttribute? formats) => attr == null
+        ? null
+        : new()
+        {
+            Priority = attr.Priority,
+            Formats = SeraFormats.FromAttr(formats),
+        };
 }

@@ -13,7 +13,7 @@ open Sera.Runtime
 [<SetUp>]
 let Setup () = ()
 
-[<SeraGen; SeraIncludeField>]
+[<SeraGen; SeraStruct(IncludeFields = true)>]
 type UnionForAttrs1 = UnionForAttrs1
 
 [<Test>]

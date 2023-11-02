@@ -15,18 +15,14 @@ public interface ITupleSeraVision<in T>
 public interface ISeqSeraVision
 {
     public int? Count { get; }
-
-    public bool HasNext { get; }
-
+    public bool MoveNext();
     public R AcceptNext<R, V>(V visitor) where V : ASeqSeraVisitor<R>;
 }
 
 public interface IMapSeraVision
 {
     public int? Count { get; }
-
-    public bool HasNext { get; }
-
+    public bool MoveNext();
     public R AcceptNext<R, V>(V visitor) where V : AMapSeraVisitor<R>;
 }
 
@@ -43,5 +39,5 @@ public interface IUnionSeraVision<in T>
 {
     public string Name { get; }
 
-    public R Accept<R, V>(V visitor, T value) where V : AUnionSeraVisitor<R>;
+    public R AcceptUnion<R, V>(V visitor, T value) where V : AUnionSeraVisitor<R>;
 }

@@ -3,7 +3,6 @@ using System.Buffers;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
-
 using SeraBase = Sera.Core.SeraBase<Sera.Core.ISeraVision<object?>>;
 using SeraBaseForward = Sera.Core.SeraBaseForward<Sera.Core.ISeraVision<object?>>;
 
@@ -16,7 +15,7 @@ public abstract class ASeraVisitor<R> : SeraBase
     public abstract R Flush();
 
     #endregion
-    
+
     #region Reference
 
     public abstract R VReference<V, T>(V vision, T value) where V : ISeraVision<T> where T : class;
@@ -103,7 +102,7 @@ public abstract class ASeraVisitor<R> : SeraBase
 
     public virtual R VArray<V, T>(V vision, T[] value) where V : ISeraVision<T> =>
         VArray<V, T>(vision, value.AsMemory());
-    
+
     public abstract R VArray<V, T>(V vision, ReadOnlyMemory<T> value) where V : ISeraVision<T>;
 
     public abstract R VArray<V, T>(V vision, ReadOnlySequence<T> value) where V : ISeraVision<T>;
@@ -231,12 +230,17 @@ public abstract class AUnionSeraVisitor<R>(SeraBase Base) : SeraBaseForward(Base
 {
     public abstract R VEmpty();
 
-    public abstract R VVariant(Variant variant, UnionStyle? style = null);
+    public abstract R VNone();
 
-    public abstract R VVariant<V, T>(V vision, T value, Variant variant, UnionStyle? style = null)
+    public abstract R VVariant(Variant variant,
+        UnionStyle? union_style = null, VariantStyle? variant_style = null);
+
+    public abstract R VVariantValue<V, T>(V vision, T value, Variant variant,
+        UnionStyle? union_style = null, VariantStyle? variant_style = null)
         where V : ISeraVision<T>;
 
-    public abstract R VVariantStruct<V, T>(V vision, T value, Variant variant, UnionStyle? style = null)
+    public abstract R VVariantStruct<V, T>(V vision, T value, Variant variant,
+        UnionStyle? union_style = null, VariantStyle? variant_style = null)
         where V : IStructSeraVision<T>;
 }
 
