@@ -14,4 +14,6 @@ public readonly record struct SeraStyles(
             Formats: SeraFormats.FromAttr(sera_format_attr),
             As: sera_attr?.As ?? SeraAs.None
         );
+
+    public SeraStyles TakeFormats() => new(Formats: Formats);
 }

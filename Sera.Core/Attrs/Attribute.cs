@@ -171,7 +171,7 @@ public sealed class SeraFormatsAttribute : Attribute
     public string? CustomGuidTextFormat { get; set; }
 }
 
-[AttributeUsage(AttributeTargets.Field)]
+[AttributeUsage(AttributeTargets.Field  | AttributeTargets.Property)]
 public sealed class SeraVariantAttribute : Attribute
 {
     public VariantPriority Priority { get; set; } = VariantPriority.Any;

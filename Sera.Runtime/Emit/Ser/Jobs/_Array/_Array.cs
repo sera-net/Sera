@@ -1,30 +1,31 @@
-﻿// using System;
-// using System.Reflection;
-// using Sera.Runtime.Emit.Deps;
-// using Sera.Runtime.Utils;
-//
-// namespace Sera.Runtime.Emit.Ser.Jobs._Array;
-//
-// // todo ArraySegment, ImmutableArray
-//
-// internal abstract class _Array(Type ItemType) : _Base
-// {
-//     public override EmitTransform[] CollectTransforms(EmitStub stub, EmitMeta target)
-//         => target.IsValueType ? EmitTransform.EmptyTransforms : SerializeEmitProvider.ReferenceTypeTransforms;
-//
-//     protected virtual NullabilityInfo? GetElementNullabilityInfo(EmitMeta target)
-//         => target.TypeMeta.Nullability?.NullabilityInfo?.ElementType;
-//
-//     public override DepMeta[] CollectDeps(EmitStub stub, EmitMeta target)
-//     {
-//         var item_nullable = GetElementNullabilityInfo(target);
-//         var transforms = !ItemType.IsValueType && item_nullable is not
-//             { ReadState: NullabilityState.NotNull }
-//             ? SerializeEmitProvider.NullableClassImplTransforms
-//             : EmitTransform.EmptyTransforms;
-//         var meta = new DepMeta(
-//             new(TypeMetas.GetTypeMeta(ItemType, new NullabilityMeta(item_nullable)), target.Data),
-//             transforms);
-//         return new[] { meta };
-//     }
-// }
+﻿using System;
+using Sera.Core.Impls.Ser;
+using Sera.Runtime.Emit.Deps;
+using BindingFlags = System.Reflection.BindingFlags;
+
+namespace Sera.Runtime.Emit.Ser.Jobs._Array;
+
+internal class _Array(Type ItemType) : _Array_Like(ItemType)
+{
+    private Type EmitType { get; set; } = null!;
+    private Type RuntimeType { get; set; } = null!;
+    public override void Init(EmitStub stub, EmitMeta target) { }
+
+    public override Type GetEmitType(EmitStub stub, EmitMeta target, EmitDeps deps)
+        => EmitType = typeof(ArrayImpl<,>).MakeGenericType(ItemType, deps.Get(0).MakeSerWrapper(ItemType));
+
+    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, RuntimeDeps deps)
+        => RuntimeType = typeof(ArrayImpl<,>).MakeGenericType(ItemType, deps.Get(0).MakeSerWrapper(ItemType));
+
+    public override void Emit(EmitStub stub, EmitMeta target, EmitDeps deps) { }
+
+    public override object CreateInst(EmitStub stub, EmitMeta target, RuntimeDeps deps)
+    {
+        var dep = deps.Get(0);
+        var wrapper = dep.MakeSerWrapper(ItemType);
+        var ctor = RuntimeType.GetConstructor(BindingFlags.Public | BindingFlags.Instance,
+            new[] { wrapper })!;
+        var inst = ctor.Invoke(new object[] { null! });
+        return inst;
+    }
+}
