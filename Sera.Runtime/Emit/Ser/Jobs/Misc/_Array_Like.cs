@@ -4,7 +4,7 @@ using System.Reflection;
 using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Utils;
 
-namespace Sera.Runtime.Emit.Ser.Jobs._Array;
+namespace Sera.Runtime.Emit.Ser.Jobs;
 
 // todo ArraySegment, ImmutableArray
 

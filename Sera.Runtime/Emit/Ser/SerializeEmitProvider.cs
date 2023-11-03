@@ -223,13 +223,13 @@ internal class SerializeEmitProvider : AEmitProvider
         var item_type = target.Type.GetElementType()!;
         if (target.IsSZArray)
         {
-            return new Jobs._Array._Array(item_type);
+            return new Jobs._Array(item_type);
         }
         throw new NotSupportedException("Multidimensional and non-zero lower bound arrays are not supported");
     }
 
     private EmitJob CreateOtherArrayJob(EmitMeta target, Type item_type)
-        => new Jobs._Array._Array(item_type);
+        => new Jobs._Array(item_type);
 
     private EmitJob CreateTupleJob(EmitMeta target, bool is_value_tuple)
     {

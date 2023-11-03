@@ -3,7 +3,7 @@ using Sera.Core.Impls.Ser;
 using Sera.Runtime.Emit.Deps;
 using BindingFlags = System.Reflection.BindingFlags;
 
-namespace Sera.Runtime.Emit.Ser.Jobs._Array;
+namespace Sera.Runtime.Emit.Ser.Jobs;
 
 internal class _Array(Type ItemType) : _Array_Like(ItemType)
 {
