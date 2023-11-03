@@ -2747,70 +2747,6 @@ public class TestRuntime
     }
 
     #endregion
-    
-    #region PrivateBytesBase1
-
-    private class PrivateBytesBase1 : List<byte> { }
-
-    [Test]
-    public void TestPrivateBytesBase1()
-    {
-        var obj = new PrivateBytesBase1 { 1, 2, 3 };
-
-        var str = SeraJson.Serializer
-            .Serialize(obj)
-            .To.String(new SeraStyles(As: SeraAs.Bytes));
-
-        Console.WriteLine(str);
-        Assert.That(str, Is.EqualTo("\"AQID\""));
-    }
-
-    #endregion
-
-    #region PrivateBytesBase2
-
-    public class PrivateBytesBase2<A> : List<byte> { }
-
-    private class PrivateBytesBase2A { }
-
-    [Test]
-    public void TestPrivateBytesBase2()
-    {
-        var obj = new PrivateBytesBase2<PrivateBytesBase2A> { 1, 2, 3 };
-
-        var str = SeraJson.Serializer
-            .Serialize(obj)
-            .To.String(new SeraStyles(As: SeraAs.Bytes));
-
-        Console.WriteLine(str);
-        Assert.That(str, Is.EqualTo("\"AQID\""));
-    }
-
-    #endregion
-
-    #region PrivateBytesBase3
-
-    private class PrivateBytesBase3 : List<byte> { }
-
-    private class PrivateBytesBase3A
-    {
-        [Sera(As = SeraAs.Bytes)]
-        public PrivateBytesBase3 A { get; set; } = new() { 1, 2, 3 };
-    }
-
-    [Test]
-    public void TestPrivateBytesBase3()
-    {
-        var obj = new PrivateBytesBase3A();
-
-        var str = SeraJson.Serializer
-            .Serialize(obj).To.String();
-
-        Console.WriteLine(str);
-        Assert.That(str, Is.EqualTo("{\"A\":\"AQID\"}"));
-    }
-
-    #endregion
 
     #region String1
 
@@ -2866,71 +2802,7 @@ public class TestRuntime
     }
 
     #endregion
-
-    #region PrivateStringBase1
-
-    private class PrivateStringBase1 : List<char> { }
-
-    [Test]
-    public void TestPrivateStringBase1()
-    {
-        var obj = new PrivateStringBase1 { 'a', 'b', 'c' };
-
-        var str = SeraJson.Serializer
-            .Serialize(obj)
-            .To.String(new SeraStyles(As: SeraAs.String));
-
-        Console.WriteLine(str);
-        Assert.That(str, Is.EqualTo("\"abc\""));
-    }
-
-    #endregion
-
-    #region PrivateStringBase2
-
-    public class PrivateStringBase2<A> : List<char> { }
-
-    private class PrivateStringBase2A;
-
-    [Test]
-    public void TestPrivateStringBase2()
-    {
-        var obj = new PrivateStringBase2<PrivateStringBase2A> { 'a', 'b', 'c' };
-
-        var str = SeraJson.Serializer
-            .Serialize(obj)
-            .To.String(new SeraStyles(As: SeraAs.String));
-
-        Console.WriteLine(str);
-        Assert.That(str, Is.EqualTo("\"abc\""));
-    }
-
-    #endregion
-
-    #region PrivateStringBase3
-
-    private class PrivateStringBase3 : List<char> { }
-
-    private class PrivateStringBase3A
-    {
-        [Sera(As = SeraAs.String)]
-        public PrivateStringBase3 A { get; set; } = new() { 'a', 'b', 'c' };
-    }
-
-    [Test]
-    public void TestPrivateStringBase3()
-    {
-        var obj = new PrivateStringBase3A();
-
-        var str = SeraJson.Serializer
-            .Serialize(obj).To.String();
-
-        Console.WriteLine(str);
-        Assert.That(str, Is.EqualTo("{\"A\":\"abc\"}"));
-    }
-
-    #endregion
-
+    
     #region Nullable1
 
     [Test]

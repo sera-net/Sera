@@ -4,7 +4,7 @@ using Sera.Core.Impls.Ser;
 
 namespace Sera.Runtime.Emit.Ser.Transforms;
 
-internal class _NullableClassImpl : EmitTransform
+public class _NullableClassImpl : EmitTransform
 {
     public override Type TransformType(EmitMeta target, Type prevType)
     {

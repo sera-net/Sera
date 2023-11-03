@@ -4,10 +4,8 @@ using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using Sera.Core;
 using Sera.Core.Impls.Ser;
-using Sera.Runtime.Emit.Ser.Internal;
 using Sera.Runtime.Utils;
 
 namespace Sera.Runtime.Emit.Ser;
@@ -87,83 +85,19 @@ internal class SerializeEmitProvider : AEmitProvider
             if (generic_def == typeof(Nullable<>)) return CreateNullableJob(target);
             if (generic_def == typeof(KeyValuePair<,>)) return CreateKeyValuePairJob(target);
         }
-        // var job = CreateJobCollectionLike(target);
-        // job ??= CreateJobFSharpTypes(target);
-        // return job ?? CreateStructJob(target);
-        return CreateStructJob(target, struct_sera_attr);
+        var job = CreateJobCollectionLike(target);
+        if (job == null)
+        {
+            foreach (var provider in SeraRuntime.GetSerEmitProviders())
+            {
+                job = provider.TryCreateJob(target);
+                if (job != null) break;
+            }
+        }
+        return job ?? CreateStructJob(target, struct_sera_attr);
     }
 
-    // private EmitJob? CreateJobCollectionLike(EmitMeta target)
-    // {
-    //     if (
-    //         target.Type.IsCollectionLike(
-    //             out var CollectionKind, out var item_type, out var key_type, out var interface_mapping
-    //         )
-    //     )
-    //     {
-    //         switch (CollectionKind)
-    //         {
-    //             case CollectionLikeKind.IEnumerable:
-    //                 if (target.Styles.As is SeraAs.Map)
-    //                 {
-    //                     if (item_type.IsOpenTypeEq(typeof(KeyValuePair<,>)))
-    //                     {
-    //                         var kv = item_type.GetGenericArguments();
-    //                         return CreateIEnumerableMapJob(target, kv[0], kv[1], interface_mapping);
-    //                     }
-    //                 }
-    //                 return CreateIEnumerableJob(target, item_type, interface_mapping);
-    //             case CollectionLikeKind.ICollection:
-    //                 if (target.Styles.As is SeraAs.Map)
-    //                 {
-    //                     if (item_type.IsOpenTypeEq(typeof(KeyValuePair<,>)))
-    //                     {
-    //                         var kv = item_type.GetGenericArguments();
-    //                         return CreateICollectionMapJob(target, kv[0], kv[1], interface_mapping);
-    //                     }
-    //                 }
-    //                 return CreateICollectionJob(target, item_type, interface_mapping);
-    //             case CollectionLikeKind.IReadOnlyCollection:
-    //                 if (target.Styles.As is SeraAs.Map)
-    //                 {
-    //                     if (item_type.IsOpenTypeEq(typeof(KeyValuePair<,>)))
-    //                     {
-    //                         var kv = item_type.GetGenericArguments();
-    //                         return CreateIReadOnlyCollectionMapJob(target, kv[0], kv[1], interface_mapping);
-    //                     }
-    //                 }
-    //                 return CreateIReadOnlyCollectionJob(target, item_type, interface_mapping);
-    //             case CollectionLikeKind.IDictionary:
-    //                 if (target.Styles.As is SeraAs.Seq)
-    //                     return CreateICollectionJob(target,
-    //                         typeof(KeyValuePair<,>).MakeGenericType(key_type!, item_type), interface_mapping);
-    //                 return CreateIDictionaryJob(target, key_type!, item_type, interface_mapping);
-    //             case CollectionLikeKind.IReadOnlyDictionary:
-    //                 if (target.Styles.As is SeraAs.Seq)
-    //                     return CreateIReadOnlyCollectionJob(target,
-    //                         typeof(KeyValuePair<,>).MakeGenericType(key_type!, item_type), interface_mapping);
-    //                 return CreateIReadOnlyDictionaryJob(target, key_type!, item_type, interface_mapping);
-    //             default:
-    //                 throw new ArgumentOutOfRangeException(nameof(CollectionKind),
-    //                     $"Unknown CollectionKind {CollectionKind}");
-    //         }
-    //     }
-    //     if (target.Type.IsIDictionary()) return CreateIDictionaryLegacyJob();
-    //     if (target.Type.IsICollection()) return CreateICollectionLegacyJob();
-    //     if (target.Type.IsIEnumerable()) return CreateIEnumerableLegacyJob();
-    //     return null;
-    // }
-    //
-    // private EmitJob? CreateJobFSharpTypes(EmitMeta target)
-    // {
-    //     if (target.Type.IsGenericType)
-    //     {
-    //         var generic_def = target.Type.GetGenericTypeDefinition();
-    //         if (generic_def.FullName == "Microsoft.FSharp.Core.FSharpOption`1")
-    //             return CreateFSharpOptionJob(target, generic_def);
-    //     }
-    //     return null;
-    // }
+    #region Struct
 
     private EmitJob CreateStructJob(EmitMeta target, SeraAttribute? struct_sera_attr)
     {
@@ -179,6 +113,10 @@ internal class SerializeEmitProvider : AEmitProvider
             return new Jobs._Struct._Private(name, members);
         }
     }
+
+    #endregion
+
+    #region Enum
 
     private EmitJob CreateEnumJob(EmitMeta target, SeraAttribute? struct_sera_attr)
     {
@@ -218,6 +156,10 @@ internal class SerializeEmitProvider : AEmitProvider
         }
     }
 
+    #endregion
+
+    #region Misc
+
     private EmitJob CreateArrayJob(EmitMeta target)
     {
         var item_type = target.Type.GetElementType()!;
@@ -251,18 +193,75 @@ internal class SerializeEmitProvider : AEmitProvider
         return new Jobs._KeyValuePair(key_type, val_type);
     }
 
+    #endregion
+
+    #region Collection
+
+    private EmitJob? CreateJobCollectionLike(EmitMeta target)
+    {
+        if (
+            target.Type.IsCollectionLike(
+                out var CollectionKind, out var item_type, out var key_type, out var interface_mapping
+            )
+        )
+        {
+            switch (CollectionKind)
+            {
+                case CollectionLikeKind.IEnumerable:
+                    if (target.Styles.As is SeraAs.Map)
+                    {
+                        if (item_type.IsOpenTypeEq(typeof(KeyValuePair<,>)))
+                        {
+                            var kv = item_type.GetGenericArguments();
+                            return new Jobs._Map._Generic._IEnumerable(kv[0], kv[1]);
+                        }
+                    }
+                    return new Jobs._Seq._Generic._IEnumerable(item_type);
+                case CollectionLikeKind.ICollection:
+                    if (target.Styles.As is SeraAs.Map)
+                    {
+                        if (item_type.IsOpenTypeEq(typeof(KeyValuePair<,>)))
+                        {
+                            var kv = item_type.GetGenericArguments();
+                            return new Jobs._Map._Generic._ICollection(kv[0], kv[1]);
+                        }
+                    }
+                    return new Jobs._Seq._Generic._ICollection(item_type);
+                case CollectionLikeKind.IReadOnlyCollection:
+                    if (target.Styles.As is SeraAs.Map)
+                    {
+                        if (item_type.IsOpenTypeEq(typeof(KeyValuePair<,>)))
+                        {
+                            var kv = item_type.GetGenericArguments();
+                            return new Jobs._Map._Generic._IReadOnlyCollection(kv[0], kv[1]);
+                        }
+                    }
+                    return new Jobs._Seq._Generic._IReadOnlyCollection(item_type);
+                case CollectionLikeKind.IDictionary:
+                    if (target.Styles.As is SeraAs.Seq)
+                        return new Jobs._Seq._Generic._ICollection(
+                            typeof(KeyValuePair<,>).MakeGenericType(key_type!, item_type));
+                    return new Jobs._Map._Generic._ICollection(key_type!, item_type);
+                case CollectionLikeKind.IReadOnlyDictionary:
+                    if (target.Styles.As is SeraAs.Seq)
+                        return new Jobs._Seq._Generic._IReadOnlyCollection(
+                            typeof(KeyValuePair<,>).MakeGenericType(key_type!, item_type));
+                    return new Jobs._Map._Generic._IReadOnlyCollection(key_type!, item_type);
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(CollectionKind),
+                        $"Unknown CollectionKind {CollectionKind}");
+            }
+        }
+        if (target.Type.IsIDictionary()) return new Jobs._Map._Legacy._IDictionary();
+        if (target.Type.IsICollection()) return new Jobs._Seq._Legacy._ICollection();
+        if (target.Type.IsIEnumerable()) return new Jobs._Seq._Legacy._IEnumerable();
+        return null;
+    }
+
     // private MethodInfo? GetDirectGetEnumerator(EmitMeta target)
     //     => target.Type.GetMethod(nameof(IEnumerable<int>.GetEnumerator),
     //         BindingFlags.Public | BindingFlags.Instance,
     //         Array.Empty<Type>());
-    //
-    // private EmitJob CreateIEnumerableJob(EmitMeta target, Type item_type, InterfaceMapping? mapping)
-    // {
-    //     var direct_get_enumerator = GetDirectGetEnumerator(target);
-    //     if (target.Type.IsVisible && item_type.IsVisible)
-    //         return new Jobs._IEnumerable._Generic._Public(item_type, mapping, direct_get_enumerator);
-    //     return new Jobs._IEnumerable._Generic._Private(item_type);
-    // }
     //
     // private EmitJob CreateIEnumerableLegacyJob()
     //     => new Jobs._IEnumerable._Legacy();
@@ -332,7 +331,20 @@ internal class SerializeEmitProvider : AEmitProvider
     //         return new Jobs._IDictionary._Generic._ReadOnly_Public(key_type, item_type, mapping, direct_get_enumerator);
     //     return new Jobs._IDictionary._Generic._IReadOnlyCollection_Private(key_type, item_type);
     // }
-    //
+
+    #endregion
+
+    // private EmitJob? CreateJobFSharpTypes(EmitMeta target)
+    // {
+    //     if (target.Type.IsGenericType)
+    //     {
+    //         var generic_def = target.Type.GetGenericTypeDefinition();
+    //         if (generic_def.FullName == "Microsoft.FSharp.Core.FSharpOption`1")
+    //             return CreateFSharpOptionJob(target, generic_def);
+    //     }
+    //     return null;
+    // }
+
     // private EmitJob CreateFSharpOptionJob(EmitMeta target, Type generic_def)
     // {
     //     var item_type = target.Type.GetGenericArguments()[0];

@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -67,11 +70,11 @@ internal static class ReflectionUtils
     public static MethodInfo AUnionSeraVisitor_VVariant { get; } =
         typeof(AUnionSeraVisitor<>).GetMethod(nameof(AUnionSeraVisitor<Unit>.VVariant),
             BindingFlags.Public | BindingFlags.Instance)!;
-    
+
     public static MethodInfo AUnionSeraVisitor_VNone { get; } =
         typeof(AUnionSeraVisitor<>).GetMethod(nameof(AUnionSeraVisitor<Unit>.VNone),
             BindingFlags.Public | BindingFlags.Instance)!;
-    
+
     public static MethodInfo AUnionSeraVisitor_VEmpty { get; } =
         typeof(AUnionSeraVisitor<>).GetMethod(nameof(AUnionSeraVisitor<Unit>.VEmpty),
             BindingFlags.Public | BindingFlags.Instance)!;
@@ -117,6 +120,61 @@ internal static class ReflectionUtils
         }
         return asm.DefineDynamicModule(asm_name.Name!);
     }
+
+    public static readonly FrozenSet<Type> SingleGenericTypes = new[]
+    {
+        typeof(IEnumerable<>),
+        typeof(ICollection<>),
+        typeof(IList<>),
+        typeof(ISet<>),
+
+        typeof(IReadOnlyCollection<>),
+        typeof(IReadOnlyList<>),
+        typeof(IReadOnlySet<>),
+
+        typeof(ConcurrentBag<>),
+        typeof(ConcurrentQueue<>),
+        typeof(ConcurrentStack<>),
+
+        typeof(FrozenSet<>),
+        typeof(HashSet<>),
+
+        typeof(List<>),
+        typeof(LinkedList<>),
+        typeof(Queue<>),
+        typeof(Stack<>),
+        typeof(SortedSet<>),
+
+        typeof(IImmutableList<>),
+        typeof(IImmutableQueue<>),
+        typeof(IImmutableStack<>),
+        typeof(IImmutableSet<>),
+
+        typeof(ImmutableList<>),
+        typeof(ImmutableQueue<>),
+        typeof(ImmutableStack<>),
+        typeof(ImmutableSortedSet<>),
+        typeof(ImmutableHashSet<>),
+        typeof(ImmutableArray<>),
+    }.ToFrozenSet();
+    
+    public static readonly FrozenSet<Type> DoubleGenericTypes = new[]
+    {
+        typeof(IDictionary<,>),
+        typeof(IReadOnlyDictionary<,>),
+        
+        typeof(FrozenDictionary<,>),
+        typeof(Dictionary<,>),
+        typeof(SortedDictionary<,>),
+        typeof(SortedList<,>),
+        typeof(ReadOnlyDictionary<,>),
+        
+        typeof(ImmutableDictionary<,>),
+        typeof(ImmutableSortedDictionary<,>),
+        
+        typeof(ConditionalWeakTable<,>),
+        
+    }.ToFrozenSet();
 
     public static FrozenSet<Type> ValueTuples { get; } = new HashSet<Type>
     {

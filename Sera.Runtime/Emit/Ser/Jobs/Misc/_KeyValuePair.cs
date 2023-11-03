@@ -51,7 +51,7 @@ internal class _KeyValuePair(Type KeyType, Type ValueType) : _Base
     {
         var dep_key = deps.Get(0);
         var dep_value = deps.Get(1);
-        return EmitType =
+        return RuntimeType =
             typeof(EntryImpl<,,,>).MakeGenericType(
                 KeyType, ValueType,
                 dep_key.MakeSerWrapper(KeyType),

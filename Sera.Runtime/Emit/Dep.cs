@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Sera.Runtime.Emit.Deps;
 
-internal readonly record struct DepMeta(EmitMeta Meta, EmitTransform[] Transforms, bool KeepRaw = false)
+public readonly record struct DepMeta(EmitMeta Meta, EmitTransform[] Transforms, bool KeepRaw = false)
 {
     public bool Equals(DepMeta other)
     {
@@ -23,9 +23,9 @@ internal readonly record struct DepMeta(EmitMeta Meta, EmitTransform[] Transform
     }
 }
 
-internal record struct DepMetaGroup(DepMeta DepMeta, int[] RawIndexes);
+public record struct DepMetaGroup(DepMeta DepMeta, int[] RawIndexes);
 
-internal class DepItem(EmitStub Stub, DepMeta Meta)
+public class DepItem(EmitStub Stub, DepMeta Meta)
 {
     public EmitStub Stub { get; } = Stub;
     public DepMeta Meta { get; } = Meta;

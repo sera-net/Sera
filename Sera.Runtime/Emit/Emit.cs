@@ -13,7 +13,7 @@ using Sera.Runtime.Utils;
 
 namespace Sera.Runtime.Emit;
 
-internal readonly record struct EmitMeta(TypeMeta TypeMeta, SeraStyles Styles)
+public readonly record struct EmitMeta(TypeMeta TypeMeta, SeraStyles Styles)
 {
     public Type Type => TypeMeta.Type;
 
@@ -61,12 +61,19 @@ internal abstract class AEmitProvider
 
 internal record struct EmitCtx(Thread CurrentThread);
 
-internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, EmitJob job)
+public sealed class EmitStub
 {
-    public AEmitProvider EmitProvider { get; } = emitProvider;
+    internal EmitStub(AEmitProvider emitProvider, EmitMeta target, EmitJob job)
+    {
+        EmitProvider = emitProvider;
+        Target = target;
+        Job = job;
+    }
 
-    public EmitMeta Target { get; } = target;
-    private EmitJob Job { get; } = job;
+    internal AEmitProvider EmitProvider { get; }
+
+    public EmitMeta Target { get; }
+    private EmitJob Job { get; }
 
     private volatile EmitStubState state = EmitStubState.None;
     public EmitStubState State => state;
@@ -157,6 +164,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
             catch (Exception e)
             {
                 MarkError(ExceptionDispatchInfo.Capture(e));
+                throw;
             }
         }
         else
@@ -226,6 +234,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
             catch (Exception e)
             {
                 MarkError(ExceptionDispatchInfo.Capture(e));
+                throw;
             }
         }
         else
@@ -317,6 +326,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
             catch (Exception e)
             {
                 MarkError(ExceptionDispatchInfo.Capture(e));
+                throw;
             }
         }
         else
@@ -358,6 +368,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
             catch (Exception e)
             {
                 MarkError(ExceptionDispatchInfo.Capture(e));
+                throw;
             }
         }
         else
@@ -418,6 +429,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
             catch (Exception e)
             {
                 MarkError(ExceptionDispatchInfo.Capture(e));
+                throw;
             }
         }
         else
@@ -460,6 +472,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
             catch (Exception e)
             {
                 MarkError(ExceptionDispatchInfo.Capture(e));
+                throw;
             }
         }
         else
@@ -495,7 +508,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
     #endregion
 }
 
-internal enum EmitStubState : uint
+public enum EmitStubState : uint
 {
     None = 0,
     Initing = None + 1,
@@ -513,7 +526,7 @@ internal enum EmitStubState : uint
     Error = uint.MaxValue,
 }
 
-internal abstract class EmitJob
+public abstract class EmitJob
 {
     public Guid Guid { get; } = Guid.NewGuid();
 

@@ -6,9 +6,12 @@ open Sera
 open Sera.Core
 open Sera.Json
 open Sera.Runtime
+open Sera.Runtime.FSharp
 
 [<SetUp>]
-let Setup () = ()
+let Setup () =
+    SeraRuntime.Reg(SeraRuntimeFSharp.Instance)
+    ()
 
 // #region TestRecord1
 

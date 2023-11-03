@@ -4,7 +4,7 @@ using Sera.Core.Impls.Ser;
 
 namespace Sera.Runtime.Emit.Ser.Transforms;
 
-internal class _ReferenceImpl : EmitTransform
+public class _ReferenceImpl : EmitTransform
 {
     public override Type TransformType(EmitMeta target, Type prevType)
     {

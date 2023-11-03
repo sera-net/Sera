@@ -8,7 +8,7 @@ using Sera.Runtime.Utils;
 
 namespace Sera.Runtime.Emit.Deps;
 
-internal readonly record struct DepPlace(
+public readonly record struct DepPlace(
     DepItem Dep, Type RawContainerType, Type ContainerType, MethodInfo GetDepMethodInfo,
     Type ActualType, Type TransformedType, Type RawType, bool Boxed
 )
@@ -25,14 +25,14 @@ internal readonly record struct DepPlace(
         .MakeGenericType(target, TransformedType, ContainerType);
 }
 
-internal abstract record BaseDeps(EmitStub Stub, DepPlace[] Deps)
+public abstract record BaseDeps(EmitStub Stub, DepPlace[] Deps)
 {
     public DepPlace Get(int rawIndex) => Deps[Stub.DepsIndexMap[rawIndex]];
 }
 
-internal sealed record EmitDeps(EmitStub Stub, DepPlace[] Deps) : BaseDeps(Stub, Deps);
+public sealed record EmitDeps(EmitStub Stub, DepPlace[] Deps) : BaseDeps(Stub, Deps);
 
-internal sealed record RuntimeDeps(EmitStub Stub, DepPlace[] Deps) : BaseDeps(Stub, Deps);
+public sealed record RuntimeDeps(EmitStub Stub, DepPlace[] Deps) : BaseDeps(Stub, Deps);
 
 public static class EmitDepContainer
 {

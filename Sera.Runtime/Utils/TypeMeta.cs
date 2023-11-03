@@ -11,9 +11,9 @@ using Sera.Core;
 
 namespace Sera.Runtime.Utils;
 
-internal record struct TypeMeta(Type Type, GenericMeta? Generics, NullabilityMeta? Nullability);
+public record struct TypeMeta(Type Type, GenericMeta? Generics, NullabilityMeta? Nullability);
 
-internal record struct GenericMeta(
+public record struct GenericMeta(
     Type[] RawTypes, TypeMeta[] Metas, NullabilityMeta[]? Nullabilities, int Length
 )
 {
@@ -21,7 +21,7 @@ internal record struct GenericMeta(
         types.Select(t => TypeMetas.GetTypeMeta(t)).ToArray(), null, types.Length);
 }
 
-internal record NullabilityMeta
+public record NullabilityMeta
 {
     public static NullabilityMeta Empty { get; } = new((NullabilityInfo?)null);
 
@@ -77,7 +77,7 @@ internal record NullabilityMeta
     public override int GetHashCode() => Hash;
 }
 
-internal static class TypeMetas
+public static class TypeMetas
 {
     #region Caches
 

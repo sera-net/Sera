@@ -2,7 +2,7 @@
 
 namespace Sera.Runtime.Emit;
 
-internal abstract class EmitTransform
+public abstract class EmitTransform
 {
     public static EmitTransform[] EmptyTransforms { get; } = Array.Empty<EmitTransform>();
     

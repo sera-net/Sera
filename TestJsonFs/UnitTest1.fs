@@ -9,9 +9,12 @@ open Sera
 open Sera.Core.Impls.Ser
 open Sera.Json
 open Sera.Runtime
+open Sera.Runtime.FSharp
 
 [<SetUp>]
-let Setup () = ()
+let Setup () =
+    SeraRuntime.Reg(SeraRuntimeFSharp.Instance)
+    ()
 
 [<SeraGen; SeraStruct(IncludeFields = true)>]
 type UnionForAttrs1 = UnionForAttrs1
