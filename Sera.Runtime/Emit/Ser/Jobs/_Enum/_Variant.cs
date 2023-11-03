@@ -1,18 +1,14 @@
 ﻿using System;
 using System.Reflection;
-using Sera.Core.Ser;
-using Sera.Runtime.Utils;
+using Sera.Runtime.Emit.Ser.Internal;
 
 namespace Sera.Runtime.Emit.Ser.Jobs._Enum;
 
-internal abstract class _Variant(Type UnderlyingType, EnumInfo[] Items, SeraEnumAttribute? EnumAttr) : _Base
+internal abstract class _Variant : _Base
 {
-    public SeraEnumAttribute? EnumAttr { get; private set; } = EnumAttr;
-    protected SerializerVariantHint? RootHint { get; } = EnumAttr?.SerHint;
-
-    protected static readonly Type VariantMetaType = typeof((string name, SerializerVariantHint? hint));
+    protected static readonly Type VariantMetaType = typeof(VariantMeta);
     protected static readonly FieldInfo VariantMetaFieldName =
-        VariantMetaType.GetField(nameof(ValueTuple<int, int>.Item1), BindingFlags.Public | BindingFlags.Instance)!;
-    protected static readonly FieldInfo VariantMetaFieldHint =
-        VariantMetaType.GetField(nameof(ValueTuple<int, int>.Item2), BindingFlags.Public | BindingFlags.Instance)!;
+        VariantMetaType.GetField(nameof(VariantMeta.Name), BindingFlags.Public | BindingFlags.Instance)!;
+    protected static readonly FieldInfo VariantMetaFieldStyle =
+        VariantMetaType.GetField(nameof(VariantMeta.Style), BindingFlags.Public | BindingFlags.Instance)!;
 }

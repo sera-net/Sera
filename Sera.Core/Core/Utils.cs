@@ -1,11 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace Sera.Core;
 
 internal static class Utils
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static T NotNull<T>(this T value)
+    {
+        if (value == null) throw new NullReferenceException();
+        return value;
+    }
+    
     public static bool DictEq<K, V>(this Dictionary<K, V> self, Dictionary<K, V> other) where K : notnull
         => self.Count == other.Count && !self
             .AsParallel()

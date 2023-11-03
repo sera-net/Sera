@@ -4,41 +4,36 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using Sera.Core;
-using Sera.Core.Ser;
 using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Utils;
 
 namespace Sera.Runtime.Emit.Ser.Jobs._Struct;
 
-internal sealed class _Public(StructMember[] Members) : _Struct(Members)
+internal sealed class _Public(string StructName, StructMember[] Members) : _Struct(Members)
 {
     public TypeBuilder TypeBuilder { get; set; } = null!;
     public Type RuntimeType { get; set; } = null!;
 
     private readonly List<(Delegate del, string name)> Accesses = new();
 
-    private MethodInfo StartStruct { get; set; } = null!;
-    
     public override void Init(EmitStub stub, EmitMeta target)
     {
         TypeBuilder = CreateTypeBuilderStruct($"Ser_{target.Type.Name}");
         TypeBuilder.MarkReadonly();
-        StartStruct = ReflectionUtils.ISerializer_StartStruct_3generic
-            .MakeGenericMethod(target.Type, target.Type, TypeBuilder);
     }
 
     public override Type GetEmitPlaceholderType(EmitStub stub, EmitMeta target) => TypeBuilder;
 
     public override Type GetRuntimePlaceholderType(EmitStub stub, EmitMeta target) => RuntimeType;
 
-    public override Type GetEmitType(EmitStub stub, EmitMeta target, DepItem[] deps) => TypeBuilder;
+    public override Type GetEmitType(EmitStub stub, EmitMeta target, EmitDeps deps) => TypeBuilder;
 
-    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, DepItem[] deps) => RuntimeType;
+    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, RuntimeDeps deps) => RuntimeType;
 
     public override void Emit(EmitStub stub, EmitMeta target, EmitDeps deps)
     {
-        EmitWrite(target);
-        EmitReceive(target, deps);
+        EmitAccept(target);
+        EmitStruct(target, deps);
         RuntimeType = TypeBuilder.CreateType();
     }
 
@@ -61,20 +56,25 @@ internal sealed class _Public(StructMember[] Members) : _Struct(Members)
         return (access, access_invoke);
     }
 
-    private void EmitWrite(EmitMeta target)
+    private void EmitAccept(EmitMeta target)
     {
-        var write_method = TypeBuilder.DefineMethod(nameof(ISerialize<object>.Write),
+        var accept_method = TypeBuilder.DefineMethod(nameof(ISeraVision<object>.Accept),
             MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.NewSlot);
-        var generic_parameters = write_method.DefineGenericParameters("S");
-        var TS = generic_parameters[0];
-        TS.SetInterfaceConstraints(typeof(ISerializer));
-        write_method.SetParameters(TS, target.Type, typeof(ISeraOptions));
-        write_method.DefineParameter(1, ParameterAttributes.None, "serializer");
-        write_method.DefineParameter(2, ParameterAttributes.None, "value");
-        write_method.DefineParameter(3, ParameterAttributes.None, "options");
-        write_method.SetImplementationFlags(MethodImplAttributes.AggressiveInlining);
+        var generic_parameters = accept_method.DefineGenericParameters("R", "V");
+        var TR = generic_parameters[0];
+        var TV = generic_parameters[1];
+        var visitor = typeof(ASeraVisitor<>).MakeGenericType(TR);
+        TV.SetBaseTypeConstraint(visitor);
+        accept_method.SetReturnType(TR);
+        accept_method.SetParameters(TV, target.Type);
+        accept_method.DefineParameter(1, ParameterAttributes.None, "visitor");
+        accept_method.DefineParameter(2, ParameterAttributes.None, "value");
+        accept_method.SetImplementationFlags(MethodImplAttributes.AggressiveInlining);
 
-        var ilg = write_method.GetILGenerator();
+        var v_struct_method = TypeBuilder.GetMethod(visitor, ReflectionUtils.ASeraVisitor_VStruct)
+            .MakeGenericMethod(TypeBuilder, target.Type);
+
+        var ilg = accept_method.GetILGenerator();
 
         var not_null_label = ilg.DefineLabel();
 
@@ -90,210 +90,276 @@ internal sealed class _Public(StructMember[] Members) : _Struct(Members)
             #endregion
         }
 
-        #region serializer.StartStruct<T, T, Self>(target.Name, field_count, value, this);
+        #region return visitor.VStruct<Self, T>(this, value);
 
         ilg.MarkLabel(not_null_label);
-        ilg.Emit(OpCodes.Ldarga, 1);
-        ilg.Emit(OpCodes.Ldstr, target.Type.Name);
-        ilg.Emit(OpCodes.Ldc_I4, Members.Length);
-        ilg.Emit(OpCodes.Conv_I);
-        ilg.Emit(OpCodes.Ldarg_2);
+        ilg.Emit(OpCodes.Ldarg_1);
+        ilg.Emit(OpCodes.Box, TV);
         ilg.Emit(OpCodes.Ldarg_0);
         ilg.Emit(OpCodes.Ldobj, TypeBuilder);
-        ilg.Emit(OpCodes.Constrained, TS);
-        ilg.Emit(OpCodes.Callvirt, StartStruct);
-
-        #endregion
-
-        #region return;
-
+        ilg.Emit(OpCodes.Ldarg_2);
+        ilg.Emit(OpCodes.Callvirt, v_struct_method);
         ilg.Emit(OpCodes.Ret);
 
         #endregion
 
-        var interface_type = typeof(ISerialize<>).MakeGenericType(target.Type);
+        var interface_type = typeof(ISeraVision<>).MakeGenericType(target.Type);
         TypeBuilder.AddInterfaceImplementation(interface_type);
-        TypeBuilder.DefineMethodOverride(write_method,
-            interface_type.GetMethod(nameof(ISerialize<object>.Write))!);
+        TypeBuilder.DefineMethodOverride(accept_method,
+            interface_type.GetMethod(nameof(ISeraVision<object>.Accept))!);
     }
 
-    private void EmitReceive(EmitMeta target, EmitDeps deps)
+    private void EmitStruct(EmitMeta target, EmitDeps deps)
     {
-        var receive_method =
-            TypeBuilder.DefineMethod(nameof(IStructSerializerReceiver<object>.Receive),
-                MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.NewSlot);
-        var generic_parameters = receive_method.DefineGenericParameters("S");
-        var TS = generic_parameters[0];
-        TS.SetInterfaceConstraints(typeof(IStructSerializer));
-        receive_method.SetParameters(target.Type, TS);
-        receive_method.DefineParameter(1, ParameterAttributes.None, "value");
-        receive_method.DefineParameter(2, ParameterAttributes.None, "serializer");
-        receive_method.SetImplementationFlags(MethodImplAttributes.AggressiveInlining);
+        #region Name
 
-        var ilg = receive_method.GetILGenerator();
+        var name_property = TypeBuilder.DefineProperty(
+            nameof(IStructSeraVision<object>.Name),
+            PropertyAttributes.None,
+            typeof(string),
+            Array.Empty<Type>()
+        );
+        var get_name_method = TypeBuilder.DefineMethod(
+            $"get_{nameof(IStructSeraVision<object>.Name)}",
+            MethodAttributes.Public | MethodAttributes.Final | MethodAttributes.Virtual | MethodAttributes.NewSlot,
+            typeof(string), Array.Empty<Type>()
+        );
+        get_name_method.SetImplementationFlags(MethodImplAttributes.AggressiveInlining);
+        name_property.SetGetMethod(get_name_method);
 
-        #region def local_int_key_null
-
-        LocalBuilder? local_int_key_null = null;
-        if (Members.Any(m => !m.IntKey.HasValue))
         {
-            local_int_key_null = ilg.DeclareLocal(typeof(long?));
-            ilg.Emit(OpCodes.Ldloca_S, local_int_key_null);
-            ilg.Emit(OpCodes.Initobj, typeof(long?));
+            var ilg = get_name_method.GetILGenerator();
+            ilg.Emit(OpCodes.Ldstr, StructName);
+            ilg.Emit(OpCodes.Ret);
         }
 
         #endregion
 
-        #region write members
+        #region Count
 
-        foreach (var (member, index) in Members.Select((a, b) => (a, b)))
+        var count_property = TypeBuilder.DefineProperty(
+            nameof(IStructSeraVision<object>.Count),
+            PropertyAttributes.None,
+            typeof(int),
+            Array.Empty<Type>()
+        );
+        var get_count_method = TypeBuilder.DefineMethod(
+            $"get_{nameof(IStructSeraVision<object>.Count)}",
+            MethodAttributes.Public | MethodAttributes.Final | MethodAttributes.Virtual | MethodAttributes.NewSlot,
+            typeof(int), Array.Empty<Type>()
+        );
+        get_count_method.SetImplementationFlags(MethodImplAttributes.AggressiveInlining);
+
         {
-            var dep = deps.Get(index);
+            var ilg = get_count_method.GetILGenerator();
+            ilg.Emit(OpCodes.Ldc_I4, Members.Length);
+            ilg.Emit(OpCodes.Ret);
+        }
 
-            var write_field = ReflectionUtils.IStructSerializer_WriteField_2generic_3arg_string_t_s
-                .MakeGenericMethod(member.Type, dep.TransformedType);
+        count_property.SetGetMethod(get_count_method);
 
-            #region load serializer
+        #endregion
 
-            ilg.Emit(OpCodes.Ldarga_S, 2);
+        #region AcceptField
+
+        var accept_field_method = TypeBuilder.DefineMethod(nameof(IStructSeraVision<object>.AcceptField),
+            MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.Final | MethodAttributes.NewSlot);
+        var generic_parameters = accept_field_method.DefineGenericParameters("R", "V");
+        var TR = generic_parameters[0];
+        var TV = generic_parameters[1];
+        var visitor = typeof(AStructSeraVisitor<>).MakeGenericType(TR);
+        TV.SetBaseTypeConstraint(visitor);
+        accept_field_method.SetReturnType(TR);
+        accept_field_method.SetParameters(TV, target.Type, typeof(int));
+        accept_field_method.DefineParameter(1, ParameterAttributes.None, "visitor");
+        accept_field_method.DefineParameter(2, ParameterAttributes.None, "value");
+        accept_field_method.DefineParameter(3, ParameterAttributes.None, "field");
+        accept_field_method.SetImplementationFlags(MethodImplAttributes.AggressiveInlining);
+
+        {
+            var v_field_method_decl = TypeBuilder.GetMethod(visitor, ReflectionUtils.AStructSeraVisitor_VField);
+            var v_none_method = TypeBuilder.GetMethod(visitor, ReflectionUtils.AStructSeraVisitor_VNone);
+
+            var ilg = accept_field_method.GetILGenerator();
+
+            var label_default = ilg.DefineLabel();
+
+            #region switch field
+
+            var labels = Members.Select(_ => ilg.DefineLabel()).ToArray();
+            ilg.Emit(OpCodes.Ldarg_3);
+            ilg.Emit(OpCodes.Switch, labels);
+            ilg.Emit(OpCodes.Br, label_default);
 
             #endregion
 
-            #region nameof member
+            #region members
 
-            ilg.Emit(OpCodes.Ldstr, member.Name);
-
-            #endregion
-
-            #region load int_key
-
-            if (member.IntKey.HasValue)
+            foreach (var (member, i) in Members.Select((a, b) => (a, b)))
             {
-                ilg.Emit(OpCodes.Ldc_I8, member.IntKey.Value);
-                ilg.Emit(OpCodes.Newobj, ReflectionUtils.Nullable_UInt64_ctor);
-            }
-            else
-            {
-                ilg.Emit(OpCodes.Ldloc, local_int_key_null!);
-            }
+                var label = labels[i];
+                var dep = deps.Get(i);
+                var member_type = member.Type;
 
-            #endregion
+                #region load visitor
 
-            #region get member value
+                ilg.MarkLabel(label);
+                ilg.Emit(OpCodes.Ldarg_1);
+                ilg.Emit(OpCodes.Box, TV);
 
-            if (member.Kind is PropertyOrField.Property)
-            {
-                var property = member.Property!;
-                var prop_type = property.PropertyType;
-                var get_method = property.GetMethod!;
-                if (!get_method.IsPublic)
+                #endregion
+
+                #region load dep
+
+                ilg.Emit(OpCodes.Call, dep.GetDepMethodInfo);
+                if (dep.Boxed)
                 {
-                    var (del, _) = EmitPrivateAccess.Instance.AccessGetProperty(target.Type, property);
-                    var (access, access_invoke) = AddAccess(target, del, prop_type);
-
-                    #region access Get(ref value)
-
-                    ilg.Emit(OpCodes.Ldsfld, access);
-                    ilg.Emit(OpCodes.Ldarga_S, 1);
-                    ilg.Emit(OpCodes.Callvirt, access_invoke);
-
-                    #endregion
-                }
-                else if (target.Type.IsValueType)
-                {
-                    #region load value
-
-                    ilg.Emit(OpCodes.Ldarga_S, 1);
-
-                    #endregion
-
-                    #region get value.mermber_property
-
+                    var get_method = dep.MakeBoxGetMethodInfo();
                     ilg.Emit(OpCodes.Call, get_method);
+                }
 
-                    #endregion
+                #endregion
+
+                #region load member
+
+                if (member.Kind is PropertyOrField.Property)
+                {
+                    var property = member.Property!;
+                    var prop_type = property.PropertyType;
+                    var get_method = property.GetMethod!;
+                    if (!get_method.IsPublic)
+                    {
+                        var (del, _) = EmitPrivateAccess.Instance.AccessGetProperty(target.Type, property);
+                        var (access, access_invoke) = AddAccess(target, del, prop_type);
+
+                        #region access Get(ref value)
+
+                        ilg.Emit(OpCodes.Ldsfld, access);
+                        ilg.Emit(OpCodes.Ldarga, 2);
+                        ilg.Emit(OpCodes.Callvirt, access_invoke);
+
+                        #endregion
+                    }
+                    else if (target.Type.IsValueType)
+                    {
+                        #region load value
+
+                        ilg.Emit(OpCodes.Ldarga, 2);
+
+                        #endregion
+
+                        #region get value.mermber_property
+
+                        ilg.Emit(OpCodes.Call, get_method);
+
+                        #endregion
+                    }
+                    else
+                    {
+                        #region load value
+
+                        ilg.Emit(OpCodes.Ldarg_2);
+
+                        #endregion
+
+                        #region get value.mermber_property
+
+                        ilg.Emit(OpCodes.Callvirt, get_method);
+
+                        #endregion
+                    }
+                }
+                else if (member.Kind is PropertyOrField.Field)
+                {
+                    var field = member.Field!;
+                    if (!field.IsPublic)
+                    {
+                        var (del, _) = EmitPrivateAccess.Instance.AccessGetField(target.Type, field);
+                        var (access, access_invoke) = AddAccess(target, del, field.FieldType);
+
+                        #region access Get(ref value)
+
+                        ilg.Emit(OpCodes.Ldsfld, access);
+                        ilg.Emit(OpCodes.Ldarga, 2);
+                        ilg.Emit(OpCodes.Callvirt, access_invoke);
+
+                        #endregion
+                    }
+                    else
+                    {
+                        #region load value
+
+                        ilg.Emit(OpCodes.Ldarg_2);
+
+                        #endregion
+
+                        #region load get value.mermber_field
+
+                        ilg.Emit(OpCodes.Ldfld, field);
+
+                        #endregion
+                    }
+                }
+                else throw new ArgumentOutOfRangeException();
+
+                #endregion
+
+                #region load name
+
+                ilg.Emit(OpCodes.Ldstr, member.Name);
+
+                #endregion
+
+                #region load key
+
+                if (member.IntKey.HasValue)
+                {
+                    ilg.Emit(OpCodes.Ldc_I8, member.IntKey.Value);
                 }
                 else
                 {
-                    #region load value
-
-                    ilg.Emit(OpCodes.Ldarg_1);
-
-                    #endregion
-
-                    #region get value.mermber_property
-
-                    ilg.Emit(OpCodes.Callvirt, get_method);
-
-                    #endregion
+                    ilg.Emit(OpCodes.Ldarg_3);
+                    ilg.Emit(OpCodes.Conv_I8);
                 }
-            }
-            else if (member.Kind is PropertyOrField.Field)
-            {
-                var field = member.Field!;
-                if (!field.IsPublic)
-                {
-                    var (del, _) = EmitPrivateAccess.Instance.AccessGetField(target.Type, field);
-                    var (access, access_invoke) = AddAccess(target, del, field.FieldType);
 
-                    #region access Get(ref value)
+                #endregion
 
-                    ilg.Emit(OpCodes.Ldsfld, access);
-                    ilg.Emit(OpCodes.Ldarga_S, 1);
-                    ilg.Emit(OpCodes.Callvirt, access_invoke);
+                #region call VField
 
-                    #endregion
-                }
-                else
-                {
-                    #region load value
+                var v_field_method = v_field_method_decl.MakeGenericMethod(dep.TransformedType, member_type);
+                ilg.Emit(OpCodes.Callvirt, v_field_method);
+                ilg.Emit(OpCodes.Ret);
 
-                    ilg.Emit(OpCodes.Ldarg_1);
-
-                    #endregion
-
-                    #region load get value.mermber_field
-
-                    ilg.Emit(OpCodes.Ldfld, field);
-
-                    #endregion
-                }
-            }
-            else throw new ArgumentOutOfRangeException();
-
-            #endregion
-
-            #region load dep
-
-            ilg.Emit(OpCodes.Call, dep.GetDepMethodInfo);
-            if (dep.Boxed)
-            {
-                var get_method = dep.MakeBoxGetMethodInfo();
-                ilg.Emit(OpCodes.Call, get_method);
+                #endregion
             }
 
             #endregion
 
-            #region serializer.WriteField<V, VImpl>(nameof member, member_value, Dep.Impl);
+            #region default => visitor.VNone();
 
-            ilg.Emit(OpCodes.Constrained, TS);
-            ilg.Emit(OpCodes.Callvirt, write_field);
+            ilg.MarkLabel(label_default);
+            ilg.Emit(OpCodes.Ldarg_1);
+            ilg.Emit(OpCodes.Box, TV);
+            ilg.Emit(OpCodes.Callvirt, v_none_method);
+            ilg.Emit(OpCodes.Ret);
 
             #endregion
         }
 
         #endregion
 
-        #region return;
+        #region interface
 
-        ilg.Emit(OpCodes.Ret);
+        var interface_type = typeof(IStructSeraVision<>).MakeGenericType(target.Type);
+        TypeBuilder.AddInterfaceImplementation(interface_type);
+        TypeBuilder.DefineMethodOverride(get_name_method,
+            interface_type.GetProperty(nameof(IStructSeraVision<object>.Name))!.GetMethod!);
+        TypeBuilder.DefineMethodOverride(get_count_method,
+            interface_type.GetProperty(nameof(IStructSeraVision<object>.Count))!.GetMethod!);
+        TypeBuilder.DefineMethodOverride(accept_field_method,
+            interface_type.GetMethod(nameof(IStructSeraVision<object>.AcceptField))!);
 
         #endregion
-
-        var interface_type = typeof(IStructSerializerReceiver<>).MakeGenericType(target.Type);
-        TypeBuilder.AddInterfaceImplementation(interface_type);
-        TypeBuilder.DefineMethodOverride(receive_method,
-            interface_type.GetMethod(nameof(IStructSerializerReceiver<object>.Receive))!);
     }
 
     private void InitAccesses(Type type)

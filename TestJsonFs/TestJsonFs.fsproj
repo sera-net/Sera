@@ -22,9 +22,10 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Sera.Json.FSharp\Sera.Json.FSharp.fsproj" />
-      <ProjectReference Include="..\Sera.Json.Runtime\Sera.Json.Runtime.csproj" />
+      <ProjectReference Include="..\Sera.FSharp\Sera.FSharp.fsproj" />
       <ProjectReference Include="..\Sera.Json\Sera.Json.csproj" />
+      <ProjectReference Include="..\Sera.Runtime.FSharp\Sera.Runtime.FSharp.fsproj" />
+      <ProjectReference Include="..\Sera.Runtime\Sera.Runtime.csproj" />
     </ItemGroup>
 
 </Project>

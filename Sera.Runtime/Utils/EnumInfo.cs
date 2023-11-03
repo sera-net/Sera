@@ -7,7 +7,7 @@ using Sera.Core;
 
 namespace Sera.Runtime.Utils;
 
-internal record EnumInfo(string Name, VariantTag Tag, FieldInfo Field, SeraEnumAttribute? EnumAttr);
+internal record EnumInfo(string Name, VariantTag Tag, FieldInfo Field, VariantStyle? Style);
 
 internal record struct EnumJumpTable(int Index, EnumInfo Info);
 
@@ -37,10 +37,12 @@ internal static class EnumUtils
             .Select(a => (a.name, a.field, value: (V)a.field.GetValue(null)!))
             .Select(a =>
             {
-                var enum_attr = a.field.GetCustomAttribute<SeraEnumAttribute>();
-                var rename_attr = a.field.GetCustomAttribute<SeraRenameAttribute>();
-                var name = rename_attr?.SerName ?? rename_attr?.Name ?? a.name; // todo auto rename
-                return new EnumInfo(name, a.value.MakeVariantTag(), a.field, enum_attr);
+                var member_sera_attr = a.field.GetCustomAttribute<SeraAttribute>();
+                var variant_attr = a.field.GetCustomAttribute<SeraVariantAttribute>();
+                var formats_attr = a.field.GetCustomAttribute<SeraFormatsAttribute>();
+                var style = VariantStyle.FromAttr(variant_attr, formats_attr);
+                var name = member_sera_attr?.Name ?? a.name; // todo auto rename
+                return new EnumInfo(name, a.value.MakeVariantTag(), a.field, style);
             });
         if (distinct)
             return q
@@ -48,7 +50,7 @@ internal static class EnumUtils
                 .ToArray();
         else return q.ToArray();
     }
-    
+
     public static EnumJumpTables? TryMakeJumpTable(Type underlying_type, EnumInfo[] items)
     {
         if (items.Length == 0) return null;

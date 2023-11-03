@@ -8,7 +8,7 @@ using Sera.Runtime.Utils;
 
 namespace Sera.Runtime.Emit.Deps;
 
-internal readonly record struct DepPlace(
+public readonly record struct DepPlace(
     DepItem Dep, Type RawContainerType, Type ContainerType, MethodInfo GetDepMethodInfo,
     Type ActualType, Type TransformedType, Type RawType, bool Boxed
 )
@@ -16,23 +16,23 @@ internal readonly record struct DepPlace(
     public MethodInfo MakeBoxGetMethodInfo() => Box.GetMethodInfo.MakeGenericMethod(TransformedType);
     public MethodInfo MakeBoxGetRefMethodInfo() => Box.GetRefMethodInfo.MakeGenericMethod(TransformedType);
 
-    public Type MakeSerializeWrapper(Type target) =>
-        (Boxed ? typeof(BoxedDepsSerializeWrapper<,,>) : typeof(DepsSerializeWrapper<,,>))
+    public Type MakeSerWrapper(Type target) =>
+        (Boxed ? typeof(BoxedDepsSerWrapper<,,>) : typeof(DepsSerWrapper<,,>))
         .MakeGenericType(target, TransformedType, ContainerType);
 
-    public Type MakeSeqSerializerReceiverWrapper(Type target) =>
-        (Boxed ? typeof(BoxedDepsSeqSerializerReceiverWrapper<,,>) : typeof(DepsSeqSerializerReceiverWrapper<,,>))
+    public Type MakeSerTupleWrapper(Type target) =>
+        (Boxed ? typeof(BoxedDepsSerTupleWrapper<,,>) : typeof(DepsSerTupleWrapper<,,>))
         .MakeGenericType(target, TransformedType, ContainerType);
 }
 
-internal abstract record BaseDeps(EmitStub Stub, DepPlace[] Deps)
+public abstract record BaseDeps(EmitStub Stub, DepPlace[] Deps)
 {
     public DepPlace Get(int rawIndex) => Deps[Stub.DepsIndexMap[rawIndex]];
 }
 
-internal sealed record EmitDeps(EmitStub Stub, DepPlace[] Deps) : BaseDeps(Stub, Deps);
+public sealed record EmitDeps(EmitStub Stub, DepPlace[] Deps) : BaseDeps(Stub, Deps);
 
-internal sealed record RuntimeDeps(EmitStub Stub, DepPlace[] Deps) : BaseDeps(Stub, Deps);
+public sealed record RuntimeDeps(EmitStub Stub, DepPlace[] Deps) : BaseDeps(Stub, Deps);
 
 public static class EmitDepContainer
 {
@@ -52,7 +52,7 @@ public static class EmitDepContainer
                 var t_type = boxed ? typeof(Box<>).MakeGenericType(emit_type) : emit_type;
                 var applied_container = container.MakeGenericType(t_type);
                 MethodInfo applied_get;
-                if (dep.EmitTypeIsTypeBuilder)
+                if (applied_container.IsTypeBuilder())
                 {
                     var get = container.GetMethod(GetImplName, BindingFlags.Public | BindingFlags.Static)!;
                     applied_get = TypeBuilder.GetMethod(applied_container, get);

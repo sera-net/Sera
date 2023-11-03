@@ -1,12 +1,11 @@
 ﻿using System.Buffers;
 using System.Collections;
-using System.Text;
 using JetBrains.Annotations;
 using Sera;
+using Sera.Core;
 using Sera.Json;
-using Sera.Json.Runtime;
 using Sera.Runtime;
-using Sera.Runtime.Emit;
+using Sera.Runtime.Emit.Ser;
 
 namespace TestJson;
 
@@ -25,8 +24,7 @@ public class TestRuntime
         var obj = new EmptyStruct1();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{}"));
@@ -36,7 +34,7 @@ public class TestRuntime
 
     #region Struct1
 
-    [SeraIncludeField]
+    [SeraStruct(IncludeFields = true)]
     public class Struct1
     {
         public int Member1 { get; set; } = 123456;
@@ -49,8 +47,7 @@ public class TestRuntime
         var obj = new Struct1();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"Member1\":123456,\"Member2\":654321}"));
@@ -76,8 +73,7 @@ public class TestRuntime
         var obj = new Struct2();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"Member1\":{\"Member1\":123456}}"));
@@ -89,9 +85,9 @@ public class TestRuntime
 
     public class Struct3
     {
-        [SeraRename(1)]
+        [SeraFieldKey(1)]
         public int Member1 { get; set; } = 123456;
-        [SeraRename(2), SeraInclude]
+        [SeraFieldKey(2), SeraInclude]
         public int Member2 = 654321;
     }
 
@@ -101,8 +97,7 @@ public class TestRuntime
         var obj = new Struct3();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"Member1\":123456,\"Member2\":654321}"));
@@ -112,7 +107,7 @@ public class TestRuntime
 
     #region Struct4
 
-    [SeraIncludeField]
+    [SeraStruct(IncludeFields = true)]
     public struct Struct4
     {
         public int Member1 { get; set; } = 123456;
@@ -127,8 +122,7 @@ public class TestRuntime
         var obj = new Struct4();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"Member1\":123456,\"Member2\":654321}"));
@@ -138,13 +132,13 @@ public class TestRuntime
 
     #region Struct5
 
-    [SeraIncludeField]
+    [SeraStruct(IncludeFields = true)]
     public struct Struct5
     {
         public Struct5B Member1 { get; set; }
     }
 
-    [SeraIncludeField]
+    [SeraStruct(IncludeFields = true)]
     public struct Struct5B { }
 
     [Test]
@@ -153,8 +147,7 @@ public class TestRuntime
         var obj = new Struct5();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"Member1\":{}}"));
@@ -164,13 +157,13 @@ public class TestRuntime
 
     #region Struct6
 
-    [SeraIncludeField]
+    [SeraStruct(IncludeFields = true)]
     public class Struct6
     {
         public Struct6B? Member1 { get; set; } = new();
     }
 
-    [SeraIncludeField]
+    [SeraStruct(IncludeFields = true)]
     public class Struct6B
     {
         public Struct6? Member1 { get; set; } = null;
@@ -182,8 +175,7 @@ public class TestRuntime
         var obj = new Struct6();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"Member1\":{\"Member1\":null}}"));
@@ -206,8 +198,7 @@ public class TestRuntime
         var obj = new Struct7();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"A\":123456}"));
@@ -233,8 +224,7 @@ public class TestRuntime
         var obj = new Struct8();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"A\":123456}"));
@@ -260,11 +250,36 @@ public class TestRuntime
         IStruct9 obj = new Struct9();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"A\":123456}"));
+    }
+
+    #endregion
+
+    #region Struct10
+
+    public interface IStruct10
+    {
+        public int this[int a] { get; }
+    }
+
+    public class Struct10 : IStruct10
+    {
+        public int this[int a] => 123;
+    }
+
+    [Test]
+    public void TestStruct10()
+    {
+        IStruct10 obj = new Struct10();
+
+        var str = SeraJson.Serializer
+            .Serialize(obj).To.String();
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{}"));
     }
 
     #endregion
@@ -282,8 +297,7 @@ public class TestRuntime
         var obj = new StructCircularReference1 { Member1 = new() };
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"Member1\":{\"Member1\":null}}"));
@@ -309,8 +323,7 @@ public class TestRuntime
         var obj = new StructCircularReference2 { Member1 = new() { Member1 = new() } };
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"Member1\":{\"Member1\":{\"Member1\":null}}}"));
@@ -335,8 +348,7 @@ public class TestRuntime
         var obj = new StructPrivateField1();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"Member1\":123456,\"Member2\":654321}"));
@@ -358,8 +370,7 @@ public class TestRuntime
         var obj = new StructPrivateType1();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"Member1\":123}"));
@@ -384,8 +395,7 @@ public class TestRuntime
         var obj = new StructPrivateTypeMember1();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"Member1\":{}}"));
@@ -415,8 +425,7 @@ public class TestRuntime
         var obj = new StructPrivateTypeMember2();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"Member1\":{\"Member1\":null}}"));
@@ -437,8 +446,7 @@ public class TestRuntime
         var obj = new StructNullableField1();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"Member1\":null}"));
@@ -459,8 +467,7 @@ public class TestRuntime
         var obj = new StructNullableField2();
 
         Assert.Throws<NullReferenceException>(() => SeraJson.Serializer
-            .ToString()
-            .Serialize(obj));
+            .Serialize(obj).To.String());
     }
 
     #endregion
@@ -480,8 +487,7 @@ public class TestRuntime
         var obj = new StructNullableField3();
 
         Assert.Throws<NullReferenceException>(() => SeraJson.Serializer
-            .ToString()
-            .Serialize(obj));
+            .Serialize(obj).To.String());
     }
 
     #endregion
@@ -504,8 +510,7 @@ public class TestRuntime
         var obj = new StructNullableField4();
 
         Assert.Throws<NullReferenceException>(() => SeraJson.Serializer
-            .ToString()
-            .Serialize(obj));
+            .Serialize(obj).To.String());
     }
 
     #endregion
@@ -525,8 +530,7 @@ public class TestRuntime
         var obj = new StructNullableField5();
 
         Assert.Throws<NullReferenceException>(() => SeraJson.Serializer
-            .ToString()
-            .Serialize(obj));
+            .Serialize(obj).To.String());
     }
 
     #endregion
@@ -549,8 +553,7 @@ public class TestRuntime
         var obj = new StructNullableField6();
 
         Assert.Throws<NullReferenceException>(() => SeraJson.Serializer
-            .ToString()
-            .Serialize(obj));
+            .Serialize(obj).To.String());
     }
 
     #endregion
@@ -571,8 +574,7 @@ public class TestRuntime
         var obj = new StructGenericNullable1();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"Member1\":{\"Member1\":null}}"));
@@ -596,8 +598,7 @@ public class TestRuntime
         var obj = new StructGenericNullable2() { Member1 = new(new()) };
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"Member1\":{\"Member1\":{\"Member1\":null}}}"));
@@ -621,8 +622,7 @@ public class TestRuntime
         var obj = new StructGenericNullable3();
 
         Assert.Throws<NullReferenceException>(() => SeraJson.Serializer
-            .ToString()
-            .Serialize(obj));
+            .Serialize(obj).To.String());
     }
 
     #endregion
@@ -632,7 +632,7 @@ public class TestRuntime
     public enum Enum1
     {
         A,
-        [SeraRename("X")]
+        [Sera(Name = "X")]
         B,
         C,
     }
@@ -644,8 +644,7 @@ public class TestRuntime
             var obj = Enum1.A;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"A\""));
@@ -654,8 +653,7 @@ public class TestRuntime
             var obj = Enum1.B;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"X\""));
@@ -664,8 +662,7 @@ public class TestRuntime
             var obj = Enum1.C;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"C\""));
@@ -674,8 +671,7 @@ public class TestRuntime
             var obj = (Enum1)100;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("100"));
@@ -700,8 +696,7 @@ public class TestRuntime
             var obj = Enum2.A;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"A\""));
@@ -710,8 +705,7 @@ public class TestRuntime
             var obj = Enum2.B;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"B\""));
@@ -720,8 +714,7 @@ public class TestRuntime
             var obj = Enum2.C;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"C\""));
@@ -730,8 +723,7 @@ public class TestRuntime
             var obj = (Enum2)1000;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("1000"));
@@ -756,8 +748,7 @@ public class TestRuntime
             var obj = Enum3.A;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"A\""));
@@ -766,8 +757,7 @@ public class TestRuntime
             var obj = Enum3.B;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"B\""));
@@ -776,8 +766,7 @@ public class TestRuntime
             var obj = Enum3.C;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"C\""));
@@ -786,8 +775,7 @@ public class TestRuntime
             var obj = (Enum3)100;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("100"));
@@ -812,8 +800,7 @@ public class TestRuntime
             var obj = Enum4.A;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"A\""));
@@ -822,8 +809,7 @@ public class TestRuntime
             var obj = Enum4.B;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"B\""));
@@ -832,8 +818,7 @@ public class TestRuntime
             var obj = Enum4.C;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"C\""));
@@ -842,8 +827,7 @@ public class TestRuntime
             var obj = (Enum4)100;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"100\""));
@@ -868,8 +852,7 @@ public class TestRuntime
             var obj = Enum5.A;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"A\""));
@@ -878,8 +861,7 @@ public class TestRuntime
             var obj = Enum5.B;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"B\""));
@@ -888,8 +870,7 @@ public class TestRuntime
             var obj = Enum5.C;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"C\""));
@@ -898,8 +879,7 @@ public class TestRuntime
             var obj = (Enum5)1000;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("1000"));
@@ -924,8 +904,7 @@ public class TestRuntime
             var obj = Enum6.A;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"A\""));
@@ -934,8 +913,7 @@ public class TestRuntime
             var obj = Enum6.B;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"B\""));
@@ -944,8 +922,7 @@ public class TestRuntime
             var obj = Enum6.C;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"C\""));
@@ -954,8 +931,7 @@ public class TestRuntime
             var obj = (Enum6)1000;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"1000\""));
@@ -997,8 +973,7 @@ public class TestRuntime
             var obj = Enum7.A3;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"A3\""));
@@ -1007,8 +982,7 @@ public class TestRuntime
             var obj = Enum7.A20;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"A20\""));
@@ -1017,8 +991,7 @@ public class TestRuntime
             var obj = Enum7.A15;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"A15\""));
@@ -1027,8 +1000,7 @@ public class TestRuntime
             var obj = (Enum7)100;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("100"));
@@ -1056,8 +1028,7 @@ public class TestRuntime
             var obj = Enum8.A;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"A\""));
@@ -1066,8 +1037,7 @@ public class TestRuntime
             var obj = Enum8.B;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"B\""));
@@ -1076,8 +1046,7 @@ public class TestRuntime
             var obj = Enum8.C;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"C\""));
@@ -1086,8 +1055,7 @@ public class TestRuntime
             var obj = (Enum8)100;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("100"));
@@ -1112,8 +1080,7 @@ public class TestRuntime
             var obj = Enum9.A;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"A\""));
@@ -1122,8 +1089,7 @@ public class TestRuntime
             var obj = Enum9.B;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"B\""));
@@ -1132,8 +1098,7 @@ public class TestRuntime
             var obj = Enum9.C;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"C\""));
@@ -1142,8 +1107,7 @@ public class TestRuntime
             var obj = (Enum9)100;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("100"));
@@ -1154,7 +1118,7 @@ public class TestRuntime
 
     #region Enum10
 
-    [SeraEnum(UseNumberTag = true)]
+    [SeraUnion(Priority = VariantPriority.TagFirst)]
     public enum Enum10
     {
         A,
@@ -1169,8 +1133,7 @@ public class TestRuntime
             var obj = Enum10.A;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("0"));
@@ -1179,8 +1142,7 @@ public class TestRuntime
             var obj = Enum10.B;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("1"));
@@ -1189,8 +1151,7 @@ public class TestRuntime
             var obj = Enum10.C;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("2"));
@@ -1199,8 +1160,7 @@ public class TestRuntime
             var obj = (Enum10)100;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("100"));
@@ -1211,7 +1171,7 @@ public class TestRuntime
 
     #region Enum11
 
-    [SeraEnum(UseNumberTag = true)]
+    [SeraUnion(Priority = VariantPriority.TagFirst)]
     private enum Enum11
     {
         A,
@@ -1226,8 +1186,7 @@ public class TestRuntime
             var obj = Enum11.A;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("0"));
@@ -1236,8 +1195,7 @@ public class TestRuntime
             var obj = Enum11.B;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("1"));
@@ -1246,8 +1204,7 @@ public class TestRuntime
             var obj = Enum11.C;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("2"));
@@ -1256,8 +1213,7 @@ public class TestRuntime
             var obj = (Enum11)100;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("100"));
@@ -1268,12 +1224,12 @@ public class TestRuntime
 
     #region Enum12
 
-    [SeraEnum(UseNumberTag = true)]
+    [SeraUnion(Priority = VariantPriority.TagFirst)]
     public enum Enum12
     {
-        [SeraEnum(UseStringTag = true)]
+        [SeraVariant(Priority = VariantPriority.NameFirst)]
         A,
-        [SeraEnum(UseNumberTag = true)]
+        [SeraVariant(Priority = VariantPriority.TagFirst)]
         B,
         C,
     }
@@ -1285,8 +1241,7 @@ public class TestRuntime
             var obj = Enum12.A;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"A\""));
@@ -1295,8 +1250,7 @@ public class TestRuntime
             var obj = Enum12.B;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("1"));
@@ -1305,8 +1259,7 @@ public class TestRuntime
             var obj = Enum12.C;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("2"));
@@ -1315,8 +1268,7 @@ public class TestRuntime
             var obj = (Enum12)100;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("100"));
@@ -1327,12 +1279,12 @@ public class TestRuntime
 
     #region Enum13
 
-    [SeraEnum(UseNumberTag = true)]
+    [SeraUnion(Priority = VariantPriority.TagFirst)]
     private enum Enum13
     {
-        [SeraEnum(UseStringTag = true)]
+        [SeraVariant(VariantPriority.NameFirst)]
         A,
-        [SeraEnum(UseNumberTag = true)]
+        [SeraVariant(VariantPriority.TagFirst)]
         B,
         C,
     }
@@ -1344,8 +1296,7 @@ public class TestRuntime
             var obj = Enum13.A;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"A\""));
@@ -1354,8 +1305,7 @@ public class TestRuntime
             var obj = Enum13.B;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("1"));
@@ -1364,8 +1314,7 @@ public class TestRuntime
             var obj = Enum13.C;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("2"));
@@ -1374,8 +1323,7 @@ public class TestRuntime
             var obj = (Enum13)100;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("100"));
@@ -1401,8 +1349,7 @@ public class TestRuntime
             var obj = Flags1.A;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"A\""));
@@ -1411,8 +1358,7 @@ public class TestRuntime
             var obj = Flags1.B;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"B\""));
@@ -1421,8 +1367,7 @@ public class TestRuntime
             var obj = Flags1.C;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"C\""));
@@ -1431,8 +1376,7 @@ public class TestRuntime
             var obj = (Flags1)100;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"100\""));
@@ -1441,8 +1385,7 @@ public class TestRuntime
             var obj = Flags1.A | Flags1.B;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"A, B\""));
@@ -1451,8 +1394,7 @@ public class TestRuntime
             var obj = Flags1.A | Flags1.B | Flags1.C;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"A, B, C\""));
@@ -1461,8 +1403,7 @@ public class TestRuntime
             var obj = Flags1.A | Flags1.B | (Flags1)100;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("\"103\""));
@@ -1488,8 +1429,7 @@ public class TestRuntime
             var obj = Flags2.A;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[\"A\"]"));
@@ -1498,8 +1438,7 @@ public class TestRuntime
             var obj = Flags2.B;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[\"B\"]"));
@@ -1508,8 +1447,7 @@ public class TestRuntime
             var obj = Flags2.C;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[\"C\"]"));
@@ -1518,8 +1456,7 @@ public class TestRuntime
             var obj = (Flags2)100;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[\"100\"]"));
@@ -1528,8 +1465,7 @@ public class TestRuntime
             var obj = Flags2.A | Flags2.B;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[\"A\",\"B\"]"));
@@ -1538,8 +1474,7 @@ public class TestRuntime
             var obj = Flags2.A | Flags2.B | Flags2.C;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[\"A\",\"B\",\"C\"]"));
@@ -1548,8 +1483,7 @@ public class TestRuntime
             var obj = Flags2.A | Flags2.B | (Flags2)100;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[\"103\"]"));
@@ -1575,8 +1509,7 @@ public class TestRuntime
             var obj = Flags3.A;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("1"));
@@ -1585,8 +1518,7 @@ public class TestRuntime
             var obj = Flags3.B;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("2"));
@@ -1595,8 +1527,7 @@ public class TestRuntime
             var obj = Flags3.C;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("4"));
@@ -1605,8 +1536,7 @@ public class TestRuntime
             var obj = (Flags3)100;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("100"));
@@ -1615,8 +1545,7 @@ public class TestRuntime
             var obj = Flags3.A | Flags3.B;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("3"));
@@ -1625,8 +1554,7 @@ public class TestRuntime
             var obj = Flags3.A | Flags3.B | Flags3.C;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("7"));
@@ -1635,8 +1563,7 @@ public class TestRuntime
             var obj = Flags3.A | Flags3.B | (Flags3)100;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("103"));
@@ -1647,11 +1574,11 @@ public class TestRuntime
 
     #region Flags4
 
-    [Flags, SeraFlags(SeraFlagsMode.Array)]
+    [Flags, SeraFlags(SeraFlagsMode.Seq)]
     public enum Flags4
     {
         A = 1 << 0,
-        [SeraRename("X")]
+        [Sera(Name = "X")]
         B = 1 << 1,
         C = 1 << 2,
     }
@@ -1663,8 +1590,7 @@ public class TestRuntime
             var obj = Flags4.A;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[\"A\"]"));
@@ -1673,8 +1599,7 @@ public class TestRuntime
             var obj = Flags4.B;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[\"X\"]"));
@@ -1683,8 +1608,7 @@ public class TestRuntime
             var obj = Flags4.C;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[\"C\"]"));
@@ -1693,8 +1617,7 @@ public class TestRuntime
             var obj = (Flags4)100;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[\"C\"]"));
@@ -1703,8 +1626,7 @@ public class TestRuntime
             var obj = (Flags4)80;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[]"));
@@ -1713,8 +1635,7 @@ public class TestRuntime
             var obj = Flags4.A | Flags4.B;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[\"A\",\"X\"]"));
@@ -1723,8 +1644,7 @@ public class TestRuntime
             var obj = Flags4.A | Flags4.B | Flags4.C;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[\"A\",\"X\",\"C\"]"));
@@ -1733,8 +1653,7 @@ public class TestRuntime
             var obj = Flags4.A | Flags4.B | (Flags4)80;
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[\"A\",\"X\"]"));
@@ -1751,8 +1670,7 @@ public class TestRuntime
         var obj = (1, 2, 3);
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3]"));
@@ -1768,8 +1686,7 @@ public class TestRuntime
         var obj = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12);
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3,4,5,6,7,8,9,10,11,12]"));
@@ -1785,8 +1702,7 @@ public class TestRuntime
         var obj = (1, 2, 3, 4, 5, 6, 7, 8);
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3,4,5,6,7,8]"));
@@ -1803,8 +1719,7 @@ public class TestRuntime
             var obj = ValueTuple.Create();
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[]"));
@@ -1813,8 +1728,7 @@ public class TestRuntime
             var obj = ValueTuple.Create(1);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[1]"));
@@ -1823,8 +1737,7 @@ public class TestRuntime
             var obj = ValueTuple.Create(1, 2);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[1,2]"));
@@ -1833,8 +1746,7 @@ public class TestRuntime
             var obj = ValueTuple.Create(1, 2, 3);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[1,2,3]"));
@@ -1843,8 +1755,7 @@ public class TestRuntime
             var obj = ValueTuple.Create(1, 2, 3, 4);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[1,2,3,4]"));
@@ -1853,8 +1764,7 @@ public class TestRuntime
             var obj = ValueTuple.Create(1, 2, 3, 4, 5);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[1,2,3,4,5]"));
@@ -1863,8 +1773,7 @@ public class TestRuntime
             var obj = ValueTuple.Create(1, 2, 3, 4, 5, 6);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[1,2,3,4,5,6]"));
@@ -1873,8 +1782,7 @@ public class TestRuntime
             var obj = ValueTuple.Create(1, 2, 3, 4, 5, 6, 7);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[1,2,3,4,5,6,7]"));
@@ -1883,8 +1791,7 @@ public class TestRuntime
             var obj = ValueTuple.Create(1, 2, 3, 4, 5, 6, 7, 8);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[1,2,3,4,5,6,7,8]"));
@@ -1893,8 +1800,7 @@ public class TestRuntime
             var obj = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[1,2,3,4,5,6,7,8,9,10,11]"));
@@ -1911,8 +1817,7 @@ public class TestRuntime
         var obj = Tuple.Create(1, 2, 3);
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3]"));
@@ -1931,8 +1836,7 @@ public class TestRuntime
         );
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3,4,5,6,7,8,9,10,11,12]"));
@@ -1948,8 +1852,7 @@ public class TestRuntime
         var obj = Tuple.Create(1, 2, 3, 4, 5, 6, 7, 8);
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3,4,5,6,7,8]"));
@@ -1966,8 +1869,7 @@ public class TestRuntime
             var obj = Tuple.Create(1);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[1]"));
@@ -1976,8 +1878,7 @@ public class TestRuntime
             var obj = Tuple.Create(1, 2);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[1,2]"));
@@ -1986,8 +1887,7 @@ public class TestRuntime
             var obj = Tuple.Create(1, 2, 3);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[1,2,3]"));
@@ -1996,8 +1896,7 @@ public class TestRuntime
             var obj = Tuple.Create(1, 2, 3, 4);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[1,2,3,4]"));
@@ -2006,8 +1905,7 @@ public class TestRuntime
             var obj = Tuple.Create(1, 2, 3, 4, 5);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[1,2,3,4,5]"));
@@ -2016,8 +1914,7 @@ public class TestRuntime
             var obj = Tuple.Create(1, 2, 3, 4, 5, 6);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[1,2,3,4,5,6]"));
@@ -2026,8 +1923,7 @@ public class TestRuntime
             var obj = Tuple.Create(1, 2, 3, 4, 5, 6, 7);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[1,2,3,4,5,6,7]"));
@@ -2036,8 +1932,7 @@ public class TestRuntime
             var obj = Tuple.Create(1, 2, 3, 4, 5, 6, 7, 8);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[1,2,3,4,5,6,7,8]"));
@@ -2047,8 +1942,7 @@ public class TestRuntime
                 new(8, 9, 10, 11));
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[1,2,3,4,5,6,7,8,9,10,11]"));
@@ -2070,8 +1964,7 @@ public class TestRuntime
         var obj = new ValueTupleNullable1A();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"Member1\":[1,null,3]}"));
@@ -2092,8 +1985,7 @@ public class TestRuntime
         var obj = new ValueTupleNullable2A();
 
         Assert.Throws<NullReferenceException>(() => SeraJson.Serializer
-            .ToString()
-            .Serialize(obj));
+            .Serialize(obj).To.String());
     }
 
     #endregion
@@ -2110,8 +2002,7 @@ public class TestRuntime
         (int, ValueTupleNullable3A, int) obj = (1, null!, 3);
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,null,3]"));
@@ -2137,8 +2028,7 @@ public class TestRuntime
         var obj = new ValueTupleNullable4A();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"Member1\":[1,{\"Member1\":[1,null,3]},3]}"));
@@ -2158,8 +2048,7 @@ public class TestRuntime
             var obj = ValueTuple.Create(a);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[{}]"));
@@ -2168,8 +2057,7 @@ public class TestRuntime
             var obj = ValueTuple.Create(a, a);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[{},{}]"));
@@ -2178,8 +2066,7 @@ public class TestRuntime
             var obj = ValueTuple.Create(a, a, a);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[{},{},{}]"));
@@ -2188,8 +2075,7 @@ public class TestRuntime
             var obj = ValueTuple.Create(a, a, a, a);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[{},{},{},{}]"));
@@ -2198,8 +2084,7 @@ public class TestRuntime
             var obj = ValueTuple.Create(a, a, a, a, a);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[{},{},{},{},{}]"));
@@ -2208,8 +2093,7 @@ public class TestRuntime
             var obj = ValueTuple.Create(a, a, a, a, a, a);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[{},{},{},{},{},{}]"));
@@ -2218,8 +2102,7 @@ public class TestRuntime
             var obj = ValueTuple.Create(a, a, a, a, a, a, a);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[{},{},{},{},{},{},{}]"));
@@ -2228,8 +2111,7 @@ public class TestRuntime
             var obj = ValueTuple.Create(a, a, a, a, a, a, a, a);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[{},{},{},{},{},{},{},{}]"));
@@ -2243,8 +2125,7 @@ public class TestRuntime
                     new(a, a, a, a));
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[{},{},{},{},{},{},{},{},{},{},{}]"));
@@ -2265,8 +2146,7 @@ public class TestRuntime
             var obj = Tuple.Create(a);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[{}]"));
@@ -2275,8 +2155,7 @@ public class TestRuntime
             var obj = Tuple.Create(a, a);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[{},{}]"));
@@ -2285,8 +2164,7 @@ public class TestRuntime
             var obj = Tuple.Create(a, a, a);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[{},{},{}]"));
@@ -2295,8 +2173,7 @@ public class TestRuntime
             var obj = Tuple.Create(a, a, a, a);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[{},{},{},{}]"));
@@ -2305,8 +2182,7 @@ public class TestRuntime
             var obj = Tuple.Create(a, a, a, a, a);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[{},{},{},{},{}]"));
@@ -2315,8 +2191,7 @@ public class TestRuntime
             var obj = Tuple.Create(a, a, a, a, a, a);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[{},{},{},{},{},{}]"));
@@ -2325,8 +2200,7 @@ public class TestRuntime
             var obj = Tuple.Create(a, a, a, a, a, a, a);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[{},{},{},{},{},{},{}]"));
@@ -2335,8 +2209,7 @@ public class TestRuntime
             var obj = Tuple.Create(a, a, a, a, a, a, a, a);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[{},{},{},{},{},{},{},{}]"));
@@ -2345,8 +2218,7 @@ public class TestRuntime
             var obj = (a, a, a, a, a, a, a, a, a, a, a);
 
             var str = SeraJson.Serializer
-                .ToString()
-                .Serialize(obj);
+                .Serialize(obj).To.String();
 
             Console.WriteLine(str);
             Assert.That(str, Is.EqualTo("[{},{},{},{},{},{},{},{},{},{},{}]"));
@@ -2368,8 +2240,7 @@ public class TestRuntime
         var obj = new PrivateTuple2();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"A\":[null,null]}"));
@@ -2391,8 +2262,7 @@ public class TestRuntime
         var obj = new PrivateTuple3();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"A\":[null,null]}"));
@@ -2408,8 +2278,7 @@ public class TestRuntime
         var obj = new[] { 1, 2, 3 };
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3]"));
@@ -2430,8 +2299,7 @@ public class TestRuntime
         var obj = new[] { new StructTestArray2() };
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[{\"A\":[null]}]"));
@@ -2449,8 +2317,7 @@ public class TestRuntime
         var obj = new[] { new StructTestArray3() };
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[{}]"));
@@ -2471,8 +2338,7 @@ public class TestRuntime
         var obj = new[] { new StructPrivateArray1() };
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[{\"A\":null}]"));
@@ -2493,11 +2359,49 @@ public class TestRuntime
         var obj = new[] { new StructPrivateArray2() };
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[{\"A\":[null]}]"));
+    }
+
+    #endregion
+
+    #region PrivateArray3
+
+    private class StructPrivateArray3 { }
+
+    [Test]
+    public void TestPrivateArray3()
+    {
+        var obj = new[] { new StructPrivateArray3() };
+
+        var str = SeraJson.Serializer
+            .Serialize(obj).To.String();
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("[{}]"));
+    }
+
+    #endregion
+
+    #region PrivateArray2
+
+    private class StructPrivateArray4
+    {
+        public StructPrivateArray4?[] A { get; set; } = { null };
+    }
+
+    [Test]
+    public void TestPrivateArray4()
+    {
+        var obj = new StructPrivateArray4();
+
+        var str = SeraJson.Serializer
+            .Serialize(obj).To.String();
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"A\":[null]}"));
     }
 
     #endregion
@@ -2510,8 +2414,7 @@ public class TestRuntime
         var obj = new List<int> { 1, 2, 3 };
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3]"));
@@ -2533,8 +2436,7 @@ public class TestRuntime
         var obj = new List<PrivateList1> { a, a, a };
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[{\"A\":[null]},{\"A\":[null]},{\"A\":[null]}]"));
@@ -2552,8 +2454,7 @@ public class TestRuntime
         var obj = new ListBase1 { 1, 2, 3 };
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3]"));
@@ -2571,8 +2472,7 @@ public class TestRuntime
         var obj = new PrivateListBase1 { 1, 2, 3 };
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3]"));
@@ -2592,8 +2492,7 @@ public class TestRuntime
         var obj = new PrivateListBase2<PrivateListBase2A> { 1, 2, 3 };
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3]"));
@@ -2616,8 +2515,7 @@ public class TestRuntime
         var obj = new PrivateListBase3A();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"A\":[1,2,3]}"));
@@ -2633,8 +2531,7 @@ public class TestRuntime
         var obj = new ReadOnlySequence<int>(new[] { 1, 2, 3 });
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3]"));
@@ -2657,8 +2554,7 @@ public class TestRuntime
         var obj = new ReadOnlySequence<ReadOnlySequence2>(new[] { a, a, a });
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[{\"A\":[null]},{\"A\":[null]},{\"A\":[null]}]"));
@@ -2681,8 +2577,7 @@ public class TestRuntime
         var obj = new ReadOnlySequence<PrivateReadOnlySequence1>(new[] { a, a, a });
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[{\"A\":[null]},{\"A\":[null]},{\"A\":[null]}]"));
@@ -2698,8 +2593,7 @@ public class TestRuntime
         var obj = new ReadOnlyMemory<int>(new[] { 1, 2, 3 });
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3]"));
@@ -2722,8 +2616,7 @@ public class TestRuntime
         var obj = new ReadOnlyMemory<ReadOnlyMemory2>(new[] { a, a, a });
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[{\"A\":[null]},{\"A\":[null]},{\"A\":[null]}]"));
@@ -2746,8 +2639,7 @@ public class TestRuntime
         var obj = new ReadOnlyMemory<PrivateReadOnlyMemory1>(new[] { a, a, a });
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[{\"A\":[null]},{\"A\":[null]},{\"A\":[null]}]"));
@@ -2763,8 +2655,7 @@ public class TestRuntime
         var obj = new Memory<int>(new[] { 1, 2, 3 });
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3]"));
@@ -2787,8 +2678,7 @@ public class TestRuntime
         var obj = new Memory<Memory2>(new[] { a, a, a });
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[{\"A\":[null]},{\"A\":[null]},{\"A\":[null]}]"));
@@ -2811,8 +2701,7 @@ public class TestRuntime
         var obj = new Memory<PrivateMemory1>(new[] { a, a, a });
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[{\"A\":[null]},{\"A\":[null]},{\"A\":[null]}]"));
@@ -2834,8 +2723,7 @@ public class TestRuntime
         var obj = new Bytes1();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"A\":\"AQID\"}"));
@@ -2851,95 +2739,11 @@ public class TestRuntime
         var obj = new byte[] { 1, 2, 3 };
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj, new SeraHints(As: SeraAs.Bytes));
+            .Serialize(obj)
+            .To.String(new SeraStyles(As: SeraAs.Bytes));
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("\"AQID\""));
-    }
-
-    #endregion
-
-    #region BytesBase1
-
-    public class BytesBase1 : List<byte> { }
-
-    [Test]
-    public void TestBytesBase1()
-    {
-        var obj = new BytesBase1 { 1, 2, 3 };
-
-        var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj, new SeraHints(As: SeraAs.Bytes));
-
-        Console.WriteLine(str);
-        Assert.That(str, Is.EqualTo("\"AQID\""));
-    }
-
-    #endregion
-
-    #region PrivateBytesBase1
-
-    private class PrivateBytesBase1 : List<byte> { }
-
-    [Test]
-    public void TestPrivateBytesBase1()
-    {
-        var obj = new PrivateBytesBase1 { 1, 2, 3 };
-
-        var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj, new SeraHints(As: SeraAs.Bytes));
-
-        Console.WriteLine(str);
-        Assert.That(str, Is.EqualTo("\"AQID\""));
-    }
-
-    #endregion
-
-    #region PrivateBytesBase2
-
-    public class PrivateBytesBase2<A> : List<byte> { }
-
-    private class PrivateBytesBase2A { }
-
-    [Test]
-    public void TestPrivateBytesBase2()
-    {
-        var obj = new PrivateBytesBase2<PrivateBytesBase2A> { 1, 2, 3 };
-
-        var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj, new SeraHints(As: SeraAs.Bytes));
-
-        Console.WriteLine(str);
-        Assert.That(str, Is.EqualTo("\"AQID\""));
-    }
-
-    #endregion
-
-    #region PrivateBytesBase3
-
-    private class PrivateBytesBase3 : List<byte> { }
-
-    private class PrivateBytesBase3A
-    {
-        [Sera(As = SeraAs.Bytes)]
-        public PrivateBytesBase3 A { get; set; } = new() { 1, 2, 3 };
-    }
-
-    [Test]
-    public void TestPrivateBytesBase3()
-    {
-        var obj = new PrivateBytesBase3A();
-
-        var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
-
-        Console.WriteLine(str);
-        Assert.That(str, Is.EqualTo("{\"A\":\"AQID\"}"));
     }
 
     #endregion
@@ -2952,8 +2756,7 @@ public class TestRuntime
         var obj = "abc";
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("\"abc\""));
@@ -2975,8 +2778,7 @@ public class TestRuntime
         var obj = new String2();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"A\":\"abc\"}"));
@@ -2992,99 +2794,15 @@ public class TestRuntime
         var obj = new[] { 'a', 'b', 'c' };
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj, new SeraHints(As: SeraAs.String));
+            .Serialize(obj)
+            .To.String(new SeraStyles(As: SeraAs.String));
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("\"abc\""));
     }
 
     #endregion
-
-    #region StringBase1
-
-    public class StringBase1 : List<char> { }
-
-    [Test]
-    public void TestStringBase1()
-    {
-        var obj = new StringBase1 { 'a', 'b', 'c' };
-
-        var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj, new SeraHints(As: SeraAs.String));
-
-        Console.WriteLine(str);
-        Assert.That(str, Is.EqualTo("\"abc\""));
-    }
-
-    #endregion
-
-    #region PrivateStringBase1
-
-    private class PrivateStringBase1 : List<char> { }
-
-    [Test]
-    public void TestPrivateStringBase1()
-    {
-        var obj = new PrivateStringBase1 { 'a', 'b', 'c' };
-
-        var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj, new SeraHints(As: SeraAs.String));
-
-        Console.WriteLine(str);
-        Assert.That(str, Is.EqualTo("\"abc\""));
-    }
-
-    #endregion
-
-    #region PrivateStringBase2
-
-    public class PrivateStringBase2<A> : List<char> { }
-
-    private class PrivateStringBase2A;
-
-    [Test]
-    public void TestPrivateStringBase2()
-    {
-        var obj = new PrivateStringBase2<PrivateStringBase2A> { 'a', 'b', 'c' };
-
-        var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj, new SeraHints(As: SeraAs.String));
-
-        Console.WriteLine(str);
-        Assert.That(str, Is.EqualTo("\"abc\""));
-    }
-
-    #endregion
-
-    #region PrivateStringBase3
-
-    private class PrivateStringBase3 : List<char> { }
-
-    private class PrivateStringBase3A
-    {
-        [Sera(As = SeraAs.String)]
-        public PrivateStringBase3 A { get; set; } = new() { 'a', 'b', 'c' };
-    }
-
-    [Test]
-    public void TestPrivateStringBase3()
-    {
-        var obj = new PrivateStringBase3A();
-
-        var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
-
-        Console.WriteLine(str);
-        Assert.That(str, Is.EqualTo("{\"A\":\"abc\"}"));
-    }
-
-    #endregion
-
+    
     #region Nullable1
 
     [Test]
@@ -3093,8 +2811,7 @@ public class TestRuntime
         int? obj = 1;
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("1"));
@@ -3110,8 +2827,7 @@ public class TestRuntime
         int? obj = null;
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("null"));
@@ -3136,8 +2852,7 @@ public class TestRuntime
         var obj = new Nullable3();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"A\":{}}"));
@@ -3165,8 +2880,7 @@ public class TestRuntime
         var obj = new Nullable4();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"A\":{\"A\":null}}"));
@@ -3184,8 +2898,7 @@ public class TestRuntime
         PrivateNullable1? obj = new PrivateNullable1();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{}"));
@@ -3203,8 +2916,7 @@ public class TestRuntime
         PrivateNullable1? obj = null;
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("null"));
@@ -3229,8 +2941,7 @@ public class TestRuntime
         var obj = new PrivateNullable3();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"A\":{}}"));
@@ -3258,8 +2969,7 @@ public class TestRuntime
         var obj = new PrivateNullable4();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"A\":{\"A\":null}}"));
@@ -3287,8 +2997,7 @@ public class TestRuntime
         var obj = new ClassIEnumerable1();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3]"));
@@ -3304,8 +3013,7 @@ public class TestRuntime
         IEnumerable<int> obj = new[] { 1, 2, 3, };
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3]"));
@@ -3333,8 +3041,7 @@ public class TestRuntime
         var obj = new ClassIEnumerable3();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3]"));
@@ -3362,8 +3069,7 @@ public class TestRuntime
         var obj = new ClassIEnumerable4();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3]"));
@@ -3391,8 +3097,7 @@ public class TestRuntime
         var obj = new ClassIEnumerable5();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3]"));
@@ -3441,8 +3146,7 @@ public class TestRuntime
         var obj = new ClassIEnumerable6();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1]"));
@@ -3463,8 +3167,7 @@ public class TestRuntime
         var obj = new IEnumerable7();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"A\":[null]}"));
@@ -3492,8 +3195,7 @@ public class TestRuntime
         var obj = new ClassPrivateIEnumerable1();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3]"));
@@ -3511,8 +3213,7 @@ public class TestRuntime
         IEnumerable<PrivateIEnumerable2> obj = new[] { new PrivateIEnumerable2() };
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[{}]"));
@@ -3533,8 +3234,7 @@ public class TestRuntime
         var obj = new PrivateIEnumerable3();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"A\":[null]}"));
@@ -3544,7 +3244,7 @@ public class TestRuntime
 
     #region Runtime1
 
-    [SeraIncludeField]
+    [SeraStruct(IncludeFields = true)]
     public class Runtime1
     {
         public int A { get; set; } = 123456;
@@ -3556,11 +3256,12 @@ public class TestRuntime
     {
         var obj = new Runtime1();
 
-        var impl = EmitRuntimeProvider.Instance.GetRuntimeSerialize();
+        var impl = EmitRuntimeProvider.Instance.Get();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj, impl);
+            .Serialize(obj)
+            .Use(impl)
+            .To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"A\":123456,\"B\":654321}"));
@@ -3570,7 +3271,7 @@ public class TestRuntime
 
     #region Runtime2
 
-    [SeraIncludeField]
+    [SeraStruct(IncludeFields = true)]
     public struct Runtime2
     {
         public int A { get; set; } = 123456;
@@ -3584,11 +3285,12 @@ public class TestRuntime
     {
         var obj = new Runtime2();
 
-        var impl = EmitRuntimeProvider.Instance.GetRuntimeSerialize();
+        var impl = EmitRuntimeProvider.Instance.Get();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize((object)obj, impl);
+            .Serialize((object)obj)
+            .Use(impl)
+            .To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"A\":123456,\"B\":654321}"));
@@ -3614,8 +3316,7 @@ public class TestRuntime
         var obj = new ClassIEnumerableLegacy1();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,\"a\",true]"));
@@ -3636,8 +3337,7 @@ public class TestRuntime
         var obj = new ClassIEnumerableLegacy2();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"A\":[{\"A\":[1,2,3]}]}"));
@@ -3678,8 +3378,7 @@ public class TestRuntime
         var obj = new ClassICollection1();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3]"));
@@ -3720,8 +3419,7 @@ public class TestRuntime
         var obj = new ClassICollection2();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3]"));
@@ -3762,8 +3460,7 @@ public class TestRuntime
         var obj = new ClassICollection3();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3]"));
@@ -3804,8 +3501,7 @@ public class TestRuntime
         var obj = new ClassICollection4();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3]"));
@@ -3846,8 +3542,7 @@ public class TestRuntime
         var obj = new PrivateClassICollection1();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3]"));
@@ -3893,8 +3588,7 @@ public class TestRuntime
         var obj = new PrivateClassICollection1A();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"A\":[1,2,3]}"));
@@ -3924,8 +3618,7 @@ public class TestRuntime
         var obj = new ClassIReadOnlyCollection1();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3]"));
@@ -3955,8 +3648,7 @@ public class TestRuntime
         var obj = new ClassIReadOnlyCollection2();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3]"));
@@ -3986,8 +3678,7 @@ public class TestRuntime
         var obj = new PrivateClassIReadOnlyCollection1();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,2,3]"));
@@ -4019,8 +3710,7 @@ public class TestRuntime
         var obj = new ClassICollectionLegacy1();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[1,\"a\",true]"));
@@ -4076,8 +3766,7 @@ public class TestRuntime
         var obj = new ClassIDictionary1();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[[1,2],[3,4],[5,6]]"));
@@ -4133,8 +3822,7 @@ public class TestRuntime
         var obj = new ClassIDictionary2();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"a\":2,\"b\":4,\"c\":6}"));
@@ -4155,8 +3843,7 @@ public class TestRuntime
         var obj = new ClassIDictionary3();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"A\":{\"1\":2}}"));
@@ -4178,8 +3865,7 @@ public class TestRuntime
         var obj = new ClassIDictionary4();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"A\":[[\"1\",2]]}"));
@@ -4203,8 +3889,7 @@ public class TestRuntime
         var obj = new PrivateClassIDictionary1();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"A\":[[\"1\",{}]]}"));
@@ -4227,8 +3912,7 @@ public class TestRuntime
         var obj = new PrivateClassIDictionary2();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"A\":{\"1\":{}}}"));
@@ -4265,8 +3949,7 @@ public class TestRuntime
         var obj = new ClassIReadOnlyDictionary1();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[[1,2],[3,4],[5,6]]"));
@@ -4303,8 +3986,7 @@ public class TestRuntime
         var obj = new ClassPrivateIReadOnlyDictionary1();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[[1,2],[3,4],[5,6]]"));
@@ -4320,8 +4002,7 @@ public class TestRuntime
         IDictionary obj = new Dictionary<int, int> { { 1, 2 } };
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("[[1,2]]"));
@@ -4342,8 +4023,7 @@ public class TestRuntime
         var obj = new ClassIDictionaryLegacy2();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj);
+            .Serialize(obj).To.String();
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"A\":[[\"a\",2]]}"));
@@ -4371,8 +4051,8 @@ public class TestRuntime
         var obj = new ClassIEnumerableMap1();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj, new SeraHints(As: SeraAs.Map));
+            .Serialize(obj)
+            .To.String(new SeraStyles(As: SeraAs.Map));
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"a\":1,\"b\":2,\"c\":3}"));
@@ -4400,8 +4080,8 @@ public class TestRuntime
         var obj = new PrivateClassIEnumerableMap1();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj, new SeraHints(As: SeraAs.Map));
+            .Serialize(obj)
+            .To.String(new SeraStyles(As: SeraAs.Map));
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"a\":1,\"b\":2,\"c\":3}"));
@@ -4442,8 +4122,8 @@ public class TestRuntime
         var obj = new ClassICollectionMap1();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj, new SeraHints(As: SeraAs.Map));
+            .Serialize(obj)
+            .To.String(new SeraStyles(As: SeraAs.Map));
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"a\":1,\"b\":2,\"c\":3}"));
@@ -4484,8 +4164,8 @@ public class TestRuntime
         var obj = new PrivateClassICollectionMap1();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj, new SeraHints(As: SeraAs.Map));
+            .Serialize(obj)
+            .To.String(new SeraStyles(As: SeraAs.Map));
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"a\":1,\"b\":2,\"c\":3}"));
@@ -4515,8 +4195,8 @@ public class TestRuntime
         var obj = new ClassIReadOnlyCollectionMap1();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj, new SeraHints(As: SeraAs.Map));
+            .Serialize(obj)
+            .To.String(new SeraStyles(As: SeraAs.Map));
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"a\":1,\"b\":2,\"c\":3}"));
@@ -4546,8 +4226,8 @@ public class TestRuntime
         var obj = new PrivateClassIReadOnlyCollectionMap1();
 
         var str = SeraJson.Serializer
-            .ToString()
-            .Serialize(obj, new SeraHints(As: SeraAs.Map));
+            .Serialize(obj)
+            .To.String(new SeraStyles(As: SeraAs.Map));
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"a\":1,\"b\":2,\"c\":3}"));

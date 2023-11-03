@@ -27,7 +27,7 @@ internal abstract class _Struct(StructMember[] Members) : _Base
                 };
                 var transforms = !m.Type.IsValueType && null_meta is not
                     { NullabilityInfo.ReadState: NullabilityState.NotNull }
-                    ? SerializeEmitProvider.NullableReferenceTypeTransforms
+                    ? SerializeEmitProvider.NullableClassImplTransforms
                     : EmitTransform.EmptyTransforms;
 
                 var sera_attr = m.Kind switch
@@ -36,10 +36,13 @@ internal abstract class _Struct(StructMember[] Members) : _Base
                     PropertyOrField.Field => m.Field!.GetCustomAttribute<SeraAttribute>(),
                     _ => throw new ArgumentOutOfRangeException()
                 };
-                var data = new SeraHints(
-                    Primitive: sera_attr?.SerPrimitive,
-                    As: sera_attr?.As ?? SeraAs.None
-                );
+                var sera_format_attr = m.Kind switch
+                {
+                    PropertyOrField.Property => m.Property!.GetCustomAttribute<SeraFormatsAttribute>(),
+                    PropertyOrField.Field => m.Field!.GetCustomAttribute<SeraFormatsAttribute>(),
+                    _ => throw new ArgumentOutOfRangeException()
+                };
+                var data = SeraStyles.FromAttr(sera_attr, sera_format_attr);
 
                 return new DepMeta(new(TypeMetas.GetTypeMeta(m.Type, null_meta), data), transforms);
             }).ToArray();

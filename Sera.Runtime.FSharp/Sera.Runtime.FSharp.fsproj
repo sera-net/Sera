@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <Version>0.0.1</Version>
+        <TargetFramework>net8.0</TargetFramework>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+        <Description>Format-agnostic (de)serialization abstraction layer</Description>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Sera.FSharp\Sera.FSharp.fsproj"/>
+        <ProjectReference Include="..\Sera.Runtime\Sera.Runtime.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="Builders\CE.fs"/>
+        <Compile Include="Emit\Ser\Jobs\_Base.fs"/>
+        <Compile Include="Emit\Ser\Jobs\Misc\_Option.fs" />
+        <Compile Include="Emit\Ser\SerEmitProvider.fs"/>
+        <Compile Include="SeraRuntime.fs"/>
+    </ItemGroup>
+
+</Project>

@@ -1,49 +1,30 @@
 ﻿using Sera.Core;
-using Sera.Core.Ser;
 
 namespace Sera.Emit.Template;
 
-public enum Enum2 : long
+public enum Enum2
 {
     A,
     B,
-    C
+    C,
 }
 
-public class Enum2Impl : ISerialize<Enum2>
+public readonly struct Enum2Impl : ISeraVision<Enum2>, IUnionSeraVision<Enum2>
 {
-    public void Write<S>(S serializer, Enum2 value, ISeraOptions options) where S : ISerializer
-    {
-        switch (value)
+    public static UnionStyle? style;
+    public static VariantStyle? style2;
+
+    public R Accept<R, V>(V visitor, Enum2 value) where V : ASeraVisitor<R>
+        => visitor.VUnion(this, value);
+
+    public string Name => nameof(Enum2);
+
+    public R AcceptUnion<R, V>(V visitor, Enum2 value) where V : AUnionSeraVisitor<R>
+        => value switch
         {
-            case Enum2.A:
-                serializer.WriteVariantUnit<Enum2>(
-                    "Enum2",
-                    new Variant("A", VariantTag.Create((long)value)),
-                    SerializerVariantHint.Unknown
-                );
-                break;
-            case Enum2.B:
-                serializer.WriteVariantUnit<Enum2>(
-                    "Enum2",
-                    new Variant("B", VariantTag.Create((long)value)),
-                    SerializerVariantHint.Unknown
-                );
-                break;
-            case Enum2.C:
-                serializer.WriteVariantUnit<Enum2>(
-                    "Enum2",
-                    new Variant("C", VariantTag.Create((long)value)),
-                    SerializerVariantHint.Unknown
-                );
-                break;
-            default:
-                serializer.WriteVariantUnit<Enum2>(
-                    "Enum2",
-                    new Variant(VariantTag.Create((long)value)),
-                    SerializerVariantHint.Unknown
-                );
-                break;
-        }
-    }
+            Enum2.A => visitor.VVariant(new Variant(nameof(Enum2.A), VariantTag.Create((int)Enum2.A)), style, style2),
+            Enum2.B => visitor.VVariant(new Variant(nameof(Enum2.B), VariantTag.Create((int)Enum2.B)), style, null),
+            Enum2.C => visitor.VVariant(new Variant(nameof(Enum2.C), VariantTag.Create((int)Enum2.C)), style, style2),
+            _ => visitor.VNone(),
+        };
 }

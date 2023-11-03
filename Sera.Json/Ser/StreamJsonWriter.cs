@@ -4,19 +4,18 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
-using Sera.Json.Builders;
-using Sera.Json.Builders.Ser;
-using Sera.Utils;
 
 namespace Sera.Json.Ser;
 
-public record StreamJsonWriter
+public class StreamJsonWriter
     (SeraJsonOptions Options, AJsonFormatter Formatter, Stream Stream) : AJsonWriter(Options, Formatter)
 {
-    public static StreamJsonWriter Create(Builder<ToStream> self) =>
-        new(self.Options, self.Formatter, self.Value.Stream);
+    private Stream? tmpStream;
 
-    private static Stream? tmpStream;
+    public override void Flush()
+    {
+        Stream.Flush();
+    }
 
     public override Stream StartBase64()
     {

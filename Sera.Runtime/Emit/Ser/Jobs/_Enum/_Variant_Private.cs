@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 using Sera.Core;
-using Sera.Core.Ser;
 using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Emit.Ser.Internal;
 using Sera.Runtime.Utils;
@@ -12,8 +11,8 @@ using Sera.Runtime.Utils;
 namespace Sera.Runtime.Emit.Ser.Jobs._Enum;
 
 internal class _Variant_Private
-    (Type UnderlyingType, EnumInfo[] Items, SeraEnumAttribute? EnumAttr)
-    : _Variant(UnderlyingType, Items, EnumAttr)
+    (Type UnderlyingType, EnumInfo[] Items, UnionStyle? UnionStyle, SeraUnionMode Mode)
+    : _Variant
 {
     private Type ImplType = null!;
     private Type ToTagType = null!;
@@ -26,10 +25,10 @@ internal class _Variant_Private
 
     private Delegate ToTag = null!;
     private object Metas = null!;
-    
+
     public override void Init(EmitStub stub, EmitMeta target)
     {
-        ImplType = typeof(PrivateEnumSerializeImpl<>).MakeGenericType(target.Type);
+        ImplType = typeof(PrivateEnumImpl<>).MakeGenericType(target.Type);
         ToTagType = typeof(Func<,>).MakeGenericType(target.Type, typeof(VariantTag));
 
         MetasDictType = typeof(Dictionary<,>).MakeGenericType(target.Type, VariantMetaType);
@@ -57,10 +56,10 @@ internal class _Variant_Private
     public override DepMeta[] CollectDeps(EmitStub stub, EmitMeta target)
         => Array.Empty<DepMeta>();
 
-    public override Type GetEmitType(EmitStub stub, EmitMeta target, DepItem[] deps)
+    public override Type GetEmitType(EmitStub stub, EmitMeta target, EmitDeps deps)
         => ImplType;
 
-    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, DepItem[] deps)
+    public override Type GetRuntimeType(EmitStub stub, EmitMeta target, RuntimeDeps deps)
         => ImplType;
 
     public override Type GetEmitPlaceholderType(EmitStub stub, EmitMeta target)
@@ -85,8 +84,7 @@ internal class _Variant_Private
         var metas_dict = Activator.CreateInstance(MetasDictType);
         foreach (var item in Items)
         {
-            var item_hint = item.EnumAttr?.SerHint ?? RootHint;
-            (string name, SerializerVariantHint? hint) meta = (item.Name, item_hint);
+            var meta = new VariantMeta(item.Name, item.Style);
             MetasDictAdd.Invoke(metas_dict, new[] { item.Tag.ToObject(), meta });
         }
         Metas = ToFrozen.Invoke(null, new[] { metas_dict, null })!;
@@ -97,7 +95,7 @@ internal class _Variant_Private
     public override object CreateInst(EmitStub stub, EmitMeta target, RuntimeDeps deps)
     {
         var ctor = ImplType.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance,
-            new[] { typeof(string), ToTagType, MetasType, typeof(SerializerVariantHint?) })!;
-        return ctor.Invoke(new[] { target.Type.Name, ToTag, Metas, RootHint });
+            new[] { typeof(string), ToTagType, MetasType, typeof(UnionStyle), typeof(SeraUnionMode) })!;
+        return ctor.Invoke(new[] { target.Type.Name, ToTag, Metas, UnionStyle, Mode });
     }
 }

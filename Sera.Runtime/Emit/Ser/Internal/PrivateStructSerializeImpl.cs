@@ -1,29 +1,26 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using Sera.Core;
-using Sera.Core.Ser;
 
 namespace Sera.Runtime.Emit.Ser.Internal;
 
-public struct PrivateStructSerializeImpl<T> : ISerialize<T>, IStructSerializerReceiver<T>
+public readonly struct PrivateStructSerializeImpl<T> : ISeraVision<T>, IStructSeraVision<T>
 {
-    private sealed record Data(object meta_key, string name, nuint field_count);
+    private sealed record Data(object meta_key, string name, int field_count);
 
     private readonly Data data;
 
-    internal PrivateStructSerializeImpl(object meta_key, string name, nuint field_count)
+    internal PrivateStructSerializeImpl(object meta_key, string name, int field_count)
         => data = new(meta_key, name, field_count);
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public R Accept<R, V>(V visitor, T value) where V : ASeraVisitor<R>
+        => visitor.VStruct(this, value);
+
+    public string Name => data.name;
+    public int Count => data.field_count;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Write<S>(S serializer, T value, ISeraOptions options) where S : ISerializer
-    {
-        if (!typeof(T).IsValueType && value == null) throw new NullReferenceException();
-        serializer.StartStruct(data.name, data.field_count, value, this);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Receive<S>(T value, S serializer) where S : IStructSerializer
-    {
-        Jobs._Struct._Private.ReceiveImpl<T, S>.Receive(data.meta_key, value, serializer);
-    }
+    public R AcceptField<R, V>(V visitor, T value, int field) where V : AStructSeraVisitor<R>
+        => Jobs._Struct._Private.Impl<T, R, V>.AcceptField(visitor, value, field, data.meta_key);
 }

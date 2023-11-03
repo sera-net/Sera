@@ -8,13 +8,12 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Threading;
-using Sera.Core.Ser;
 using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Utils;
 
 namespace Sera.Runtime.Emit;
 
-internal readonly record struct EmitMeta(TypeMeta TypeMeta, SeraHints Data)
+public readonly record struct EmitMeta(TypeMeta TypeMeta, SeraStyles Styles)
 {
     public Type Type => TypeMeta.Type;
 
@@ -62,12 +61,19 @@ internal abstract class AEmitProvider
 
 internal record struct EmitCtx(Thread CurrentThread);
 
-internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, EmitJob job)
+public sealed class EmitStub
 {
-    public AEmitProvider EmitProvider { get; } = emitProvider;
+    internal EmitStub(AEmitProvider emitProvider, EmitMeta target, EmitJob job)
+    {
+        EmitProvider = emitProvider;
+        Target = target;
+        Job = job;
+    }
 
-    public EmitMeta Target { get; } = target;
-    private EmitJob Job { get; } = job;
+    internal AEmitProvider EmitProvider { get; }
+
+    public EmitMeta Target { get; }
+    private EmitJob Job { get; }
 
     private volatile EmitStubState state = EmitStubState.None;
     public EmitStubState State => state;
@@ -92,8 +98,6 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
     private DepItem[] Deps { get; set; } = Array.Empty<DepItem>();
     private EmitDeps? emitDeps;
     private RuntimeDeps? runtimeDeps;
-
-    public bool EmitTypeIsTypeBuilder { get; private set; }
 
     public ExceptionDispatchInfo? Exception { get; private set; }
 
@@ -160,6 +164,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
             catch (Exception e)
             {
                 MarkError(ExceptionDispatchInfo.Capture(e));
+                throw;
             }
         }
         else
@@ -224,12 +229,12 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
                 ReadyChildDeps(ctx);
                 CheckDepsCircular();
                 BuildEmitType(false);
-                CheckEmitTypeIsTypeBuilder();
                 SetState(EmitStubState.DepsReady);
             }
             catch (Exception e)
             {
                 MarkError(ExceptionDispatchInfo.Capture(e));
+                throw;
             }
         }
         else
@@ -292,26 +297,17 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
         }
         else
         {
-            var deps = Deps;
             if (RawEmitType == null)
             {
                 Deps.AsParallel().ForAll(dep => dep.Stub.BuildEmitType(dep.UsePlaceholder));
                 lock (MakeRawEmitPlaceholderTypeLock)
                 {
-                    RawEmitType ??= Job.GetEmitType(this, Target, deps);
+                    emitDeps = EmitDepContainer.BuildEmitDeps(this, Deps);
+                    RawEmitType ??= Job.GetEmitType(this, Target, emitDeps);
                 }
             }
         }
     }
-
-    private void CheckEmitTypeIsTypeBuilder()
-    {
-        EmitTypeIsTypeBuilder = IsTypeBuilder(RawEmitType!);
-    }
-
-    private bool IsTypeBuilder(Type type) =>
-        type is TypeBuilder ||
-        type is { IsGenericType: true } && type.GetGenericArguments().AsParallel().Any(IsTypeBuilder);
 
     #endregion
 
@@ -330,6 +326,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
             catch (Exception e)
             {
                 MarkError(ExceptionDispatchInfo.Capture(e));
+                throw;
             }
         }
         else
@@ -343,8 +340,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
 
     private void Emit()
     {
-        var deps = emitDeps = EmitDepContainer.BuildEmitDeps(this, Deps);
-        Job.Emit(this, Target, deps);
+        Job.Emit(this, Target, emitDeps!);
     }
 
     private void EmitDeps(EmitCtx ctx)
@@ -372,6 +368,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
             catch (Exception e)
             {
                 MarkError(ExceptionDispatchInfo.Capture(e));
+                throw;
             }
         }
         else
@@ -403,13 +400,13 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
         }
         else
         {
-            var deps = Deps;
             if (RawRuntimeType == null)
             {
                 Deps.AsParallel().ForAll(dep => dep.Stub.BuildRuntimeType(dep.UsePlaceholder));
                 lock (MakeRawRuntimePlaceholderTypeLock)
                 {
-                    RawRuntimeType ??= Job.GetRuntimeType(this, Target, deps);
+                    runtimeDeps = EmitDepContainer.BuildRuntimeDeps(emitDeps!);
+                    RawRuntimeType ??= Job.GetRuntimeType(this, Target, runtimeDeps);
                 }
             }
         }
@@ -432,6 +429,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
             catch (Exception e)
             {
                 MarkError(ExceptionDispatchInfo.Capture(e));
+                throw;
             }
         }
         else
@@ -445,8 +443,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
 
     private void CreateInst()
     {
-        var deps = runtimeDeps = EmitDepContainer.BuildRuntimeDeps(emitDeps!);
-        RawInst = Job.CreateInst(this, Target, deps);
+        RawInst = Job.CreateInst(this, Target, runtimeDeps!);
         Debug.Assert(RawInst != null);
     }
 
@@ -475,6 +472,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
             catch (Exception e)
             {
                 MarkError(ExceptionDispatchInfo.Capture(e));
+                throw;
             }
         }
         else
@@ -510,7 +508,7 @@ internal sealed class EmitStub(AEmitProvider emitProvider, EmitMeta target, Emit
     #endregion
 }
 
-internal enum EmitStubState : uint
+public enum EmitStubState : uint
 {
     None = 0,
     Initing = None + 1,
@@ -528,7 +526,7 @@ internal enum EmitStubState : uint
     Error = uint.MaxValue,
 }
 
-internal abstract class EmitJob
+public abstract class EmitJob
 {
     public Guid Guid { get; } = Guid.NewGuid();
 
@@ -567,10 +565,10 @@ internal abstract class EmitJob
     public abstract Type GetRuntimePlaceholderType(EmitStub stub, EmitMeta target);
 
     /// <summary>Create emit type</summary>
-    public abstract Type GetEmitType(EmitStub stub, EmitMeta target, DepItem[] deps);
+    public abstract Type GetEmitType(EmitStub stub, EmitMeta target, EmitDeps deps);
 
     /// <summary>Create runtime type</summary>
-    public abstract Type GetRuntimeType(EmitStub stub, EmitMeta target, DepItem[] deps);
+    public abstract Type GetRuntimeType(EmitStub stub, EmitMeta target, RuntimeDeps deps);
 
     /// <summary>Emit if need</summary>
     public abstract void Emit(EmitStub stub, EmitMeta target, EmitDeps deps);

@@ -1,8 +1,10 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -10,16 +12,18 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using Sera.Core;
-using Sera.Core.Impls.Deps;
-using Sera.Core.Impls.Tuples;
-using Sera.Core.Ser;
+using Sera.Core.Providers.Ser;
 using Sera.Runtime.Emit;
-using Ser = Sera.Runtime.Emit.Ser;
+using SerImpl = Sera.Core.Impls.Ser;
 
 namespace Sera.Runtime.Utils;
 
 internal static class ReflectionUtils
 {
+    public static bool IsTypeBuilder(this Type type) =>
+        type is TypeBuilder ||
+        type is { IsGenericType: true } && type.GetGenericArguments().AsParallel().Any(IsTypeBuilder);
+
     public static ConstructorInfo NullReferenceException_ctor { get; } =
         typeof(NullReferenceException).GetConstructor(
             BindingFlags.Public | BindingFlags.Instance,
@@ -44,128 +48,37 @@ internal static class ReflectionUtils
                 && r.GetGenericTypeDefinition() == typeof(ReadOnlyMemory<>)
             ));
 
-    public static MethodInfo StaticRuntimeProvider_TryGetSerialize { get; } =
-        typeof(StaticRuntimeProvider).GetMethod(nameof(StaticRuntimeProvider.TryGetSerialize))!;
+    public static MethodInfo StaticSerImpls_TryGet { get; } =
+        typeof(StaticSerImpls).GetMethod(nameof(StaticSerImpls.TryGet))!;
 
-    public static Dictionary<string, MethodInfo[]> ISerializerMethods { get; } =
-        typeof(ISerializer).GetMethods().GroupBy(a => a.Name)
-            .ToDictionary(g => g.Key, g => g.ToArray());
+    public static MethodInfo ASeraVisitor_VStruct { get; } =
+        typeof(ASeraVisitor<>).GetMethod(nameof(ASeraVisitor<Unit>.VStruct),
+            BindingFlags.Public | BindingFlags.Instance)!;
 
-    public static MethodInfo ISerializer_StartStruct_3generic { get; } =
-        ISerializerMethods[nameof(ISerializer.StartStruct)]
-            .Single(m =>
-                m is { IsGenericMethod: true }
-                && m.GetGenericArguments() is { Length: 3 }
-            );
+    public static MethodInfo AStructSeraVisitor_VField { get; } =
+        typeof(AStructSeraVisitor<>).GetMethod(nameof(AStructSeraVisitor<Unit>.VField),
+            BindingFlags.Public | BindingFlags.Instance)!;
 
-    public static MethodInfo ISerializer_WriteArray_2generic_array { get; } =
-        ISerializerMethods[nameof(ISerializer.WriteArray)]
-            .Single(m =>
-                m is { IsGenericMethod: true }
-                && m.GetGenericArguments() is { Length: 2 }
-                && m.GetParameters()[0].ParameterType.IsSZArray
-            );
+    public static MethodInfo AStructSeraVisitor_VNone { get; } =
+        typeof(AStructSeraVisitor<>).GetMethod(nameof(AStructSeraVisitor<Unit>.VNone),
+            BindingFlags.Public | BindingFlags.Instance)!;
 
-    public static MethodInfo ISerializer_WriteArray_2generic_list { get; } =
-        ISerializerMethods[nameof(ISerializer.WriteArray)]
-            .Single(m =>
-                m is { IsGenericMethod: true }
-                && m.GetGenericArguments() is { Length: 2 }
-                && m.GetParameters()[0].ParameterType is { IsGenericType: true } p0
-                && p0.GetGenericTypeDefinition() == typeof(List<>)
-            );
+    public static MethodInfo ASeraVisitor_VUnion { get; } =
+        typeof(ASeraVisitor<>).GetMethod(nameof(ASeraVisitor<Unit>.VUnion),
+            BindingFlags.Public | BindingFlags.Instance)!;
 
-    public static MethodInfo ISerializer_WriteArray_2generic_ReadOnlySequence { get; } =
-        ISerializerMethods[nameof(ISerializer.WriteArray)]
-            .Single(m =>
-                m is { IsGenericMethod: true }
-                && m.GetGenericArguments() is { Length: 2 }
-                && m.GetParameters()[0].ParameterType is { IsGenericType: true } p0
-                && p0.GetGenericTypeDefinition() == typeof(ReadOnlySequence<>)
-            );
+    public static MethodInfo AUnionSeraVisitor_VVariant { get; } =
+        typeof(AUnionSeraVisitor<>).GetMethod(nameof(AUnionSeraVisitor<Unit>.VVariant),
+            BindingFlags.Public | BindingFlags.Instance)!;
 
-    public static MethodInfo ISerializer_WriteArray_2generic_ReadOnlyMemory { get; } =
-        ISerializerMethods[nameof(ISerializer.WriteArray)]
-            .Single(m =>
-                m is { IsGenericMethod: true }
-                && m.GetGenericArguments() is { Length: 2 }
-                && m.GetParameters()[0].ParameterType is { IsGenericType: true } p0
-                && p0.GetGenericTypeDefinition() == typeof(ReadOnlyMemory<>)
-            );
+    public static MethodInfo AUnionSeraVisitor_VNone { get; } =
+        typeof(AUnionSeraVisitor<>).GetMethod(nameof(AUnionSeraVisitor<Unit>.VNone),
+            BindingFlags.Public | BindingFlags.Instance)!;
 
-    public static MethodInfo ISerializer_WriteNone_1generic { get; } =
-        ISerializerMethods[nameof(ISerializer.WriteNone)]
-            .Single(m =>
-                m is { IsGenericMethod: true }
-                && m.GetGenericArguments() is { Length: 1 }
-            );
+    public static MethodInfo AUnionSeraVisitor_VEmpty { get; } =
+        typeof(AUnionSeraVisitor<>).GetMethod(nameof(AUnionSeraVisitor<Unit>.VEmpty),
+            BindingFlags.Public | BindingFlags.Instance)!;
 
-    public static MethodInfo ISerializer_WriteSome_2generic { get; } =
-        ISerializerMethods[nameof(ISerializer.WriteSome)]
-            .Single(m =>
-                m is { IsGenericMethod: true }
-                && m.GetGenericArguments() is { Length: 2 }
-            );
-
-    public static MethodInfo ISerializer_StartSeq_2generic { get; } =
-        ISerializerMethods[nameof(ISerializer.StartSeq)]
-            .Single(m =>
-                m is { IsGenericMethod: true }
-                && m.GetGenericArguments() is { Length: 2 }
-            );
-
-    public static MethodInfo ISerializer_StartSeq_3generic { get; } =
-        ISerializerMethods[nameof(ISerializer.StartSeq)]
-            .Single(m =>
-                m is { IsGenericMethod: true }
-                && m.GetGenericArguments() is { Length: 3 }
-            );
-
-    public static MethodInfo ISerializer_StartMap_4generic { get; } =
-        ISerializerMethods[nameof(ISerializer.StartMap)]
-            .Single(m =>
-                m is { IsGenericMethod: true }
-                && m.GetGenericArguments() is { Length: 4 }
-            );
-
-    public static MethodInfo ISerializer_WriteVariantUnit_1generic { get; } =
-        ISerializerMethods[nameof(ISerializer.WriteVariantUnit)]
-            .Single(m =>
-                m is { IsGenericMethod: true }
-                && m.GetGenericArguments() is { Length: 1 }
-            );
-
-    public static MethodInfo ISerializer_WriteEmptyUnion_1generic { get; } =
-        ISerializerMethods[nameof(ISerializer.WriteEmptyUnion)]
-            .Single(m =>
-                m is { IsGenericMethod: true }
-                && m.GetGenericArguments() is { Length: 1 }
-            );
-
-    public static MethodInfo[] IStructSerializerMethods { get; } = typeof(IStructSerializer).GetMethods();
-
-    public static MethodInfo IStructSerializer_WriteField_2generic_3arg_string_t_s { get; } = IStructSerializerMethods
-        .Single(m =>
-            m is { Name: nameof(IStructSerializer.WriteField), IsGenericMethod: true }
-            && m.GetGenericArguments() is { Length: 2 }
-            && m.GetParameters() is { Length: 4 } p && p[0].ParameterType == typeof(string)
-        );
-
-    public static MethodInfo[] ISeqSerializerMethods { get; } = typeof(ISeqSerializer).GetMethods();
-
-    public static MethodInfo ISeqSerializer_WriteElement_2generic { get; } = ISeqSerializerMethods
-        .Single(m =>
-            m is { Name: nameof(ISeqSerializer.WriteElement), IsGenericMethod: true }
-            && m.GetGenericArguments() is { Length: 2 }
-        );
-
-    public static MethodInfo[] IMapSerializerMethods { get; } = typeof(IMapSerializer).GetMethods();
-
-    public static MethodInfo IMapSerializer_WriteEntry_4generic { get; } = IMapSerializerMethods
-        .Single(m =>
-            m is { Name: nameof(IMapSerializer.WriteEntry), IsGenericMethod: true }
-            && m.GetGenericArguments() is { Length: 4 }
-        );
 
     public static readonly ConstructorInfo IsReadOnlyAttributeCtor =
         typeof(IsReadOnlyAttribute).GetConstructor(BindingFlags.Instance | BindingFlags.Public, Array.Empty<Type>())!;
@@ -208,44 +121,62 @@ internal static class ReflectionUtils
         return asm.DefineDynamicModule(asm_name.Name!);
     }
 
-    public static Dictionary<int, Type> DepsContainers { get; } = new()
+    public static readonly FrozenSet<Type> SingleGenericTypes = new[]
     {
-        { 0, typeof(DepsContainer) },
-        { 1, typeof(DepsContainer<>) },
-        { 2, typeof(DepsContainer<,>) },
-        { 3, typeof(DepsContainer<,,>) },
-        { 4, typeof(DepsContainer<,,,>) },
-        { 5, typeof(DepsContainer<,,,,>) },
-        { 6, typeof(DepsContainer<,,,,,>) },
-        { 7, typeof(DepsContainer<,,,,,,>) },
-        { 8, typeof(DepsContainer<,,,,,,,>) },
-    };
+        typeof(IEnumerable<>),
+        typeof(ICollection<>),
+        typeof(IList<>),
+        typeof(ISet<>),
 
-    public static Dictionary<int, Type> DepsSerWraps { get; } = new()
+        typeof(IReadOnlyCollection<>),
+        typeof(IReadOnlyList<>),
+        typeof(IReadOnlySet<>),
+
+        typeof(ConcurrentBag<>),
+        typeof(ConcurrentQueue<>),
+        typeof(ConcurrentStack<>),
+
+        typeof(FrozenSet<>),
+        typeof(HashSet<>),
+
+        typeof(List<>),
+        typeof(LinkedList<>),
+        typeof(Queue<>),
+        typeof(Stack<>),
+        typeof(SortedSet<>),
+
+        typeof(IImmutableList<>),
+        typeof(IImmutableQueue<>),
+        typeof(IImmutableStack<>),
+        typeof(IImmutableSet<>),
+
+        typeof(ImmutableList<>),
+        typeof(ImmutableQueue<>),
+        typeof(ImmutableStack<>),
+        typeof(ImmutableSortedSet<>),
+        typeof(ImmutableHashSet<>),
+        typeof(ImmutableArray<>),
+    }.ToFrozenSet();
+    
+    public static readonly FrozenSet<Type> DoubleGenericTypes = new[]
     {
-        { 0, typeof(DepsSerializerWrapper1<,,>) },
-        { 1, typeof(DepsSerializerWrapper2<,,>) },
-        { 2, typeof(DepsSerializerWrapper3<,,>) },
-        { 3, typeof(DepsSerializerWrapper4<,,>) },
-        { 4, typeof(DepsSerializerWrapper5<,,>) },
-        { 5, typeof(DepsSerializerWrapper6<,,>) },
-        { 6, typeof(DepsSerializerWrapper7<,,>) },
-        { 7, typeof(DepsSerializerWrapper8<,,>) },
-    };
+        typeof(IDictionary<,>),
+        typeof(IReadOnlyDictionary<,>),
+        
+        typeof(FrozenDictionary<,>),
+        typeof(Dictionary<,>),
+        typeof(SortedDictionary<,>),
+        typeof(SortedList<,>),
+        typeof(ReadOnlyDictionary<,>),
+        
+        typeof(ImmutableDictionary<,>),
+        typeof(ImmutableSortedDictionary<,>),
+        
+        typeof(ConditionalWeakTable<,>),
+        
+    }.ToFrozenSet();
 
-    public static Dictionary<int, Type> DepsSeqSerReceiverWraps { get; } = new()
-    {
-        { 0, typeof(DepsSeqSerializerReceiverWrapper1<,,>) },
-        { 1, typeof(DepsSeqSerializerReceiverWrapper2<,,>) },
-        { 2, typeof(DepsSeqSerializerReceiverWrapper3<,,>) },
-        { 3, typeof(DepsSeqSerializerReceiverWrapper4<,,>) },
-        { 4, typeof(DepsSeqSerializerReceiverWrapper5<,,>) },
-        { 5, typeof(DepsSeqSerializerReceiverWrapper6<,,>) },
-        { 6, typeof(DepsSeqSerializerReceiverWrapper7<,,>) },
-        { 7, typeof(DepsSeqSerializerReceiverWrapper8<,,>) },
-    };
-
-    public static HashSet<Type> ValueTuples { get; } = new()
+    public static FrozenSet<Type> ValueTuples { get; } = new HashSet<Type>
     {
         typeof(ValueTuple<>),
         typeof(ValueTuple<,>),
@@ -255,9 +186,9 @@ internal static class ReflectionUtils
         typeof(ValueTuple<,,,,,>),
         typeof(ValueTuple<,,,,,,>),
         typeof(ValueTuple<,,,,,,,>),
-    };
+    }.ToFrozenSet();
 
-    public static HashSet<Type> ClassTuples { get; } = new()
+    public static FrozenSet<Type> ClassTuples { get; } = new HashSet<Type>
     {
         typeof(Tuple<>),
         typeof(Tuple<,>),
@@ -267,7 +198,7 @@ internal static class ReflectionUtils
         typeof(Tuple<,,,,,>),
         typeof(Tuple<,,,,,,>),
         typeof(Tuple<,,,,,,,>),
-    };
+    }.ToFrozenSet();
 
     public static bool IsTuple(this EmitMeta target)
         => IsTuple(target.Type, out _);
@@ -334,73 +265,16 @@ internal static class ReflectionUtils
         return ClassTuples.Contains(t);
     }
 
-    public static Dictionary<int, Type> ValueTupleSerImpls { get; } = new()
+    public static FrozenDictionary<int, Type> TupleSerImpls { get; } = new Dictionary<int, Type>
     {
-        { 1, typeof(ValueTupleSerializeImpl<,>) },
-        { 2, typeof(ValueTupleSerializeImpl<,,,>) },
-        { 3, typeof(ValueTupleSerializeImpl<,,,,,>) },
-        { 4, typeof(ValueTupleSerializeImpl<,,,,,,,>) },
-        { 5, typeof(ValueTupleSerializeImpl<,,,,,,,,,>) },
-        { 6, typeof(ValueTupleSerializeImpl<,,,,,,,,,,,>) },
-        { 7, typeof(ValueTupleSerializeImpl<,,,,,,,,,,,,,>) },
-    };
-
-    public static Dictionary<int, Type> ClassTupleSerImpls { get; } = new()
-    {
-        { 1, typeof(TupleSerializeImpl<,>) },
-        { 2, typeof(TupleSerializeImpl<,,,>) },
-        { 3, typeof(TupleSerializeImpl<,,,,,>) },
-        { 4, typeof(TupleSerializeImpl<,,,,,,,>) },
-        { 5, typeof(TupleSerializeImpl<,,,,,,,,,>) },
-        { 6, typeof(TupleSerializeImpl<,,,,,,,,,,,>) },
-        { 7, typeof(TupleSerializeImpl<,,,,,,,,,,,,,>) },
-    };
-
-    public static Dictionary<int, Type> ValueTupleSerBaseImpls { get; } = new()
-    {
-        { 1, typeof(ValueTupleSerializeImplBase<>) },
-        { 2, typeof(ValueTupleSerializeImplBase<,>) },
-        { 3, typeof(ValueTupleSerializeImplBase<,,>) },
-        { 4, typeof(ValueTupleSerializeImplBase<,,,>) },
-        { 5, typeof(ValueTupleSerializeImplBase<,,,,>) },
-        { 6, typeof(ValueTupleSerializeImplBase<,,,,,>) },
-        { 7, typeof(ValueTupleSerializeImplBase<,,,,,,>) },
-    };
-
-    public static Dictionary<int, Type> ClassTupleSerBaseImpls { get; } = new()
-    {
-        { 1, typeof(TupleSerializeImplBase<>) },
-        { 2, typeof(TupleSerializeImplBase<,>) },
-        { 3, typeof(TupleSerializeImplBase<,,>) },
-        { 4, typeof(TupleSerializeImplBase<,,,>) },
-        { 5, typeof(TupleSerializeImplBase<,,,,>) },
-        { 6, typeof(TupleSerializeImplBase<,,,,,>) },
-        { 7, typeof(TupleSerializeImplBase<,,,,,,>) },
-    };
-
-    public static Dictionary<int, Ser.Transforms._TupleSerializeImplWrapper> ValueTupleSerImplWrappers { get; } = new()
-    {
-        { 1, new(typeof(ValueTupleSerializeImplWrapper<>), typeof(ValueTupleSerializeImplBase<>)) },
-        { 2, new(typeof(ValueTupleSerializeImplWrapper<,>), typeof(ValueTupleSerializeImplBase<,>)) },
-        { 3, new(typeof(ValueTupleSerializeImplWrapper<,,>), typeof(ValueTupleSerializeImplBase<,,>)) },
-        { 4, new(typeof(ValueTupleSerializeImplWrapper<,,,>), typeof(ValueTupleSerializeImplBase<,,,>)) },
-        { 5, new(typeof(ValueTupleSerializeImplWrapper<,,,,>), typeof(ValueTupleSerializeImplBase<,,,,>)) },
-        { 6, new(typeof(ValueTupleSerializeImplWrapper<,,,,,>), typeof(ValueTupleSerializeImplBase<,,,,,>)) },
-        { 7, new(typeof(ValueTupleSerializeImplWrapper<,,,,,,>), typeof(ValueTupleSerializeImplBase<,,,,,,>)) },
-        { 8, new(typeof(ValueTupleSerializeImplWrapper<,,,,,,,>), typeof(ValueTupleRestSerializeImplBase<,,,,,,,>)) },
-    };
-
-    public static Dictionary<int, Ser.Transforms._TupleSerializeImplWrapper> ClassTupleSerImplWrappers { get; } = new()
-    {
-        { 1, new(typeof(TupleSerializeImplWrapper<>), typeof(TupleSerializeImplBase<>)) },
-        { 2, new(typeof(TupleSerializeImplWrapper<,>), typeof(TupleSerializeImplBase<,>)) },
-        { 3, new(typeof(TupleSerializeImplWrapper<,,>), typeof(TupleSerializeImplBase<,,>)) },
-        { 4, new(typeof(TupleSerializeImplWrapper<,,,>), typeof(TupleSerializeImplBase<,,,>)) },
-        { 5, new(typeof(TupleSerializeImplWrapper<,,,,>), typeof(TupleSerializeImplBase<,,,,>)) },
-        { 6, new(typeof(TupleSerializeImplWrapper<,,,,,>), typeof(TupleSerializeImplBase<,,,,,>)) },
-        { 7, new(typeof(TupleSerializeImplWrapper<,,,,,,>), typeof(TupleSerializeImplBase<,,,,,,>)) },
-        { 8, new(typeof(TupleSerializeImplWrapper<,,,,,,,>), typeof(TupleRestSerializeImplBase<,,,,,,,>)) },
-    };
+        { 1, typeof(SerImpl.TupleImpl<,>) },
+        { 2, typeof(SerImpl.TupleImpl<,,,>) },
+        { 3, typeof(SerImpl.TupleImpl<,,,,,>) },
+        { 4, typeof(SerImpl.TupleImpl<,,,,,,,>) },
+        { 5, typeof(SerImpl.TupleImpl<,,,,,,,,,>) },
+        { 6, typeof(SerImpl.TupleImpl<,,,,,,,,,,,>) },
+        { 7, typeof(SerImpl.TupleImpl<,,,,,,,,,,,,,>) },
+    }.ToFrozenDictionary();
 
     public static bool IsAssignableTo2(this Type type, Type target)
     {
@@ -552,7 +426,7 @@ internal static class ReflectionUtils
 
         return interfaces.Length > 0;
     }
-    
+
     public static bool IsIDictionary(this Type type)
     {
         if (type == typeof(IDictionary)) return true;

@@ -1,385 +1,392 @@
 ﻿using System;
 using System.Buffers;
-using System.Buffers.Text;
-using System.Diagnostics;
 using System.Numerics;
-using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using Sera.Core;
-using Sera.Core.Ser;
+using Sera.Core.Formats;
+using Sera.Core.Impls.Ser;
+using Sera.Core.Providers.Ser;
+using Sera.Utils;
 
 namespace Sera.Json.Ser;
 
-public record JsonSerializer(SeraJsonOptions Options, AJsonFormatter Formatter, AJsonWriter Writer) : ISerializer
+public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, AJsonWriter writer) : ASeraVisitor<Unit>
 {
-    public JsonSerializer(AJsonWriter Writer) : this(Writer.Options, Writer.Formatter, Writer) { }
+    public JsonSerializer(AJsonWriter writer) : this(writer.Options, writer.Formatter, writer) { }
 
-    public string FormatName => "json";
-    public string FormatMIME => "application/json";
-    public SeraFormatType FormatType => SeraFormatType.HumanReadableText;
+    private readonly AJsonWriter writer = writer;
+    private readonly AJsonFormatter formatter = formatter;
 
-    public IRuntimeProvider? RuntimeProviderOverride { get; set; }
-    public IAsyncRuntimeProvider? AsyncRuntimeProviderOverride { get; set; }
+    public override string FormatName => "json";
+    public override string FormatMIME => "application/json";
+    public override SeraFormatType FormatType => SeraFormatType.HumanReadableText;
+    public override ISeraOptions Options => options;
 
-#pragma warning disable CS0618
-    public IRuntimeProvider RuntimeProvider => RuntimeProviderOverride ?? Options.RuntimeProvider;
+    public override IRuntimeProvider<ISeraVision<object?>> RuntimeProvider =>
+        RuntimeProviderOverride ?? EmptySerRuntimeProvider.Instance;
 
-    public IAsyncRuntimeProvider AsyncRuntimeProvider => AsyncRuntimeProviderOverride ?? Options.AsyncRuntimeProvider;
-#pragma warning restore CS0618
-
+    public IRuntimeProvider<ISeraVision<object?>>? RuntimeProviderOverride { get; set; }
 
     private JsonSerializerState state;
 
+    public override Unit Flush()
+    {
+        writer.Flush();
+        return default;
+    }
+
     #region Reference
 
-    public bool MarkReference<T, S>(T obj, S serialize) where T : class where S : ISerialize<T>
+    public override Unit VReference<V, T>(V vision, T value)
     {
         // todo circular reference
-        return false;
+        return vision.Accept<Unit, JsonSerializer>(this, value);
     }
 
     #endregion
 
     #region Primitive
 
-    public void WritePrimitive<T>(T value, SerializerPrimitiveHint? hint)
-    {
-        switch (value)
-        {
-            case bool v:
-                if (((hint ?? default) & SerializerPrimitiveHint.BooleanAsNumber) != 0)
-                {
-                    WriteNumber(4, v ? 1 : 0, hint ?? default, false);
-                }
-                else
-                {
-                    Writer.Write(v ? "true" : "false");
-                }
-                break;
-            case sbyte v:
-                WriteNumber(4, v, hint ?? default, false);
-                break;
-            case short v:
-                WriteNumber(8, v, hint ?? default, false);
-                break;
-            case int v:
-                WriteNumber(16, v, hint ?? default, false);
-                break;
-            case long v:
-                WriteNumber(32, v, hint ?? default, Formatter.LargeNumberUseString);
-                break;
-            case Int128 v:
-                WriteNumber(64, v, hint ?? default, Formatter.LargeNumberUseString);
-                break;
-            case byte v:
-                WriteNumber(4, v, hint ?? default, false);
-                break;
-            case ushort v:
-                WriteNumber(8, v, hint ?? default, false);
-                break;
-            case uint v:
-                WriteNumber(16, v, hint ?? default, false);
-                break;
-            case ulong v:
-                WriteNumber(32, v, hint ?? default, Formatter.LargeNumberUseString);
-                break;
-            case UInt128 v:
-                WriteNumber(64, v, hint ?? default, Formatter.LargeNumberUseString);
-                break;
-            case nint v:
-                WriteNumber(32, v, hint ?? default, Formatter.LargeNumberUseString);
-                break;
-            case nuint v:
-                WriteNumber(32, v, hint ?? default, Formatter.LargeNumberUseString);
-                break;
-            case Half v:
-                WriteNumber(32, v, hint ?? default, false);
-                break;
-            case float v:
-                WriteNumber(32, v, hint ?? default, false);
-                break;
-            case double v:
-                WriteNumber(32, v, hint ?? default, false);
-                break;
-            case decimal v:
-                WriteNumber(32, v, hint ?? default, Formatter.DecimalUseString);
-                break;
-            case BigInteger v:
-                Writer.WriteString(v.ToString(), false);
-                break;
-            case Complex v:
-                Writer.WriteString(v.ToString(), false);
-                break;
-            case TimeSpan v:
-                WriteDate(v, hint ?? default);
-                break;
-            case DateOnly v:
-                WriteDate(v, hint ?? default);
-                break;
-            case TimeOnly v:
-                WriteDate(v, hint ?? default);
-                break;
-            case DateTime v:
-                WriteDate(v, hint ?? default);
-                break;
-            case DateTimeOffset v:
-                WriteDate(v, hint ?? default);
-                break;
-            case Guid v:
-                WriteGuid(v, hint ?? default);
-                break;
-            case Range v:
-                Writer.WriteString(v.ToString(), false);
-                break;
-            case Index v:
-                Writer.WriteString(v.ToString(), false);
-                break;
-            case char v:
-                WriteChar(v);
-                break;
-            case Rune v:
-                WriteChar(v);
-                break;
-        }
-    }
-
     #region Number
 
-    private void WriteNumber<T>(int size, T v, SerializerPrimitiveHint hint, bool use_string) where T : ISpanFormattable
+    private Unit WriteNumber<T>(int size, T v, SeraFormats? formats, bool use_string) where T : ISpanFormattable
     {
-        Span<char> chars = stackalloc char[size];
-        if (v.TryFormat(chars, out var len, null, null))
+        var format = formats?.CustomNumberTextFormat ?? (formats?.NumberTextFormat is { } ntf
+            ? (ntf switch
+            {
+                NumberTextFormat.Decimal or NumberTextFormat.Any => "D",
+                NumberTextFormat.Hex => "X",
+                NumberTextFormat.Binary => "B",
+                _ => throw new ArgumentOutOfRangeException()
+            })
+            : null);
+        if (format == null)
         {
-            var span = chars[..len];
-            if (use_string) Writer.WriteString(span, false);
-            else Writer.Write(span);
-            return;
+            Span<char> chars = stackalloc char[size];
+            if (v.TryFormat(chars, out var len, null, null))
+            {
+                var span = chars[..len];
+                if (use_string) writer.WriteString(span, false);
+                else writer.Write(span);
+                return default;
+            }
         }
-        var str = v.ToString(null, null);
-        if (use_string) Writer.WriteString(str, false);
-        else Writer.Write(str);
+        var str = v.ToString(format, null);
+        if (use_string) writer.WriteString(str, true);
+        else writer.Write(str);
+        return default;
     }
 
     #endregion
 
     #region Date
 
-    private void WriteDate(TimeSpan v, SerializerPrimitiveHint hint)
+    private Unit WriteDate(TimeSpan v, SeraFormats? formats)
     {
-        if ((hint & SerializerPrimitiveHint.DateAsNumber) != 0)
+        if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateAsNumber) ?? false)
         {
-            WriteNumber(32, v.Ticks, hint, Formatter.LargeNumberUseString);
-            return;
+            return WriteNumber(32, v.Ticks, formats, formatter.LargeNumberUseString);
         }
         Span<char> chars = stackalloc char[32];
-        if (v.TryFormat(chars, out var len, "G", null))
+        if (v.TryFormat(chars, out var len, "G"))
         {
-            Writer.WriteString(chars[..len], false);
+            writer.WriteString(chars[..len], false);
         }
         else
         {
-            Writer.WriteString(v.ToString("G"), false);
+            writer.WriteString(v.ToString("G"), false);
         }
+        return default;
     }
 
-    private void WriteDate(DateOnly v, SerializerPrimitiveHint hint)
+    private Unit WriteDate(DateOnly v, SeraFormats? formats)
     {
-        if ((hint & SerializerPrimitiveHint.DateOnlyToDateTime) != 0)
+        if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateOnlyToDateTime) ?? false)
         {
             var date_time = v.ToDateTime(TimeOnly.MinValue);
-            WriteDate(date_time, hint);
-            return;
+            return WriteDate(date_time, formats);
         }
-        if ((hint & SerializerPrimitiveHint.DateOnlyToDateTimeOffset) != 0)
+        if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateOnlyToDateTimeOffset) ?? false)
         {
             var date_time_offset =
                 new DateTimeOffset(TimeZoneInfo.ConvertTime(v.ToDateTime(TimeOnly.MinValue), Options.TimeZone));
-            WriteDate(date_time_offset, hint);
-            return;
+            return WriteDate(date_time_offset, formats);
         }
-        if ((hint & SerializerPrimitiveHint.DateAsNumber) != 0)
+        if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateAsNumber) ?? false)
         {
-            WriteNumber(32, v.DayNumber, hint, false);
-            return;
+            return WriteNumber(32, v.DayNumber, formats, false);
         }
         Span<char> chars = stackalloc char[16];
-        if (v.TryFormat(chars, out var len, "O", null))
+        if (v.TryFormat(chars, out var len, "O"))
         {
-            Writer.WriteString(chars[..len], false);
+            writer.WriteString(chars[..len], false);
         }
         else
         {
-            Writer.WriteString(v.ToString("O"), false);
+            writer.WriteString(v.ToString("O"), false);
         }
+        return default;
     }
 
-    private void WriteDate(TimeOnly v, SerializerPrimitiveHint hint)
+    private Unit WriteDate(TimeOnly v, SeraFormats? formats)
     {
-        if ((hint & SerializerPrimitiveHint.DateAsNumber) != 0)
+        if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateAsNumber) ?? false)
         {
-            WriteNumber(32, v.Ticks, hint, Formatter.LargeNumberUseString);
-            return;
+            return WriteNumber(32, v.Ticks, formats, formatter.LargeNumberUseString);
         }
         Span<char> chars = stackalloc char[32];
-        if (v.TryFormat(chars, out var len, "O", null))
+        if (v.TryFormat(chars, out var len, "O"))
         {
-            Writer.WriteString(chars[..len], false);
+            writer.WriteString(chars[..len], false);
         }
         else
         {
-            Writer.WriteString(v.ToString("O"), false);
+            writer.WriteString(v.ToString("O"), false);
         }
+        return default;
     }
 
-    private void WriteDate(DateTime v, SerializerPrimitiveHint hint)
+    private Unit WriteDate(DateTime v, SeraFormats? formats)
     {
         v = TimeZoneInfo.ConvertTime(v, Options.TimeZone);
-        if ((hint & SerializerPrimitiveHint.DateTimeToDateTimeOffset) != 0)
+        if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateTimeToDateTimeOffset) ?? false)
         {
             var date_time_offset = new DateTimeOffset(v);
-            WriteDate(date_time_offset, hint);
-            return;
+            return WriteDate(date_time_offset, formats);
         }
-        if ((hint & SerializerPrimitiveHint.DateAsNumber) != 0)
+        if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateAsNumber) ?? false)
         {
-            WriteNumber(32, v.Ticks, hint, Formatter.LargeNumberUseString);
-            return;
+            return WriteNumber(32, v.Ticks, formats, formatter.LargeNumberUseString);
         }
         Span<char> chars = stackalloc char[64];
-        if (v.TryFormat(chars, out var len, "O", null))
+        if (v.TryFormat(chars, out var len, "O"))
         {
-            Writer.WriteString(chars[..len], false);
+            writer.WriteString(chars[..len], false);
         }
         else
         {
-            Writer.WriteString(v.ToString("O"), false);
+            writer.WriteString(v.ToString("O"), false);
         }
+        return default;
     }
 
-    private void WriteDate(DateTimeOffset v, SerializerPrimitiveHint hint)
+    private Unit WriteDate(DateTimeOffset v, SeraFormats? formats)
     {
-        if ((hint & SerializerPrimitiveHint.DateAsNumber) != 0)
+        if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateAsNumber) ?? false)
         {
-            WriteNumber(32, v.Ticks, hint, Formatter.LargeNumberUseString);
-            return;
+            return WriteNumber(32, v.Ticks, formats, formatter.LargeNumberUseString);
         }
-        if ((hint & SerializerPrimitiveHint.DateTimeOffsetUseTimeZone) != 0)
+        if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateTimeOffsetUseTimeZone) ?? false)
         {
             v = TimeZoneInfo.ConvertTime(v, Options.TimeZone);
         }
         Span<char> chars = stackalloc char[64];
-        if (v.TryFormat(chars, out var len, "O", null))
+        if (v.TryFormat(chars, out var len, "O"))
         {
-            Writer.WriteString(chars[..len], false);
+            writer.WriteString(chars[..len], false);
         }
         else
         {
-            Writer.WriteString(v.ToString("O"), false);
+            writer.WriteString(v.ToString("O"), false);
         }
+        return default;
     }
 
     #endregion
 
     #region Guid
 
-    private void WriteGuid(Guid v, SerializerPrimitiveHint hint)
+    private Unit WriteGuid(Guid v, SeraFormats? formats)
     {
-        var format = "D";
-        if ((hint & SerializerPrimitiveHint.GuidFormatHex) != 0)
+        var format = formats?.CustomGuidTextFormat ?? (formats?.GuidTextFormat is { } gtf
+            ? gtf switch
+            {
+                GuidTextFormat.GuidTextShort or GuidTextFormat.Any => "N",
+                GuidTextFormat.GuidTextGuid => "D",
+                GuidTextFormat.GuidTextBraces => "B",
+                GuidTextFormat.GuidTextParentheses => "P",
+                GuidTextFormat.GuidTextHex => "X",
+                _ => throw new ArgumentOutOfRangeException()
+            }
+            : null) ?? "D";
+        if (format != "X")
         {
-            format = "X";
-            goto str;
+            Span<char> chars = stackalloc char[64];
+            if (v.TryFormat(chars, out var len, format))
+            {
+                writer.WriteString(chars[..len], false);
+                return default;
+            }
         }
-
-        if ((hint & SerializerPrimitiveHint.GuidFormatShort) != 0)
-        {
-            format = "N";
-        }
-        else if ((hint & SerializerPrimitiveHint.GuidFormatBraces) != 0)
-        {
-            format = "B";
-        }
-        Span<char> chars = stackalloc char[64];
-        if (v.TryFormat(chars, out var len, format))
-        {
-            Writer.WriteString(chars[..len], false);
-            return;
-        }
-        str:
         var str = v.ToString(format);
-        Writer.WriteString(str, false);
+        writer.WriteString(str, false);
+        return default;
     }
 
     #endregion
 
     #region Char
 
-    private void WriteChar<T>(T v) where T : ISpanFormattable
+    private Unit WriteChar<T>(T v) where T : ISpanFormattable
     {
         Span<char> chars = stackalloc char[8];
         if (v.TryFormat(chars, out var len, null, null))
         {
-            Writer.WriteString(chars[..len], true);
+            writer.WriteString(chars[..len], true);
         }
         else
         {
-            Writer.WriteString(v.ToString(null, null), true);
+            writer.WriteString(v.ToString(null, null), true);
         }
+        return default;
     }
 
     #endregion
+
+    public override Unit VPrimitive(bool value, SeraFormats? formats = null)
+    {
+        if (formats is { BooleanAsNumber: true }) return VPrimitive(value ? 1 : 0, formats);
+        writer.Write(value ? "true" : "false");
+        return default;
+    }
+
+    public override Unit VPrimitive(sbyte value, SeraFormats? formats = null)
+        => WriteNumber(4, value, formats, false);
+
+    public override Unit VPrimitive(byte value, SeraFormats? formats = null)
+        => WriteNumber(4, value, formats, false);
+
+    public override Unit VPrimitive(short value, SeraFormats? formats = null)
+        => WriteNumber(8, value, formats, false);
+
+    public override Unit VPrimitive(ushort value, SeraFormats? formats = null)
+        => WriteNumber(8, value, formats, false);
+
+    public override Unit VPrimitive(int value, SeraFormats? formats = null)
+        => WriteNumber(16, value, formats, false);
+
+    public override Unit VPrimitive(uint value, SeraFormats? formats = null)
+        => WriteNumber(16, value, formats, false);
+
+    public override Unit VPrimitive(long value, SeraFormats? formats = null)
+        => WriteNumber(32, value, formats, formatter.LargeNumberUseString);
+
+    public override Unit VPrimitive(ulong value, SeraFormats? formats = null)
+        => WriteNumber(32, value, formats, formatter.LargeNumberUseString);
+
+    public override Unit VPrimitive(Int128 value, SeraFormats? formats = null)
+        => WriteNumber(64, value, formats, formatter.LargeNumberUseString);
+
+    public override Unit VPrimitive(UInt128 value, SeraFormats? formats = null)
+        => WriteNumber(64, value, formats, formatter.LargeNumberUseString);
+
+    public override Unit VPrimitive(IntPtr value, SeraFormats? formats = null)
+        => WriteNumber(32, value, formats, formatter.LargeNumberUseString);
+
+    public override Unit VPrimitive(UIntPtr value, SeraFormats? formats = null)
+        => WriteNumber(32, value, formats, formatter.LargeNumberUseString);
+
+    public override Unit VPrimitive(Half value, SeraFormats? formats = null)
+        => WriteNumber(32, value, formats, false);
+
+    public override Unit VPrimitive(float value, SeraFormats? formats = null)
+        => WriteNumber(32, value, formats, false);
+
+    public override Unit VPrimitive(double value, SeraFormats? formats = null)
+        => WriteNumber(32, value, formats, false);
+
+    public override Unit VPrimitive(decimal value, SeraFormats? formats = null)
+        => WriteNumber(32, value, formats, false);
+
+    public override Unit VPrimitive(NFloat value, SeraFormats? formats = null)
+        => WriteNumber(32, value, formats, false);
+
+    public override Unit VPrimitive(BigInteger value, SeraFormats? formats = null)
+    {
+        writer.WriteString(value.ToString(), false);
+        return default;
+    }
+
+    public override Unit VPrimitive(Complex value, SeraFormats? formats = null)
+    {
+        writer.WriteString(value.ToString(), false);
+        return default;
+    }
+
+    public override Unit VPrimitive(TimeSpan value, SeraFormats? formats = null)
+        => WriteDate(value, formats);
+
+    public override Unit VPrimitive(DateOnly value, SeraFormats? formats = null)
+        => WriteDate(value, formats);
+
+    public override Unit VPrimitive(TimeOnly value, SeraFormats? formats = null)
+        => WriteDate(value, formats);
+
+    public override Unit VPrimitive(DateTime value, SeraFormats? formats = null)
+        => WriteDate(value, formats);
+
+    public override Unit VPrimitive(DateTimeOffset value, SeraFormats? formats = null)
+        => WriteDate(value, formats);
+
+    public override Unit VPrimitive(Guid value, SeraFormats? formats = null)
+        => WriteGuid(value, formats);
+
+    public override Unit VPrimitive(Range value, SeraFormats? formats = null)
+    {
+        writer.WriteString(value.ToString(), true);
+        return default;
+    }
+
+    public override Unit VPrimitive(Index value, SeraFormats? formats = null)
+    {
+        writer.WriteString(value.ToString(), true);
+        return default;
+    }
+
+    public override Unit VPrimitive(char value, SeraFormats? formats = null)
+        => WriteChar(value);
+
+    public override Unit VPrimitive(Rune value, SeraFormats? formats = null)
+        => WriteChar(value);
+
+    public override Unit VPrimitive(Uri value, SeraFormats? formats = null)
+    {
+        writer.WriteString(value.ToString(), true);
+        return default;
+    }
+
+    public override Unit VPrimitive(Version value, SeraFormats? formats = null)
+    {
+        writer.WriteString(value.ToString(), true);
+        return default;
+    }
 
     #endregion
 
     #region String
 
-    public void WriteString(ReadOnlySpan<char> value)
-        => Writer.WriteString(value, true);
+    public override Unit VString(ReadOnlyMemory<char> value)
+    {
+        writer.WriteString(value.Span, true);
+        return default;
+    }
 
-    public void WriteStringEncoded(ReadOnlySpan<byte> value, Encoding encoding)
-        => Writer.WriteStringEncoded(value, encoding, true);
+    public override Unit VString(ReadOnlyMemory<byte> value, Encoding encoding)
+    {
+        writer.WriteStringEncoded(value.Span, encoding, true);
+        return default;
+    }
 
     #endregion
 
     #region Bytes
 
-    public void WriteBytes(ReadOnlySpan<byte> value)
+    public override Unit VBytes(ReadOnlySequence<byte> value)
     {
-        if (Formatter.Base64Bytes)
+        if (formatter.Base64Bytes)
         {
-            var init_len = Base64.GetMaxEncodedToUtf8Length(value.Length);
-            var buf = ArrayPool<byte>.Shared.Rent(init_len);
-            try
-            {
-                // ReSharper disable once RedundantAssignment
-                var r = Base64.EncodeToUtf8(value, buf, out _, out var len);
-                Debug.Assert(r == OperationStatus.Done);
-                Writer.WriteStringEncoded(buf.AsSpan(0, len), Encoding.UTF8, false);
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(buf);
-            }
-        }
-        else
-        {
-            Writer.Write("[");
-            var first = true;
-            foreach (var v in value)
-            {
-                if (first) first = false;
-                else Writer.Write(",");
-                WriteNumber(4, v, default, false);
-            }
-            Writer.Write("]");
-        }
-    }
-
-    public void WriteBytes(ReadOnlySequence<byte> value)
-    {
-        if (Formatter.Base64Bytes)
-        {
-            var stream = Writer.StartBase64();
+            var stream = writer.StartBase64();
             try
             {
                 foreach (var mem in value)
@@ -389,23 +396,34 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonFormatter Formatter, 
             }
             finally
             {
-                Writer.EndBase64();
+                writer.EndBase64();
             }
+            return default;
         }
         else
         {
-            Writer.Write("[");
-            var first = true;
-            foreach (var mem in value)
+            return VArray(new PrimitiveImpl(), value);
+        }
+    }
+
+    public override Unit VBytes(ReadOnlyMemory<byte> value)
+    {
+        if (formatter.Base64Bytes)
+        {
+            var stream = writer.StartBase64();
+            try
             {
-                foreach (var v in mem.Span)
-                {
-                    if (first) first = false;
-                    else Writer.Write(",");
-                    WriteNumber(4, v, default, false);
-                }
+                stream.Write(value.Span);
             }
-            Writer.Write("]");
+            finally
+            {
+                writer.EndBase64();
+            }
+            return default;
+        }
+        else
+        {
+            return VArray(new PrimitiveImpl(), value);
         }
     }
 
@@ -413,450 +431,448 @@ public record JsonSerializer(SeraJsonOptions Options, AJsonFormatter Formatter, 
 
     #region Array
 
-    public void WriteArray<T, S>(ReadOnlySpan<T> value, S serialize) where S : ISerialize<T>
+    public override Unit VArray<V, T>(V vision, ReadOnlySequence<T> value)
     {
         var len = value.Length;
         if (len is 0)
         {
-            Writer.Write("[]");
-            return;
+            writer.Write("[]");
+            return default;
         }
         var last_state = state;
         state = JsonSerializerState.None;
-        Writer.Write("[");
-        var isFirst = true;
-        foreach (var item in value)
-        {
-            if (isFirst) isFirst = false;
-            else Writer.Write(",");
-            serialize.Write(this, item, Options);
-        }
-        Writer.Write("]");
-        state = last_state;
-    }
-
-    public void WriteArray<T, S>(ReadOnlySequence<T> value, S serialize) where S : ISerialize<T>
-    {
-        var last_state = state;
-        state = JsonSerializerState.None;
-        Writer.Write("[");
+        writer.Write("[");
         var isFirst = true;
         foreach (var mem in value)
         {
             foreach (var item in mem.Span)
             {
                 if (isFirst) isFirst = false;
-                else Writer.Write(",");
-                serialize.Write(this, item, Options);
+                else writer.Write(",");
+                vision.Accept<Unit, JsonSerializer>(this, item);
             }
         }
-        Writer.Write("]");
+        writer.Write("]");
         state = last_state;
+        return default;
+    }
+
+    public override Unit VArray<V, T>(V vision, ReadOnlyMemory<T> value)
+    {
+        var len = value.Length;
+        if (len is 0)
+        {
+            writer.Write("[]");
+            return default;
+        }
+        var last_state = state;
+        state = JsonSerializerState.None;
+        writer.Write("[");
+        var isFirst = true;
+        foreach (var item in value)
+        {
+            if (isFirst) isFirst = false;
+            else writer.Write(",");
+            vision.Accept<Unit, JsonSerializer>(this, item);
+        }
+        writer.Write("]");
+        state = last_state;
+        return default;
     }
 
     #endregion
 
     #region Unit
 
-    public void WriteUnit()
-    {
-        WriteNone();
-    }
+    public override Unit VUnit() => VNone();
 
     #endregion
 
     #region Option
 
-    public void WriteNone()
+    public override Unit VNone()
     {
-        Writer.Write("null");
+        writer.Write("null");
+        return default;
     }
 
-    public void WriteSome<T, S>(T value, S serialize) where S : ISerialize<T>
+    public override Unit VSome<V, T>(V vision, T value)
+        => vision.Accept<Unit, JsonSerializer>(this, value);
+
+    #endregion
+
+    #region Entry
+
+    public override Unit VEntry<KV, VV, IK, IV>(KV keyVision, VV valueVision, IK key, IV value)
     {
-        serialize.Write(this, value, Options);
+        var last_state = state;
+        state = JsonSerializerState.None;
+        writer.Write("[");
+        keyVision.Accept<Unit, JsonSerializer>(this, key);
+        writer.Write(",");
+        valueVision.Accept<Unit, JsonSerializer>(this, value);
+        writer.Write("]");
+        state = last_state;
+        return default;
+    }
+
+    #endregion
+
+    #region Tuple
+
+    public override Unit VTuple<V, T>(V vision, T value)
+    {
+        var size = vision.Size;
+        if (size == 0)
+        {
+            writer.Write("[]");
+            return default;
+        }
+        var last_state = state;
+        state = JsonSerializerState.None;
+        TupleVisitor ??= new(this);
+        writer.Write("[");
+        var first = true;
+        for (var i = 0; i < size; i++)
+        {
+            if (first) first = false;
+            else writer.Write(",");
+            var err = vision.AcceptItem<bool, TupleSeraVisitor>(TupleVisitor, value, i);
+            if (err) throw new SerializeException($"Unable to get item {i} of tuple {value}");
+        }
+        writer.Write("]");
+        state = last_state;
+        return default;
+    }
+
+    private TupleSeraVisitor? TupleVisitor;
+
+    private class TupleSeraVisitor(JsonSerializer Base) : ATupleSeraVisitor<bool>(Base)
+    {
+        public override bool VItem<T, V>(V vision, T value)
+        {
+            vision.Accept<Unit, JsonSerializer>(Base, value);
+            return false;
+        }
+
+        public override bool VNone() => true;
     }
 
     #endregion
 
     #region Seq
 
-    private SeqSerializer? Seq;
-
-    private void CheckWriteElement()
+    public override Unit VSeq<V>(V vision)
     {
-        if (state is JsonSerializerState.None) state = JsonSerializerState.ArrayItem;
-        else if (state is JsonSerializerState.ArrayItem) Writer.Write(",");
-        else throw new SerializeException("Serializer status error");
-    }
-
-    private record SeqSerializer(JsonSerializer self) : ISeqSerializer
-    {
-        public void WriteElement<T, S>(T value, S serialize) where S : ISerialize<T>
+        var size = vision.Count;
+        if (size is 0)
         {
-            self.CheckWriteElement();
-            serialize.Write(self, value, self.Options);
-        }
-    }
-
-    public void StartSeq<T, R>(UIntPtr? len, T value, R receiver) where R : ISeqSerializerReceiver<T>
-    {
-        if (len is 0)
-        {
-            Writer.Write("[]");
-            return;
+            writer.Write("[]");
+            return default;
         }
         var last_state = state;
         state = JsonSerializerState.None;
-        Writer.Write("[");
-        Seq ??= new(this);
-        receiver.Receive(value, Seq);
-        Writer.Write("]");
+        SeqVisitor ??= new(this);
+        writer.Write("[");
+        var first = true;
+        while (vision.MoveNext())
+        {
+            if (first) first = false;
+            else writer.Write(",");
+            vision.AcceptNext<Unit, SeqSeraVisitor>(SeqVisitor);
+        }
+        writer.Write("]");
         state = last_state;
+        return default;
+    }
+
+    private SeqSeraVisitor? SeqVisitor;
+
+    private class SeqSeraVisitor(JsonSerializer Base) : ASeqSeraVisitor<Unit>(Base)
+    {
+        public override Unit VItem<T, V>(V vision, T value)
+            => vision.Accept<Unit, JsonSerializer>(Base, value);
+
+        public override Unit VEnd() => default;
     }
 
     #endregion
 
     #region Map
 
-    private SeqMapSerializer? SeqMap;
-    private KeyStringMapSerializer? KeyStringMap;
-    private KeyStringOnlyJsonSerializer? KeyStringOnly;
-
-    private void CheckWriteKey()
+    public override Unit VMap<V>(V vision)
     {
-        if (state is JsonSerializerState.None) state = JsonSerializerState.ObjectKey;
-        else if (state is JsonSerializerState.ObjectValue) Writer.Write(",");
-        else throw new SerializeException("Serializer status error", new SerializeException("Wrong WriteKey order"));
-    }
-
-    private void CheckWriteValue()
-    {
-        if (state is JsonSerializerState.ObjectKey) state = JsonSerializerState.ObjectValue;
-        else throw new SerializeException("Serializer status error", new SerializeException("Wrong WriteValue order"));
-    }
-
-    private void CheckWriteEntry()
-    {
-        if (state is JsonSerializerState.None) state = JsonSerializerState.ObjectValue;
-        else if (state is JsonSerializerState.ObjectValue) Writer.Write(",");
-        else throw new SerializeException("Serializer status error");
-    }
-
-    private record SeqMapSerializer(JsonSerializer self) : IMapSerializer
-    {
-        public void WriteKey<K, SK>(K key, SK key_serialize) where SK : ISerialize<K>
+        var size = vision.Count;
+        if (size is 0)
         {
-            self.CheckWriteKey();
-            self.Writer.Write("[");
-            key_serialize.Write(self, key, self.Options);
-            self.Writer.Write(",");
-        }
-
-        public void WriteValue<V, SV>(V value, SV value_serialize) where SV : ISerialize<V>
-        {
-            self.CheckWriteValue();
-            value_serialize.Write(self, value, self.Options);
-            self.Writer.Write("]");
-        }
-
-        public void WriteEntry<K, V, SK, SV>(K key, V value, SK key_serialize, SV value_serialize)
-            where SK : ISerialize<K> where SV : ISerialize<V>
-        {
-            self.CheckWriteEntry();
-            self.Writer.Write("[");
-            key_serialize.Write(self, key, self.Options);
-            self.Writer.Write(",");
-            value_serialize.Write(self, value, self.Options);
-            self.Writer.Write("]");
-        }
-    }
-
-    private record KeyStringMapSerializer(JsonSerializer self) : IMapSerializer
-    {
-        public void WriteKey<K, SK>(K key, SK key_serialize) where SK : ISerialize<K>
-        {
-            self.CheckWriteKey();
-            self.Writer.Write("");
-            self.KeyStringOnly ??= new(self);
-            key_serialize.Write(self.KeyStringOnly, key, self.Options);
-            self.Writer.Write(":");
-        }
-
-        public void WriteValue<V, SV>(V value, SV value_serialize) where SV : ISerialize<V>
-        {
-            self.CheckWriteValue();
-            value_serialize.Write(self, value, self.Options);
-        }
-
-        public void WriteEntry<K, V, SK, SV>(K key, V value, SK key_serialize, SV value_serialize)
-            where SK : ISerialize<K> where SV : ISerialize<V>
-        {
-            self.CheckWriteEntry();
-            self.KeyStringOnly ??= new(self);
-            key_serialize.Write(self.KeyStringOnly, key, self.Options);
-            self.Writer.Write(":");
-            value_serialize.Write(self, value, self.Options);
-        }
-    }
-
-    private record KeyStringOnlyJsonSerializer(JsonSerializer self) : ISerializer
-    {
-        public string FormatName => self.FormatName;
-        public string FormatMIME => self.FormatMIME;
-        public SeraFormatType FormatType => self.FormatType;
-
-        public IRuntimeProvider RuntimeProvider => self.RuntimeProvider;
-
-        public IAsyncRuntimeProvider AsyncRuntimeProvider => self.AsyncRuntimeProvider;
-
-        public void WriteString(ReadOnlySpan<char> value)
-            => self.WriteString(value);
-
-        public void WriteStringEncoded(ReadOnlySpan<byte> value, Encoding encoding)
-            => self.WriteStringEncoded(value, encoding);
-
-        private void Throw() => throw new NotSupportedException("key must be a string");
-
-        #region Other
-
-        public bool MarkReference<T, S>(T obj, S serialize) where T : class where S : ISerialize<T>
-            => self.MarkReference(obj, serialize);
-
-        public void WriteEmptyUnion(string? union_name)
-            => Throw();
-
-        public void WriteVariantUnit(string? union_name, Variant variant, SerializerVariantHint? hint)
-            => Throw();
-
-        public void WriteVariant<T, S>(string? union_name, Variant variant, T value, S serializer,
-            SerializerVariantHint? hint)
-            where S : ISerialize<T>
-            => Throw();
-
-        public void StartStruct<T, R>(string? name, UIntPtr len, T value, R receiver)
-            where R : IStructSerializerReceiver<T>
-            => Throw();
-
-        public void StartMap<T, R>(UIntPtr? len, T value, R receiver) where R : IMapSerializerReceiver<T>
-            => Throw();
-
-        public void StartSeq<T, R>(UIntPtr? len, T value, R receiver) where R : ISeqSerializerReceiver<T>
-            => Throw();
-
-        public void WriteNone()
-            => self.WriteString("");
-
-        public void WriteSome<T, S>(T value, S serialize) where S : ISerialize<T>
-            => serialize.Write(self, value, self.Options);
-
-        public void WriteUnit()
-            => Throw();
-
-        public void WriteArray<T, S>(ReadOnlySequence<T> value, S serialize) where S : ISerialize<T>
-            => Throw();
-
-        public void WriteArray<T, S>(ReadOnlySpan<T> value, S serialize) where S : ISerialize<T>
-            => Throw();
-
-        public void WriteBytes(ReadOnlySequence<byte> value)
-            => Throw();
-
-        public void WriteBytes(ReadOnlySpan<byte> value)
-            => Throw();
-
-        public void WritePrimitive<T>(T value, SerializerPrimitiveHint? hint)
-            => Throw();
-
-        #endregion
-    }
-
-    public void StartMap<T, R>(UIntPtr? len, T value, R receiver) where R : IMapSerializerReceiver<T>
-    {
-        if (len is 0)
-        {
-            Writer.Write("[]");
-            return;
+            writer.Write("[]");
+            return default;
         }
         var last_state = state;
         state = JsonSerializerState.None;
-        Writer.Write("[");
-        SeqMap ??= new(this);
-        receiver.Receive(value, SeqMap);
-        Writer.Write("]");
-        state = last_state;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public void StartMap<K, V, T, R>(UIntPtr? len, T value, R receiver) where R : IMapSerializerReceiver<T>
-    {
-        if (typeof(K) != typeof(string)) StartMap(len, value, receiver);
-        else StringKeyMap(len, value, receiver);
-    }
-
-    private void StringKeyMap<T, R>(UIntPtr? len, T value, R receiver) where R : IMapSerializerReceiver<T>
-    {
-        if (len is 0)
+        SeqMapVisitor ??= new(this);
+        writer.Write("[");
+        var first = true;
+        while (vision.MoveNext())
         {
-            Writer.Write("{}");
-            return;
+            if (first) first = false;
+            else writer.Write(",");
+            vision.AcceptNext<Unit, SeqMapSeraVisitor>(SeqMapVisitor);
+        }
+        writer.Write("]");
+        state = last_state;
+        return default;
+    }
+
+    private SeqMapSeraVisitor? SeqMapVisitor;
+
+    private class SeqMapSeraVisitor(JsonSerializer Base) : AMapSeraVisitor<Unit>(Base)
+    {
+        public override Unit VEntry<KV, VV, IK, IV>(KV keyVision, VV valueVision, IK key, IV value)
+            => Base.VEntry(keyVision, valueVision, key, value);
+
+        public override Unit VEnd() => default;
+    }
+
+    #endregion
+
+    #region Typed Map
+
+    public override Unit VMap<V, T, IK, IV>(V vision)
+    {
+        if (typeof(IK) != typeof(string)) return VMap(vision);
+        var size = vision.Count;
+        if (size is 0)
+        {
+            writer.Write("{}");
+            return default;
         }
         var last_state = state;
         state = JsonSerializerState.None;
-        Writer.Write("{");
-        KeyStringMap ??= new(this);
-        receiver.Receive(value, KeyStringMap);
-        Writer.Write("}");
+        MapVisitor ??= new(this);
+        writer.Write("{");
+        var first = true;
+        while (vision.MoveNext())
+        {
+            if (first) first = false;
+            else writer.Write(",");
+            vision.AcceptNext<Unit, MapSeraVisitor>(MapVisitor);
+        }
+        writer.Write("}");
         state = last_state;
+        return default;
+    }
+
+    private MapSeraVisitor? MapVisitor;
+
+    private class MapSeraVisitor(JsonSerializer Base) : AMapSeraVisitor<Unit>(Base)
+    {
+        public override Unit VEntry<KV, VV, IK, IV>(KV keyVision, VV valueVision, IK key, IV value)
+        {
+            var str = key is null ? "null" : $"{key}";
+            Base.writer.WriteString(str, true);
+            Base.writer.Write(":");
+            return valueVision.Accept<Unit, JsonSerializer>(Base, value);
+        }
+
+        public override Unit VEnd() => default;
     }
 
     #endregion
 
     #region Struct
 
-    private StructSerializer? Struct;
-
-    private void CheckWriteField()
+    public override Unit VStruct<V, T>(V vision, T value)
     {
-        if (state is JsonSerializerState.None) state = JsonSerializerState.Field;
-        else if (state is JsonSerializerState.Field) Writer.Write(",");
-        else throw new SerializeException("Serializer status error");
-    }
-
-    private record StructSerializer(JsonSerializer self) : IStructSerializer
-    {
-        public void WriteField<T, S>(ReadOnlySpan<char> key, long? int_key, T value, S serializer)
-            where S : ISerialize<T>
+        var size = vision.Count;
+        if (size is 0)
         {
-            self.CheckWriteField();
-            self.Writer.WriteString(key, true);
-            self.Writer.Write(":");
-            serializer.Write(self, value, self.Options);
-        }
-    }
-
-    public void StartStruct<T, R>(string? name, UIntPtr len, T value, R receiver) where R : IStructSerializerReceiver<T>
-    {
-        if (len is 0)
-        {
-            Writer.Write("{}");
-            return;
+            writer.Write("{}");
+            return default;
         }
         var last_state = state;
         state = JsonSerializerState.None;
-        Writer.Write("{");
-        Struct ??= new(this);
-        receiver.Receive(value, Struct);
-        Writer.Write("}");
+        StructVisitor ??= new(this);
+        writer.Write("{");
+        var first = true;
+        for (var i = 0; i < size; i++)
+        {
+            if (first) first = false;
+            else writer.Write(",");
+            var err = vision.AcceptField<bool, StructSeraVisitor>(StructVisitor, value, i);
+            if (err) throw new SerializeException($"Unable to get field nth {i} of {value}");
+        }
+        writer.Write("}");
         state = last_state;
+        return default;
+    }
+
+    private StructSeraVisitor? StructVisitor;
+
+    private class StructSeraVisitor(JsonSerializer Base) : AStructSeraVisitor<bool>(Base)
+    {
+        public override bool VField<V, T>(V vision, T value, string name, long key)
+        {
+            Base.writer.WriteString(name, true);
+            Base.writer.Write(":");
+            vision.Accept<Unit, JsonSerializer>(Base, value);
+            return false;
+        }
+
+        public override bool VNone() => true;
     }
 
     #endregion
 
-    #region Variant
+    #region Union
 
-    public void WriteEmptyUnion(string? union_name)
+    public override Unit VUnion<V, T>(V vision, T value)
     {
-        WriteUnit();
+        UnionVisitor ??= new(this);
+        return vision.AcceptUnion<Unit, UnionSeraVisitor>(UnionVisitor, value);
     }
 
-    public void WriteVariantUnit(string? union_name, Variant variant, SerializerVariantHint? hint)
-    {
-        switch (variant.Kind)
-        {
-            case VariantKind.NameAndTag:
-                if (hint == SerializerVariantHint.UseNumberTag) goto case VariantKind.Tag;
-                else goto case VariantKind.Name;
-            case VariantKind.Name:
-                Writer.WriteString(variant.Name, true);
-                break;
-            case VariantKind.Tag:
-                var tag = variant.Tag;
-                switch (tag.Kind)
-                {
-                    case VariantTagKind.SByte:
-                        WriteNumber(4, tag.SByte, default, false);
-                        break;
-                    case VariantTagKind.Byte:
-                        WriteNumber(4, tag.Byte, default, false);
-                        break;
-                    case VariantTagKind.Int16:
-                        WriteNumber(8, tag.Int16, default, false);
-                        break;
-                    case VariantTagKind.UInt16:
-                        WriteNumber(8, tag.UInt16, default, false);
-                        break;
-                    case VariantTagKind.Int32:
-                        WriteNumber(16, tag.Int32, default, false);
-                        break;
-                    case VariantTagKind.UInt32:
-                        WriteNumber(16, tag.UInt32, default, false);
-                        break;
-                    case VariantTagKind.Int64:
-                        WriteNumber(32, tag.Int64, default, Formatter.LargeNumberUseString);
-                        break;
-                    case VariantTagKind.UInt64:
-                        WriteNumber(32, tag.UInt64, default, Formatter.LargeNumberUseString);
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
-        }
-    }
+    private UnionSeraVisitor? UnionVisitor;
 
-    public void WriteVariant<T, S>(string? union_name, Variant variant, T value, S serializer,
-        SerializerVariantHint? hint) where S : ISerialize<T>
+    private class UnionSeraVisitor(JsonSerializer Base) : AUnionSeraVisitor<Unit>(Base)
     {
-        Writer.Write("{");
-        switch (variant.Kind)
+        public override Unit VEmpty()
         {
-            case VariantKind.NameAndTag:
-                if (hint == SerializerVariantHint.UseNumberTag) goto case VariantKind.Tag;
-                else goto case VariantKind.Name;
-            case VariantKind.Name:
-                Writer.WriteString(variant.Name, true);
-                break;
-            case VariantKind.Tag:
-                var tag = variant.Tag;
-                switch (tag.Kind)
-                {
-                    case VariantTagKind.SByte:
-                        WriteNumber(4, tag.SByte, default, true);
-                        break;
-                    case VariantTagKind.Byte:
-                        WriteNumber(4, tag.Byte, default, true);
-                        break;
-                    case VariantTagKind.Int16:
-                        WriteNumber(8, tag.Int16, default, true);
-                        break;
-                    case VariantTagKind.UInt16:
-                        WriteNumber(8, tag.UInt16, default, true);
-                        break;
-                    case VariantTagKind.Int32:
-                        WriteNumber(16, tag.Int32, default, true);
-                        break;
-                    case VariantTagKind.UInt32:
-                        WriteNumber(16, tag.UInt32, default, true);
-                        break;
-                    case VariantTagKind.Int64:
-                        WriteNumber(32, tag.Int64, default, true);
-                        break;
-                    case VariantTagKind.UInt64:
-                        WriteNumber(32, tag.UInt64, default, true);
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
+            Base.writer.Write("{}");
+            return default;
         }
-        Writer.Write(":");
-        serializer.Write(this, value, Options);
-        Writer.Write("}");
+
+        public override Unit VNone() => throw new SeraMatchFailureException();
+
+        private void VVariant(Variant variant, UnionStyle? union_style, VariantStyle? variant_style, bool mustString)
+        {
+            var priority = variant_style?.Priority ?? union_style?.VariantPriority;
+            switch (variant.Kind)
+            {
+                case VariantKind.NameAndTag:
+                    if (mustString) goto case VariantKind.Name;
+                    if (priority is VariantPriority.TagFirst) goto case VariantKind.Tag;
+                    else goto case VariantKind.Name;
+                case VariantKind.Name:
+                    Base.writer.WriteString(variant.Name, true);
+                    break;
+                case VariantKind.Tag:
+                    var tag = variant.Tag;
+                    if (mustString)
+                    {
+                        Base.writer.WriteString(tag.ToString(), true);
+                        return;
+                    }
+                    var formats = variant_style?.Formats ??
+                                  union_style?.VariantFormats ??
+                                  Base.formatter.DefaultFormats;
+                    switch (tag.Kind)
+                    {
+                        case VariantTagKind.SByte:
+                            Base.VPrimitive(tag.SByte, formats);
+                            break;
+                        case VariantTagKind.Byte:
+                            Base.VPrimitive(tag.Byte, formats);
+                            break;
+                        case VariantTagKind.Int16:
+                            Base.VPrimitive(tag.Int16, formats);
+                            break;
+                        case VariantTagKind.UInt16:
+                            Base.VPrimitive(tag.UInt16, formats);
+                            break;
+                        case VariantTagKind.Int32:
+                            Base.VPrimitive(tag.Int32, formats);
+                            break;
+                        case VariantTagKind.UInt32:
+                            Base.VPrimitive(tag.UInt32, formats);
+                            break;
+                        case VariantTagKind.Int64:
+                            Base.VPrimitive(tag.Int64, formats);
+                            break;
+                        case VariantTagKind.UInt64:
+                            Base.VPrimitive(tag.UInt64, formats);
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        public override Unit VVariant(Variant variant,
+            UnionStyle? union_style = null, VariantStyle? variant_style = null)
+        {
+            VVariant(variant, union_style, variant_style, false);
+            return default;
+        }
+
+        public override Unit VVariantValue<V, T>(V vision, T value, Variant variant,
+            UnionStyle? union_style = null, VariantStyle? variant_style = null)
+        {
+            var s = union_style ?? Base.formatter.DefaultUnionStyle;
+            var format = s.Format is not UnionFormat.Any ? s.Format : Base.formatter.DefaultUnionFormat;
+            switch (format)
+            {
+                case UnionFormat.External:
+                    Base.writer.Write("{");
+                    VVariant(variant, union_style, variant_style, true);
+                    Base.writer.Write(":");
+                    vision.Accept<Unit, JsonSerializer>(Base, value);
+                    Base.writer.Write("}");
+                    break;
+                case UnionFormat.Internal:
+                    goto case UnionFormat.External;
+                case UnionFormat.Adjacent:
+                    Base.writer.Write("{");
+                    Base.writer.WriteString(s.AdjacentTagName, true);
+                    Base.writer.Write(":");
+                    VVariant(variant, union_style, variant_style, false);
+                    Base.writer.Write(",");
+                    Base.writer.WriteString(s.AdjacentValueName, true);
+                    Base.writer.Write(":");
+                    vision.Accept<Unit, JsonSerializer>(Base, value);
+                    Base.writer.Write("}");
+                    break;
+                case UnionFormat.Tuple:
+                    Base.writer.Write("[");
+                    VVariant(variant, union_style, variant_style, false);
+                    Base.writer.Write(",");
+                    vision.Accept<Unit, JsonSerializer>(Base, value);
+                    Base.writer.Write("]");
+                    break;
+                case UnionFormat.Untagged:
+                    vision.Accept<Unit, JsonSerializer>(Base, value);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+            return default;
+        }
+
+        public override Unit VVariantStruct<V, T>(V vision, T value, Variant variant,
+            UnionStyle? union_style = null, VariantStyle? variant_style = null)
+        {
+            var s = union_style ?? Base.formatter.DefaultUnionStyle;
+            var size = vision.Count;
+            var last_state = Base.state;
+            Base.state = JsonSerializerState.None;
+            Base.StructVisitor ??= new(Base);
+            Base.writer.Write("{");
+            Base.writer.WriteString(s.InternalTagName, true);
+            Base.writer.Write(":");
+            VVariant(variant, union_style, variant_style, false);
+            for (var i = 0; i < size; i++)
+            {
+                Base.writer.Write(",");
+                var err = vision.AcceptField<bool, StructSeraVisitor>(Base.StructVisitor, value, i);
+                if (err) throw new SerializeException($"Unable to get field nth {i} of {value}");
+            }
+            Base.writer.Write("}");
+            Base.state = last_state;
+            return default;
+        }
     }
 
     #endregion

@@ -1,6 +1,12 @@
-﻿namespace Sera.Core;
+﻿using System.Runtime.CompilerServices;
 
-public record struct Unit
+namespace Sera.Core;
+
+public readonly record struct Unit
 {
-    public static readonly Unit New = new();
+    public static Unit New
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => new();
+    }
 }

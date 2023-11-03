@@ -1,28 +1,32 @@
 module TestJsonFs.UnitTest1
 
 open System
+open System.IO
+open System.Text
+open System.Threading.Tasks
 open NUnit.Framework
 open Sera
-open Sera.Core
-open Sera.Core.Impls
-open Sera.Core.Ser
+open Sera.Core.Impls.Ser
 open Sera.Json
 open Sera.Runtime
+open Sera.Runtime.FSharp
 
 [<SetUp>]
-let Setup () = ()
+let Setup () =
+    SeraRuntime.Reg(SeraRuntimeFSharp.Instance)
+    ()
 
-[<SeraGen; SeraGenDe; SeraGenSer; SeraIncludeField>]
+[<SeraGen; SeraStruct(IncludeFields = true)>]
 type UnionForAttrs1 = UnionForAttrs1
 
 [<Test>]
 let Test1 () =
     let str =
         SeraJson.Serializer {
-            ToString
-            Use PrimitiveImpls.Int32
-            Static
             Serialize 123
+            Use(PrimitiveImpl())
+            Static
+            ToString
         }
 
     Console.WriteLine(str)
@@ -36,9 +40,9 @@ let Test2 () =
 
     let str =
         SeraJson.Serializer {
-            ToString
-            Hints(SeraHints(As = SeraAs.Bytes))
             Serialize [| 1uy; 2uy; 3uy |]
+            Styles(SeraStyles(As = SeraAs.Bytes))
+            ToString
         }
 
     Console.WriteLine(str)
@@ -49,16 +53,23 @@ let Test2 () =
 
 [<Test>]
 let Test3 () =
-    let str =
-        SeraJson.Serializer {
-            ToString
-            BySelf
-            Static
-            Serialize(SeraAny.MakeUnit())
-        }
+    task {
+        use stream = new MemoryStream()
 
-    Console.WriteLine(str)
+        do!
+            SeraJson.Serializer {
+                Serialize 123
+                Use(PrimitiveImpl())
+                Static
+                ToStreamAsync stream
+            }
 
-    Assert.That(str, Is.EqualTo("null"))
+        stream.Position <- 0
+        use reader = new StreamReader(stream, Encoding.UTF8)
+        let str = reader.ReadToEnd()
 
-    ()
+        Console.WriteLine(str)
+
+        Assert.That(str, Is.EqualTo("123"))
+    }
+    :> Task

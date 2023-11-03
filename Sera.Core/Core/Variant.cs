@@ -261,3 +261,75 @@ public enum VariantKind : byte
     Tag,
     NameAndTag,
 }
+
+public enum VariantPriority : byte
+{
+    Any,
+    TagFirst,
+    NameFirst,
+}
+
+public enum UnionFormat
+{
+    Any,
+    /// <summary>
+    /// Json is <code>{ "Tag": Value }</code>
+    /// </summary>
+    External,
+    /// <summary>
+    /// Json is <code>{ "type": Tag, ...Value }</code>
+    /// </summary>
+    Internal,
+    /// <summary>
+    /// Json is <code>{ "t": Tag, "c": Value }</code>
+    /// </summary>
+    Adjacent,
+    /// <summary>
+    /// Json is <code>[Tag, Value]</code>
+    /// </summary>
+    Tuple,
+    /// <summary>
+    /// Json is <code>Value</code>
+    /// </summary>
+    Untagged,
+}
+
+public record UnionStyle(
+    VariantPriority VariantPriority = VariantPriority.Any,
+    SeraFormats? VariantFormats = null,
+    UnionFormat Format = UnionFormat.Any,
+    string InternalTagName = "type",
+    string AdjacentTagName = "t",
+    string AdjacentValueName = "c"
+)
+{
+    public static UnionStyle Default { get; } = new();
+
+    public static UnionStyle? FromAttr(SeraUnionAttribute? attr, SeraFormatsAttribute? formats) => attr == null
+        ? null
+        : new()
+        {
+            VariantPriority = attr.Priority,
+            VariantFormats = SeraFormats.FromAttr(formats),
+            Format = attr.Format,
+            InternalTagName = attr.InternalTagName,
+            AdjacentTagName = attr.AdjacentTagName,
+            AdjacentValueName = attr.AdjacentValueName,
+        };
+}
+
+public record VariantStyle(
+    VariantPriority Priority = VariantPriority.Any,
+    SeraFormats? Formats = null
+)
+{
+    public static VariantStyle Default { get; } = new();
+    
+    public static VariantStyle? FromAttr(SeraVariantAttribute? attr, SeraFormatsAttribute? formats) => attr == null
+        ? null
+        : new()
+        {
+            Priority = attr.Priority,
+            Formats = SeraFormats.FromAttr(formats),
+        };
+}
