@@ -326,20 +326,87 @@ let TestPrivateOption2 () =
 
 [<SeraUnion(Format = UnionFormat.External)>]
 type TypeTestUnion1 =
-    | [<SeraVariant(Priority = VariantPriority.TagFirst)>] TypeTestUnion1_A
-    | TypeTestUnion1_B of int
+    | TypeTestUnion1_A_1
+    | [<SeraVariant(Priority = VariantPriority.TagFirst)>] TypeTestUnion1_A_2
+    | TypeTestUnion1_B_1 of int
+    | [<SeraVariant(Format = VariantFormat.Tuple)>] TypeTestUnion1_B_2 of int
+    | TypeTestUnion1_C_1 of int * int
+    | TypeTestUnion1_D_1 of a: int * b: int
+    | TypeTestUnion1_E_1 of a: int * int
 
 [<Test>]
 let TestTypeTestUnion1 () =
-    let obj = TypeTestUnion1_A
-
+    let obj = TypeTestUnion1_A_1
     let str = SeraJson.Serializer.Serialize(obj).To.String()
-
     Console.WriteLine(str)
+    Assert.That(str, Is.EqualTo("\"TypeTestUnion1_A_1\""))
 
-    // Assert.That(str, Is.EqualTo("{}"))
-    // todo
+    // ==================================================
 
+    let obj = TypeTestUnion1_A_2
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
+    Console.WriteLine(str)
+    Assert.That(str, Is.EqualTo("1"))
+
+    // ==================================================
+
+    let obj = TypeTestUnion1_B_1(123)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
+    Console.WriteLine(str)
+    Assert.That(str, Is.EqualTo("{\"TypeTestUnion1_B_1\":123}"))
+
+    // ==================================================
+
+    let obj = TypeTestUnion1_B_2(123)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
+    Console.WriteLine(str)
+    Assert.That(str, Is.EqualTo("{\"TypeTestUnion1_B_2\":[123]}"))
+
+    // ==================================================
+    ()
+
+#endregion
+
+// #region TestUnion2
+
+[<Struct; SeraUnion(Format = UnionFormat.External)>]
+type TypeTestUnion2 =
+    | TypeTestUnion2_A_1
+    | [<SeraVariant(Priority = VariantPriority.TagFirst)>] TypeTestUnion2_A_2
+    | [<SeraVariant(Format = VariantFormat.Value)>] TypeTestUnion2_B_1 of xxx: int
+    | [<SeraVariant(Format = VariantFormat.Tuple)>] TypeTestUnion2_B_2 of yyy: int
+    | TypeTestUnion2_C_1 of a: int * b: int
+    | TypeTestUnion2_D_1 of c: int * int
+
+[<Test>]
+let TestTypeTestUnion2 () =
+    let obj = TypeTestUnion2_A_1
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
+    Console.WriteLine(str)
+    Assert.That(str, Is.EqualTo("\"TypeTestUnion2_A_1\""))
+
+    // ==================================================
+
+    let obj = TypeTestUnion2_A_2
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
+    Console.WriteLine(str)
+    Assert.That(str, Is.EqualTo("1"))
+
+    // ==================================================
+
+    let obj = TypeTestUnion2_B_1(123)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
+    Console.WriteLine(str)
+    Assert.That(str, Is.EqualTo("{\"TypeTestUnion2_B_1\":123}"))
+
+    // ==================================================
+
+    let obj = TypeTestUnion2_B_2(123)
+    let str = SeraJson.Serializer.Serialize(obj).To.String()
+    Console.WriteLine(str)
+    Assert.That(str, Is.EqualTo("{\"TypeTestUnion2_B_2\":[123]}"))
+
+    // ==================================================
     ()
 
 // #endregion

@@ -6,6 +6,7 @@ using System.Reflection.Emit;
 using Sera.Core;
 using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Utils;
+using Sera.Runtime.Utils.Internal;
 
 namespace Sera.Runtime.Emit.Ser.Jobs._Struct;
 

@@ -11,7 +11,7 @@ internal abstract class _Struct(StructMember[] Members) : _Base
     public override EmitTransform[] CollectTransforms(EmitStub stub, EmitMeta target)
     {
         if (target.IsValueType) return Array.Empty<EmitTransform>();
-        else return SerializeEmitProvider.ReferenceTypeTransforms;
+        else return ReferenceTypeTransforms;
     }
 
     public override DepMeta[] CollectDeps(EmitStub stub, EmitMeta target)
@@ -27,7 +27,7 @@ internal abstract class _Struct(StructMember[] Members) : _Base
                 };
                 var transforms = !m.Type.IsValueType && null_meta is not
                     { NullabilityInfo.ReadState: NullabilityState.NotNull }
-                    ? SerializeEmitProvider.NullableClassImplTransforms
+                    ? NullableClassImplTransforms
                     : EmitTransform.EmptyTransforms;
 
                 var sera_attr = m.Kind switch

@@ -26,7 +26,7 @@ internal class _KeyValuePair(Type KeyType, Type ValueType) : _Base
             var nullable = nullables?[i];
             var transforms = !t.IsValueType && nullable is not
                 { ReadState: NullabilityState.NotNull }
-                ? SerializeEmitProvider.NullableClassImplTransforms
+                ? NullableClassImplTransforms
                 : EmitTransform.EmptyTransforms;
             var meta = new DepMeta(
                 new(TypeMetas.GetTypeMeta(t, new NullabilityMeta(nullable)), target.Styles.TakeFormats()),

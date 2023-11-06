@@ -5,6 +5,7 @@ using System.Reflection.Emit;
 using Sera.Core.Impls.Deps;
 using Sera.Runtime.Emit.Ser.Internal;
 using Sera.Runtime.Utils;
+using Sera.Runtime.Utils.Internal;
 
 namespace Sera.Runtime.Emit.Deps;
 

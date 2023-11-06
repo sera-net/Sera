@@ -3,5 +3,5 @@
 open Sera.Runtime.Emit.Ser
 
 [<AbstractClass>]
-type _Base() =
+type internal _Base() =
     inherit SerEmitJob()

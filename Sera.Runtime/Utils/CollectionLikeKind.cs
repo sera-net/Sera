@@ -1,6 +1,6 @@
-﻿namespace Sera.Runtime.Utils;
+﻿namespace Sera.Runtime.Utils.Internal;
 
-internal enum CollectionLikeKind : byte
+public enum CollectionLikeKind : byte
 {
     None,
     IEnumerable,

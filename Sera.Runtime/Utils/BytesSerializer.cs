@@ -488,7 +488,7 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
 
     private class TupleSeraVisitor(BytesSerializer Base) : ATupleSeraVisitor<Unit>(Base)
     {
-        public override Unit VItem<T, V>(V vision, T value)
+        public override Unit VItem<V, T>(V vision, T value)
             => vision.Accept<Unit, BytesSerializer>(Base, value);
 
         public override Unit VNone() => default;
@@ -631,6 +631,18 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
             Base.VString(str);
             Base.Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.Mid << 3));
             vision.Accept<Unit, BytesSerializer>(Base, value);
+            Base.Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.End << 3));
+            return default;
+        }
+
+        public override Unit VVariantTuple<V, T>(V vision, T value, Variant variant, UnionStyle? union_style = null,
+            VariantStyle? variant_style = null)
+        {
+            Base.Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.Start << 3));
+            var str = variant.ToString();
+            Base.VString(str);
+            Base.Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.Mid << 3));
+            Base.VTuple(vision, value);
             Base.Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.End << 3));
             return default;
         }

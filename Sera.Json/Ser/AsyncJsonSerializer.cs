@@ -504,7 +504,7 @@ public class AsyncJsonSerializer
 
     private class TupleSeraVisitor(AsyncJsonSerializer Base) : ATupleSeraVisitor<ValueTask<bool>>(Base)
     {
-        public override async ValueTask<bool> VItem<T, V>(V vision, T value)
+        public override async ValueTask<bool> VItem<V, T>(V vision, T value)
         {
             await vision.Accept<ValueTask, AsyncJsonSerializer>(Base, value);
             return false;
@@ -799,10 +799,21 @@ public class AsyncJsonSerializer
             }
         }
 
+        public override ValueTask VVariantTuple<V, T>(V vision, T value, Variant variant,
+            UnionStyle? union_style = null,
+            VariantStyle? variant_style = null)
+            => VVariantValue(ByImpls<T>.ByTuple(vision), value, variant, union_style, variant_style);
+
         public override async ValueTask VVariantStruct<V, T>(V vision, T value, Variant variant,
             UnionStyle? union_style = null, VariantStyle? variant_style = null)
         {
             var s = union_style ?? Base.formatter.DefaultUnionStyle;
+            var format = s.Format is not UnionFormat.Any ? s.Format : Base.formatter.DefaultUnionFormat;
+            if (format is not UnionFormat.Internal)
+            {
+                await VVariantValue(ByImpls<T>.ByStruct(vision), value, variant, union_style, variant_style);
+                return;
+            }
             var size = vision.Count;
             var last_state = Base.state;
             Base.state = JsonSerializerState.None;

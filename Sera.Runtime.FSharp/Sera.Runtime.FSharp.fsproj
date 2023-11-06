@@ -8,7 +8,7 @@
         <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
         <Description>Format-agnostic (de)serialization abstraction layer</Description>
     </PropertyGroup>
-
+    
     <ItemGroup>
         <ProjectReference Include="..\Sera.FSharp\Sera.FSharp.fsproj"/>
         <ProjectReference Include="..\Sera.Runtime\Sera.Runtime.csproj"/>
@@ -16,8 +16,13 @@
 
     <ItemGroup>
         <Compile Include="Builders\CE.fs"/>
+        <Compile Include="Utils\Cont.fs"/>
+        <Compile Include="Utils\UnionInfo.fs"/>
+        <Compile Include="Exceptions\IllegalUnionException.fs" />
         <Compile Include="Emit\Ser\Jobs\_Base.fs"/>
-        <Compile Include="Emit\Ser\Jobs\Misc\_Option.fs" />
+        <Compile Include="Emit\Ser\Jobs\Misc\_Option.fs"/>
+        <Compile Include="Emit\Ser\Jobs\_Union\_Union.fs"/>
+        <Compile Include="Emit\Ser\Jobs\_Union\_Public.fs"/>
         <Compile Include="Emit\Ser\SerEmitProvider.fs"/>
         <Compile Include="SeraRuntime.fs"/>
     </ItemGroup>

@@ -11,7 +11,7 @@ namespace Sera.Runtime.Emit.Ser.Jobs;
 internal abstract class _Array_Like(Type ItemType) : _Base
 {
     public override EmitTransform[] CollectTransforms(EmitStub stub, EmitMeta target)
-        => target.IsValueType ? EmitTransform.EmptyTransforms : SerializeEmitProvider.ReferenceTypeTransforms;
+        => target.IsValueType ? EmitTransform.EmptyTransforms : ReferenceTypeTransforms;
 
     protected virtual NullabilityInfo? GetElementNullabilityInfo(EmitMeta target)
     {
@@ -33,7 +33,7 @@ internal abstract class _Array_Like(Type ItemType) : _Base
         var item_nullable = GetElementNullabilityInfo(target);
         var transforms = !ItemType.IsValueType && item_nullable is not
             { ReadState: NullabilityState.NotNull }
-            ? SerializeEmitProvider.NullableClassImplTransforms
+            ? NullableClassImplTransforms
             : EmitTransform.EmptyTransforms;
         var meta = new DepMeta(
             new(TypeMetas.GetTypeMeta(ItemType, new NullabilityMeta(item_nullable)), target.Styles.TakeFormats()),

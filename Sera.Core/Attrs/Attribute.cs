@@ -175,6 +175,7 @@ public sealed class SeraFormatsAttribute : Attribute
 public sealed class SeraVariantAttribute : Attribute
 {
     public VariantPriority Priority { get; set; } = VariantPriority.Any;
+    public VariantFormat Format { get; set; } = VariantFormat.None;
 
     public SeraVariantAttribute() { }
 
@@ -182,6 +183,29 @@ public sealed class SeraVariantAttribute : Attribute
     {
         Priority = priority;
     }
+}
+
+public enum VariantFormat
+{
+    None,
+    /// <summary>
+    /// If f# union has only one variant and variant name is Item then this is the default
+    /// <code language="fs">type A = A of int</code>
+    /// <code language="js">{ "A": 123 }</code>
+    /// </summary>
+    Value,
+    /// <summary>
+    /// Only for f# union; If the name of each variant in f# union is ItemN then this is the default
+    /// <code language="fs">type A = A of int</code>
+    /// <code language="js">{ "A": [123] }</code>
+    /// </summary>
+    Tuple,
+    /// <summary>
+    /// Only for f# union; The default of f #union in other cases
+    /// <code language="fs">type A = A of a: int</code>
+    /// <code language="js">{ "A": { "a": 123 } }</code>
+    /// </summary>
+    Struct,
 }
 
 [AttributeUsage(AttributeTargets.Enum | AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Interface)]

@@ -8,6 +8,7 @@ using Sera.Core;
 using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Emit.Ser.Internal;
 using Sera.Runtime.Utils;
+using Sera.Runtime.Utils.Internal;
 
 namespace Sera.Runtime.Emit.Ser.Jobs._Enum;
 
@@ -205,6 +206,7 @@ internal class _Variant_Public
             var v_variant_method = TypeBuilder.GetMethod(visitor, ReflectionUtils.AUnionSeraVisitor_VVariant);
             var v_none_method = TypeBuilder.GetMethod(visitor, ReflectionUtils.AUnionSeraVisitor_VNone);
             var v_empty_method = TypeBuilder.GetMethod(visitor, ReflectionUtils.AUnionSeraVisitor_VEmpty);
+            
             var ilg = accept_union_method.GetILGenerator();
 
             var label_default = ilg.DefineLabel();

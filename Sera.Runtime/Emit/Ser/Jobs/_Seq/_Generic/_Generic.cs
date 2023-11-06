@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.Reflection;
 using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Utils;
+using Sera.Runtime.Utils.Internal;
 
 namespace Sera.Runtime.Emit.Ser.Jobs._Seq._Generic;
 
@@ -31,7 +32,7 @@ internal abstract class _Generic(Type ItemType) : _Seq
         var item_nullable = GetElementNullabilityInfo(target);
         var transforms = !ItemType.IsValueType && item_nullable is not
             { ReadState: NullabilityState.NotNull }
-            ? SerializeEmitProvider.NullableClassImplTransforms
+            ? NullableClassImplTransforms
             : EmitTransform.EmptyTransforms;
         var meta = new DepMeta(
             new(TypeMetas.GetTypeMeta(ItemType, new NullabilityMeta(item_nullable)), target.Styles.TakeFormats()),

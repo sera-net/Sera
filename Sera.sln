@@ -27,6 +27,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Sera.FSharp", "Sera.FSharp\
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Sera.Runtime.FSharp", "Sera.Runtime.FSharp\Sera.Runtime.FSharp.fsproj", "{9AE99C20-FD6D-4569-B51F-85F2E812AADC}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Sera.Emit.FSharp.Template", "Sera.Emit.FSharp.Template\Sera.Emit.FSharp.Template.fsproj", "{01F2773D-CF70-4D93-A9E2-17EBD0B3F4DF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -73,6 +75,10 @@ Global
 		{9AE99C20-FD6D-4569-B51F-85F2E812AADC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9AE99C20-FD6D-4569-B51F-85F2E812AADC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9AE99C20-FD6D-4569-B51F-85F2E812AADC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{01F2773D-CF70-4D93-A9E2-17EBD0B3F4DF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{01F2773D-CF70-4D93-A9E2-17EBD0B3F4DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{01F2773D-CF70-4D93-A9E2-17EBD0B3F4DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{01F2773D-CF70-4D93-A9E2-17EBD0B3F4DF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -88,6 +94,7 @@ Global
 		{2A634BA1-E881-4129-9A0F-58AF60553584} = {307CA1E6-D8F2-46B4-956F-07872B6EDD0E}
 		{B1097A01-E4CA-48E1-89C5-38F22B7819F7} = {307CA1E6-D8F2-46B4-956F-07872B6EDD0E}
 		{9AE99C20-FD6D-4569-B51F-85F2E812AADC} = {307CA1E6-D8F2-46B4-956F-07872B6EDD0E}
+		{01F2773D-CF70-4D93-A9E2-17EBD0B3F4DF} = {307CA1E6-D8F2-46B4-956F-07872B6EDD0E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {85874BB3-7F17-4418-8B8B-60FC2EF987E5}

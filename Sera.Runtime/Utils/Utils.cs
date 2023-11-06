@@ -4,8 +4,10 @@ using Sera.Core;
 
 namespace Sera.Runtime.Utils;
 
-internal static class Utils
+public static class Utils
 {
+    public const int MaxJumpTableSizeAllowed = 255;
+    
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static VariantTag MakeVariantTag<V>(this V value) => value switch
     {

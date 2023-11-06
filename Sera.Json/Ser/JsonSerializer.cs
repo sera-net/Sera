@@ -549,7 +549,7 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
 
     private class TupleSeraVisitor(JsonSerializer Base) : ATupleSeraVisitor<bool>(Base)
     {
-        public override bool VItem<T, V>(V vision, T value)
+        public override bool VItem<V, T>(V vision, T value)
         {
             vision.Accept<Unit, JsonSerializer>(Base, value);
             return false;
@@ -851,10 +851,19 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
             return default;
         }
 
+        public override Unit VVariantTuple<V, T>(V vision, T value, Variant variant, UnionStyle? union_style = null,
+            VariantStyle? variant_style = null)
+            => VVariantValue(ByImpls<T>.ByTuple(vision), value, variant, union_style, variant_style);
+
         public override Unit VVariantStruct<V, T>(V vision, T value, Variant variant,
             UnionStyle? union_style = null, VariantStyle? variant_style = null)
         {
             var s = union_style ?? Base.formatter.DefaultUnionStyle;
+            var format = s.Format is not UnionFormat.Any ? s.Format : Base.formatter.DefaultUnionFormat;
+            if (format is not UnionFormat.Internal)
+            {
+                return VVariantValue(ByImpls<T>.ByStruct(vision), value, variant, union_style, variant_style);
+            }
             var size = vision.Count;
             var last_state = Base.state;
             Base.state = JsonSerializerState.None;

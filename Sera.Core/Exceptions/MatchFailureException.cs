@@ -3,7 +3,7 @@
 namespace Sera.Core;
 
 /// <summary>Non-exhaustive match failures will raise the MatchFailureException exception</summary>
-public class SeraMatchFailureException : Exception
+public class SeraMatchFailureException : SeraFailureException
 {
     public SeraMatchFailureException() { }
     public SeraMatchFailureException(string message) : base(message) { }
