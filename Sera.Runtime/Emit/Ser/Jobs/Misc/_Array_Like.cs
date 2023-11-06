@@ -8,8 +8,10 @@ namespace Sera.Runtime.Emit.Ser.Jobs;
 
 // todo ArraySegment, ImmutableArray
 
-internal abstract class _Array_Like(Type ItemType) : _Base
+internal abstract class _Array_Like(Type item_type) : _Base
 {
+    public Type ItemType => item_type;
+
     public override EmitTransform[] CollectTransforms(EmitStub stub, EmitMeta target)
         => target.IsValueType ? EmitTransform.EmptyTransforms : ReferenceTypeTransforms;
 

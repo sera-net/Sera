@@ -10,8 +10,10 @@ using Sera.Runtime.Utils.Internal;
 
 namespace Sera.Runtime.Emit.Ser.Jobs._Seq._Generic;
 
-internal abstract class _Generic(Type ItemType) : _Seq
+internal abstract class _Generic(Type item_type) : _Seq
 {
+    public Type ItemType => item_type;
+
     protected virtual NullabilityInfo? GetElementNullabilityInfo(EmitMeta target)
     {
         if (target.Type.IsSZArray) return target.TypeMeta.Nullability?.NullabilityInfo?.ElementType;

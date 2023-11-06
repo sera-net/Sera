@@ -10,8 +10,11 @@ using Sera.Runtime.Utils.Internal;
 
 namespace Sera.Runtime.Emit.Ser.Jobs._Map._Generic;
 
-internal abstract class _Generic(Type KeyType, Type ValType) : _Map
+internal abstract class _Generic(Type key_type, Type val_type) : _Map
 {
+    public Type KeyType => key_type;
+    public Type ValType => val_type;
+
     protected virtual (NullabilityInfo?, NullabilityInfo?) GetElementNullabilityInfo(EmitMeta target)
     {
         var type = target.Type;

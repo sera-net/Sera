@@ -15,7 +15,7 @@ namespace Sera.Runtime.Utils;
 
 internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisitor<Unit>, IDisposable, IAsyncDisposable
 {
-    public Stream Stream { get; } = stream;
+    public Stream Stream => stream;
     private readonly BinaryWriter Writer = new(stream);
 
     public override ISeraOptions Options { get; } = options;
