@@ -26,16 +26,16 @@ public interface IMapSeraVision
     public R AcceptNext<R, V>(V visitor) where V : AMapSeraVisitor<R>;
 }
 
-public interface IStructSeraVision<in T>
+public interface IStructSeraVision<T>
 {
     public string Name { get; }
 
     public int Count { get; }
 
-    public R AcceptField<R, V>(V visitor, T value, int field) where V : AStructSeraVisitor<R>;
+    public R AcceptField<R, V>(V visitor, ref T value, int field) where V : AStructSeraVisitor<R>;
 }
 
-public interface IUnionSeraVision<in T>
+public interface IUnionSeraVision<T>
 {
     public string Name { get; }
 

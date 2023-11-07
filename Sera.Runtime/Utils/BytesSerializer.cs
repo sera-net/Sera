@@ -570,7 +570,7 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
         {
             if (first) first = false;
             else Writer.Write((byte)((byte)TypeToken.Map | (byte)SplitToken.Split << 3));
-            vision.AcceptField<Unit, StructSeraVisitor>(StructVisitor, value, i);
+            vision.AcceptField<Unit, StructSeraVisitor>(StructVisitor, ref value, i);
         }
         Writer.Write((byte)((byte)TypeToken.Map | (byte)SplitToken.End << 3));
         return default;

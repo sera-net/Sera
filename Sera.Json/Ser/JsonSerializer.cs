@@ -699,7 +699,7 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
         {
             if (first) first = false;
             else writer.Write(",");
-            var err = vision.AcceptField<bool, StructSeraVisitor>(StructVisitor, value, i);
+            var err = vision.AcceptField<bool, StructSeraVisitor>(StructVisitor, ref value, i);
             if (err) throw new SerializeException($"Unable to get field nth {i} of {value}");
         }
         writer.Write("}");
@@ -875,7 +875,7 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
             for (var i = 0; i < size; i++)
             {
                 Base.writer.Write(",");
-                var err = vision.AcceptField<bool, StructSeraVisitor>(Base.StructVisitor, value, i);
+                var err = vision.AcceptField<bool, StructSeraVisitor>(Base.StructVisitor, ref value, i);
                 if (err) throw new SerializeException($"Unable to get field nth {i} of {value}");
             }
             Base.writer.Write("}");

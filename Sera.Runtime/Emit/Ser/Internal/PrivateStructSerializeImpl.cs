@@ -21,6 +21,6 @@ public readonly struct PrivateStructSerializeImpl<T> : ISeraVision<T>, IStructSe
     public int Count => data.field_count;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R AcceptField<R, V>(V visitor, T value, int field) where V : AStructSeraVisitor<R>
-        => Jobs._Struct._Private.Impl<T, R, V>.AcceptField(visitor, value, field, data.meta_key);
+    public R AcceptField<R, V>(V visitor, ref T value, int field) where V : AStructSeraVisitor<R>
+        => Jobs._Struct._Private.Impl<T, R, V>.AcceptField(visitor, ref value, field, data.meta_key);
 }

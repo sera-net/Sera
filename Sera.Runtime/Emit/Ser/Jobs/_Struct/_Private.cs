@@ -52,18 +52,20 @@ internal class _Private(string StructName, StructMember[] Members) : _Struct(Mem
     internal static class Impl<T, R, V> where V : AStructSeraVisitor<R>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static R AcceptField(V visitor, T value, int field, object meta_key)
-            => GetDelegate(meta_key).Invoke(visitor, value, field);
+        public static R AcceptField(V visitor, ref T value, int field, object meta_key)
+            => GetDelegate(meta_key).Invoke(visitor, ref value, field);
 
-        private static readonly ConditionalWeakTable<object, Func<V, T, int, R>> Delegates = new();
+        private static readonly ConditionalWeakTable<object, FnAcceptField> Delegates = new();
 
-        private static Func<V, T, int, R> GetDelegate(object meta_key) => Delegates.GetValue(meta_key, static key =>
+        public delegate R FnAcceptField(V visitor, ref T value, int field);
+
+        private static FnAcceptField GetDelegate(object meta_key) => Delegates.GetValue(meta_key, static key =>
         {
             if (Metas.TryGetValue(key, out var meta)) return Create(meta);
             throw new NullReferenceException();
         });
 
-        private static Func<V, T, int, R> Create(MetaData meta)
+        private static FnAcceptField Create(MetaData meta)
         {
             var target = typeof(T);
 
@@ -72,7 +74,7 @@ internal class _Private(string StructName, StructMember[] Members) : _Struct(Mem
             var dyn_method = new DynamicMethod(
                 dyn_method_name,
                 MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard,
-                typeof(R), new[] { typeof(V), typeof(T), typeof(int) },
+                typeof(R), new[] { typeof(V), typeof(T).MakeByRefType(), typeof(int) },
                 typeof(T).Module, true
             );
 
@@ -130,7 +132,7 @@ internal class _Private(string StructName, StructMember[] Members) : _Struct(Mem
                     {
                         #region load value
 
-                        ilg.Emit(OpCodes.Ldarga, 1);
+                        ilg.Emit(OpCodes.Ldarg_1);
 
                         #endregion
 
@@ -145,6 +147,7 @@ internal class _Private(string StructName, StructMember[] Members) : _Struct(Mem
                         #region load value
 
                         ilg.Emit(OpCodes.Ldarg_1);
+                        ilg.Emit(OpCodes.Ldind_Ref);
 
                         #endregion
 
@@ -162,6 +165,8 @@ internal class _Private(string StructName, StructMember[] Members) : _Struct(Mem
                     #region load value
 
                     ilg.Emit(OpCodes.Ldarg_1);
+                    if (!target.IsValueType)
+                        ilg.Emit(OpCodes.Ldind_Ref);
 
                     #endregion
 
@@ -216,7 +221,7 @@ internal class _Private(string StructName, StructMember[] Members) : _Struct(Mem
 
             #endregion
 
-            var del = dyn_method.CreateDelegate<Func<V, T, int, R>>();
+            var del = dyn_method.CreateDelegate<FnAcceptField>();
             return del;
         }
     }

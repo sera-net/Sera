@@ -654,7 +654,7 @@ public class AsyncJsonSerializer
         {
             if (first) first = false;
             else await writer.Write(",");
-            var err = await vision.AcceptField<ValueTask<bool>, StructSeraVisitor>(StructVisitor, value, i);
+            var err = await vision.AcceptField<ValueTask<bool>, StructSeraVisitor>(StructVisitor, ref value, i);
             if (err) throw new SerializeException($"Unable to get field nth {i} of {value}");
         }
         await writer.Write("}");
@@ -825,7 +825,8 @@ public class AsyncJsonSerializer
             for (var i = 0; i < size; i++)
             {
                 await Base.writer.Write(",");
-                var err = await vision.AcceptField<ValueTask<bool>, StructSeraVisitor>(Base.StructVisitor, value, i);
+                var err = await vision.AcceptField<ValueTask<bool>, StructSeraVisitor>(Base.StructVisitor, ref value,
+                    i);
                 if (err) throw new SerializeException($"Unable to get field nth {i} of {value}");
             }
             await Base.writer.Write("}");
