@@ -300,7 +300,7 @@ type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle
 
         accept_union_method
 
-    member private this.EmitUnion_Cases(target, deps, ilg, labels, TR, TV, visitor, v_variant_method) =
+    member private this.EmitUnion_Cases(target, deps, ilg, labels, _TR, TV, visitor, v_variant_method) =
         for i = 0 to info.cases.Length - 1 do
             let case = info.cases[i]
             let label = labels[i]
@@ -554,10 +554,176 @@ type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle
                 //#endregion
                 ()
             else // VariantFormat.Struct
-                ilg.Emit(OpCodes.Pop) // todo
-                let tmp = ilg.DeclareLocal(TR)
-                ilg.Emit(OpCodes.Ldloc, tmp)
+                //#region return visitor.VVariantStruct(impl, value, new Variant(Name, VariantTag.Create(value)), union_style, variant_style);
+
+                //#region struct impl
+
+                let inline emit_struct_impl () =
+
+                    let struct_impl =
+                        TypeBuilder.DefineNestedType(
+                            $"_{case.name}_StructImpl",
+                            TypeAttributes.NestedPublic,
+                            typeof<ValueType>
+                        )
+
+                    struct_impl.MarkReadonly()
+
+                    let get_count_method =
+                        this.EmitUnion_TupleOrStruct_Size(
+                            struct_impl,
+                            ReflectionUtils.Name__IStructSeraVision_Count,
+                            case.fields.Length
+                        )
+
+                    let get_name_method =
+                        this.EmitUnion_Struct_Name(
+                            struct_impl,
+                            ReflectionUtils.Name__IStructSeraVision_Name,
+                            $"{UnionName}.{case.name}"
+                        )
+
+                    //#region accept field method
+
+                    let inline emit_accept_field_method () =
+                        let accept_field_method =
+                            struct_impl.DefineMethod(
+                                ReflectionUtils.Name__IStructSeraVision_AcceptField,
+                                MethodAttributes.Public
+                                ||| MethodAttributes.Final
+                                ||| MethodAttributes.Virtual
+                                ||| MethodAttributes.NewSlot
+                            )
+
+                        let generic_parameters = accept_field_method.DefineGenericParameters("R", "V")
+                        let TR = generic_parameters[0]
+                        let TV = generic_parameters[1]
+                        let visitor = ReflectionUtils.TypeDel__AStructSeraVisitor.MakeGenericType(TR)
+                        TV.SetBaseTypeConstraint(visitor)
+                        accept_field_method.SetReturnType(TR)
+                        accept_field_method.SetParameters(TV, target.Type.MakeByRefType(), typeof<int>)
+                        let _ = accept_field_method.DefineParameter(1, ParameterAttributes.None, "visitor")
+                        let _ = accept_field_method.DefineParameter(2, ParameterAttributes.None, "value")
+                        let _ = accept_field_method.DefineParameter(3, ParameterAttributes.None, "field")
+                        accept_field_method.SetImplementationFlags(MethodImplAttributes.AggressiveInlining)
+
+                        let v_none_method =
+                            Emit.TypeBuilder.GetMethod(visitor, ReflectionUtils.AStructSeraVisitor_VNone)
+
+                        let v_field_method_decl =
+                            Emit.TypeBuilder.GetMethod(visitor, ReflectionUtils.AStructSeraVisitor_VField)
+
+                        let ilg = accept_field_method.GetILGenerator()
+
+                        let label_default = ilg.DefineLabel()
+
+                        //#region switch index
+
+                        let labels = case.fields |> Seq.map (fun _ -> ilg.DefineLabel()) |> Seq.toArray
+                        ilg.Emit(OpCodes.Ldarg_3)
+                        ilg.Emit(OpCodes.Switch, labels)
+                        ilg.Emit(OpCodes.Br, label_default)
+
+                        //#endregion
+
+                        //#region items
+
+                        for i = 0 to case.fields.Length - 1 do
+                            //#region return visitor.VItem(dep, value.field);
+
+                            let field = case.fields[i]
+                            let label = labels[i]
+                            let dep = deps.Get(this.tag_deps[case.tag][i])
+
+                            let v_field_method =
+                                v_field_method_decl.MakeGenericMethod(dep.TransformedType, field.PropertyType)
+
+                            ilg.MarkLabel(label)
+                            ilg.Emit(OpCodes.Ldarg_1)
+                            ilg.Emit(OpCodes.Box, TV)
+
+                            load_dep dep ilg
+
+                            load_case ilg
+
+                            ilg.Emit(OpCodes.Call, field.GetMethod)
+
+                            ilg.Emit(OpCodes.Ldstr, field.Name)
+                            ilg.Emit(OpCodes.Ldc_I4, i)
+
+                            ilg.Emit(OpCodes.Callvirt, v_field_method)
+                            ilg.Emit(OpCodes.Ret)
+
+                            //#endregion
+                            ()
+
+                        //#endregion
+
+                        //#region default
+
+                        ilg.MarkLabel(label_default)
+                        ilg.Emit(OpCodes.Ldarg_1)
+                        ilg.Emit(OpCodes.Box, TV)
+                        ilg.Emit(OpCodes.Callvirt, v_none_method)
+                        ilg.Emit(OpCodes.Ret)
+
+                        //#endregion
+
+                        accept_field_method
+
+                    let accept_field_method = emit_accept_field_method ()
+
+                    //#endregion
+
+                    let interface_type =
+                        ReflectionUtils.TypeDel__IStructSeraVision.MakeGenericType(target.Type)
+
+                    struct_impl.AddInterfaceImplementation(interface_type)
+
+                    struct_impl.DefineMethodOverride(
+                        get_count_method,
+                        interface_type
+                            .GetProperty(ReflectionUtils.Name__IStructSeraVision_Count)
+                            .GetMethod
+                    )
+                    
+                    struct_impl.DefineMethodOverride(
+                        get_name_method,
+                        interface_type
+                            .GetProperty(ReflectionUtils.Name__IStructSeraVision_Name)
+                            .GetMethod
+                    )
+
+                    struct_impl.DefineMethodOverride(
+                        accept_field_method,
+                        interface_type.GetMethod(ReflectionUtils.Name__IStructSeraVision_AcceptField)
+                    )
+
+                    struct_impl.CreateType() |> ignore
+                    struct_impl
+
+                let struct_impl = emit_struct_impl ()
+
+                //#endregion
+
+                let v_variant_struct_method =
+                    Emit.TypeBuilder
+                        .GetMethod(visitor, ReflectionUtils.AUnionSeraVisitor_VVariantStruct)
+                        .MakeGenericMethod(struct_impl, target.Type)
+
+                let local_struct_impl = ilg.DeclareLocal(struct_impl)
+                ilg.Emit(OpCodes.Ldloc, local_struct_impl)
+                ilg.Emit(OpCodes.Ldarg_2)
+                ilg.Emit(OpCodes.Ldobj, target.Type)
+
+                create_variant ilg
+                load__union_style ilg
+                load__variant_style ilg
+
+                ilg.Emit(OpCodes.Callvirt, v_variant_struct_method)
                 ilg.Emit(OpCodes.Ret)
+
+                //#endregion
                 ()
 
         () // for
@@ -585,3 +751,27 @@ type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle
         ilg.Emit(OpCodes.Ret)
 
         get_size_method
+
+    member private this.EmitUnion_Struct_Name(tb, name, v_name: string) =
+        let name_property =
+            tb.DefineProperty(name, PropertyAttributes.None, typeof<string>, Array.Empty<Type>())
+
+        let get_name_method =
+            tb.DefineMethod(
+                $"get_{name}",
+                MethodAttributes.Public
+                ||| MethodAttributes.Final
+                ||| MethodAttributes.Virtual
+                ||| MethodAttributes.NewSlot,
+                typeof<string>,
+                Array.Empty<Type>()
+            )
+
+        get_name_method.SetImplementationFlags(MethodImplAttributes.AggressiveInlining)
+        name_property.SetGetMethod(get_name_method)
+
+        let ilg = get_name_method.GetILGenerator()
+        ilg.Emit(OpCodes.Ldstr, v_name)
+        ilg.Emit(OpCodes.Ret)
+
+        get_name_method

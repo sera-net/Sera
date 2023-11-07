@@ -753,9 +753,42 @@ public class AsyncJsonSerializer
             }
         }
 
-        public override ValueTask VVariant(Variant variant,
+        public override async ValueTask VVariant(Variant variant,
             UnionStyle? union_style = null, VariantStyle? variant_style = null)
-            => VVariant(variant, union_style, variant_style, false);
+        {
+            var s = union_style ?? Base.formatter.DefaultUnionStyle;
+            if (s.CompactTag)
+            {
+                await VVariant(variant, union_style, variant_style, false);
+                return;
+            }
+            var format = s.Format is not UnionFormat.Any ? s.Format : Base.formatter.DefaultUnionFormat;
+            switch (format)
+            {
+                case UnionFormat.Internal:
+                    await Base.writer.Write("{");
+                    await Base.writer.WriteString(s.InternalTagName, true);
+                    await Base.writer.Write(":");
+                    await VVariant(variant, union_style, variant_style, false);
+                    await Base.writer.Write("}");
+                    break;
+                case UnionFormat.Adjacent:
+                    await Base.writer.Write("{");
+                    await Base.writer.WriteString(s.AdjacentTagName, true);
+                    await Base.writer.Write(":");
+                    await VVariant(variant, union_style, variant_style, false);
+                    await Base.writer.Write("}");
+                    break;
+                case UnionFormat.Tuple:
+                    await Base.writer.Write("[");
+                    await VVariant(variant, union_style, variant_style, false);
+                    await Base.writer.Write("]");
+                    break;
+                default:
+                    await VVariant(variant, union_style, variant_style, false);
+                    break;
+            }
+        }
 
         public override async ValueTask VVariantValue<V, T>(V vision, T value, Variant variant,
             UnionStyle? union_style = null, VariantStyle? variant_style = null)
@@ -772,7 +805,16 @@ public class AsyncJsonSerializer
                     await Base.writer.Write("}");
                     break;
                 case UnionFormat.Internal:
-                    goto case UnionFormat.External;
+                    await Base.writer.Write("{");
+                    await Base.writer.WriteString(s.InternalTagName, true);
+                    await Base.writer.Write(":");
+                    await VVariant(variant, union_style, variant_style, false);
+                    await Base.writer.Write(",");
+                    await Base.writer.WriteString(s.InternalValueName, true);
+                    await Base.writer.Write(":");
+                    await vision.Accept<ValueTask, AsyncJsonSerializer>(Base, value);
+                    await Base.writer.Write("}");
+                    break;
                 case UnionFormat.Adjacent:
                     await Base.writer.Write("{");
                     await Base.writer.WriteString(s.AdjacentTagName, true);

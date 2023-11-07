@@ -171,7 +171,7 @@ public sealed class SeraFormatsAttribute : Attribute
     public string? CustomGuidTextFormat { get; set; }
 }
 
-[AttributeUsage(AttributeTargets.Field  | AttributeTargets.Property)]
+[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
 public sealed class SeraVariantAttribute : Attribute
 {
     public VariantPriority Priority { get; set; } = VariantPriority.Any;
@@ -212,10 +212,19 @@ public enum VariantFormat
 public class SeraUnionAttribute : Attribute
 {
     public SeraUnionMode Mode { get; set; }
+    /// <summary>Variant tag priority</summary>
     public VariantPriority Priority { get; set; } = VariantPriority.Any;
+    /// <summary>Union format</summary>
     public UnionFormat Format { get; set; } = UnionFormat.Any;
+    /// <summary>Whether to treat the variant as a tag when it has no value when the format is <see cref="UnionFormat.Internal"/> | <see cref="UnionFormat.Adjacent"/> | <see cref="UnionFormat.Tuple"/></summary>
+    public bool CompactTag { get; set; } = false;
+    /// <summary>The name of the tag when the format is <see cref="UnionFormat.Internal"/></summary>
     public string InternalTagName { get; set; } = "type";
+    /// <summary>Field name if the variant value cannot be treated as a structure when the format is <see cref="UnionFormat.Internal"/></summary>
+    public string InternalValueName { get; set; } = "value";
+    /// <summary>The name of the tag when the format is <see cref="UnionFormat.Adjacent"/></summary>
     public string AdjacentTagName { get; set; } = "t";
+    /// <summary>The name of the value when the format is <see cref="UnionFormat.Adjacent"/></summary>
     public string AdjacentValueName { get; set; } = "c";
 }
 

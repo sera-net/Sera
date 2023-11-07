@@ -804,7 +804,38 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
         public override Unit VVariant(Variant variant,
             UnionStyle? union_style = null, VariantStyle? variant_style = null)
         {
-            VVariant(variant, union_style, variant_style, false);
+            var s = union_style ?? Base.formatter.DefaultUnionStyle;
+            if (s.CompactTag)
+            {
+                VVariant(variant, union_style, variant_style, false);
+                return default;
+            }
+            var format = s.Format is not UnionFormat.Any ? s.Format : Base.formatter.DefaultUnionFormat;
+            switch (format)
+            {
+                case UnionFormat.Internal:
+                    Base.writer.Write("{");
+                    Base.writer.WriteString(s.InternalTagName, true);
+                    Base.writer.Write(":");
+                    VVariant(variant, union_style, variant_style, false);
+                    Base.writer.Write("}");
+                    break;
+                case UnionFormat.Adjacent:
+                    Base.writer.Write("{");
+                    Base.writer.WriteString(s.AdjacentTagName, true);
+                    Base.writer.Write(":");
+                    VVariant(variant, union_style, variant_style, false);
+                    Base.writer.Write("}");
+                    break;
+                case UnionFormat.Tuple:
+                    Base.writer.Write("[");
+                    VVariant(variant, union_style, variant_style, false);
+                    Base.writer.Write("]");
+                    break;
+                default:
+                    VVariant(variant, union_style, variant_style, false);
+                    break;
+            }
             return default;
         }
 
@@ -823,7 +854,16 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
                     Base.writer.Write("}");
                     break;
                 case UnionFormat.Internal:
-                    goto case UnionFormat.External;
+                    Base.writer.Write("{");
+                    Base.writer.WriteString(s.InternalTagName, true);
+                    Base.writer.Write(":");
+                    VVariant(variant, union_style, variant_style, false);
+                    Base.writer.Write(",");
+                    Base.writer.WriteString(s.InternalValueName, true);
+                    Base.writer.Write(":");
+                    vision.Accept<Unit, JsonSerializer>(Base, value);
+                    Base.writer.Write("}");
+                    break;
                 case UnionFormat.Adjacent:
                     Base.writer.Write("{");
                     Base.writer.WriteString(s.AdjacentTagName, true);
