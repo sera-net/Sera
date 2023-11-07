@@ -6,18 +6,19 @@ open Sera.Core.Impls.Ser
 
 [<SeraUnion(Format = UnionFormat.External)>]
 type TypeTestUnion1 =
-    | [<SeraVariant(Priority = VariantPriority.TagFirst)>] TypeTestUnion1_A
+    | TypeTestUnion1_A
     | TypeTestUnion1_B of int
     | TypeTestUnion1_C of int * int
     | TypeTestUnion1_D of a: int * b: int
-    | TypeTestUnion1_E of a: int * int
 
 [<Struct; SeraUnion(Format = UnionFormat.External)>]
 type TypeTestUnion2 =
-    | [<SeraVariant(Priority = VariantPriority.TagFirst)>] TypeTestUnion2_A
-    | TypeTestUnion2_B of a: int * b: int
-    | TypeTestUnion2_C of c: int * int
+    | TypeTestUnion2_A
+    | TypeTestUnion2_B of int
+    | TypeTestUnion2_C of int * int
+    | TypeTestUnion2_D of a: int * b: int
 
+[<Struct; NoEquality; NoComparison>]
 type Impl1 =
 
     interface ISeraVision<TypeTestUnion1> with
@@ -33,16 +34,20 @@ type Impl1 =
                 visitor.VVariantValue<_, int>(
                     PrimitiveImpl(),
                     i,
-                    Variant(nameof TypeTestUnion1_A, VariantTag.Create(0))
+                    Variant(nameof TypeTestUnion1_B, VariantTag.Create(0))
                 )
-            | TypeTestUnion1_C(i, i1) ->
+            | TypeTestUnion1_C _ ->
                 visitor.VVariantTuple(
                     TypeTestUnion1_C_Impl(),
                     value,
-                    Variant(nameof TypeTestUnion1_A, VariantTag.Create(0))
+                    Variant(nameof TypeTestUnion1_C, VariantTag.Create(0))
                 )
-            | TypeTestUnion1_D(a, b) -> failwith "todo"
-            | TypeTestUnion1_E(a, i) -> failwith "todo"
+            | TypeTestUnion1_D _ ->
+                visitor.VVariantStruct(
+                    TypeTestUnion1_D_Impl(),
+                    value,
+                    Variant(nameof TypeTestUnion1_D, VariantTag.Create(0))
+                )
 
 [<Struct; NoEquality; NoComparison>]
 type TypeTestUnion1_C_Impl =
@@ -58,5 +63,23 @@ type TypeTestUnion1_C_Impl =
             | 1 ->
                 match value with
                 | TypeTestUnion1_C(_, b) -> visitor.VItem<_, int>(PrimitiveImpl(), b)
+                | _ -> visitor.VNone()
+            | _ -> visitor.VNone()
+
+[<Struct; NoEquality; NoComparison>]
+type TypeTestUnion1_D_Impl =
+    interface IStructSeraVision<TypeTestUnion1> with
+        member this.Name = "TypeTestUnion1.TypeTestUnion1_D"
+        member this.Count = 2
+
+        member this.AcceptField(visitor, value, field) =
+            match field with
+            | 0 ->
+                match value with
+                | TypeTestUnion1_D(a, _) -> visitor.VField<_, int>(PrimitiveImpl(), a, "a", 0)
+                | _ -> visitor.VNone()
+            | 1 ->
+                match value with
+                | TypeTestUnion1_D(_, b) -> visitor.VField<_, int>(PrimitiveImpl(), b, "b", 0)
                 | _ -> visitor.VNone()
             | _ -> visitor.VNone()

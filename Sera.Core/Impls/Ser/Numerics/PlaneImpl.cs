@@ -16,7 +16,7 @@ public readonly struct PlaneImpl(SeraFormats? formats = null) : ISeraVision<Plan
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R AcceptItem<R, V>(V visitor, Plane value, int index) where V : ATupleSeraVisitor<R>
+    public R AcceptItem<R, V>(V visitor, ref Plane value, int index) where V : ATupleSeraVisitor<R>
         => index switch
         {
             0 => visitor.VItem(new PrimitiveImpl(formats), value.Normal.X),

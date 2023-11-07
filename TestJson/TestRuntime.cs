@@ -339,7 +339,9 @@ public class TestRuntime
         [UsedImplicitly]
         private int Member1 { get; set; } = 123456;
         [SeraInclude, UsedImplicitly]
+#pragma warning disable CS0414
         private int Member2 = 654321;
+#pragma warning restore CS0414
     }
 
     [Test]

@@ -537,7 +537,7 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
         {
             if (first) first = false;
             else writer.Write(",");
-            var err = vision.AcceptItem<bool, TupleSeraVisitor>(TupleVisitor, value, i);
+            var err = vision.AcceptItem<bool, TupleSeraVisitor>(TupleVisitor, ref value, i);
             if (err) throw new SerializeException($"Unable to get item {i} of tuple {value}");
         }
         writer.Write("]");

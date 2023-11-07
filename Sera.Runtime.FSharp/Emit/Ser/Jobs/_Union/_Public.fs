@@ -362,21 +362,26 @@ type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle
                     let get_method = dep.MakeBoxGetMethodInfo()
                     ilg.Emit(OpCodes.Call, get_method)
 
-            let inline load_case' not_ref (ilg: ILGenerator) =
+            let inline load_case_ref (ilg: ILGenerator) =
                 let field = case.fields[0]
 
                 if target.Type.IsValueType then
-                    if not_ref then
-                        ilg.Emit(OpCodes.Ldarg_2)
-                    else
-                        ilg.Emit(OpCodes.Ldarga, 2) // &value
+                    ilg.Emit(OpCodes.Ldarga, 2)
                 else
                     let case_type = field.DeclaringType
                     ilg.Emit(OpCodes.Ldarg_2)
                     ilg.Emit(OpCodes.Castclass, case_type)
 
-            let inline load_case_ref ilg = load_case' false ilg
-            let inline load_case ilg = load_case' true ilg
+            let inline load_case_unref (ilg: ILGenerator) =
+                let field = case.fields[0]
+
+                if target.Type.IsValueType then
+                    ilg.Emit(OpCodes.Ldarg_2)
+                else
+                    let case_type = field.DeclaringType
+                    ilg.Emit(OpCodes.Ldarg_2)
+                    ilg.Emit(OpCodes.Ldind_Ref)
+                    ilg.Emit(OpCodes.Castclass, case_type)
 
             //#region common
 
@@ -465,7 +470,7 @@ type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle
                         let visitor = ReflectionUtils.TypeDel__ATupleSeraVisitor.MakeGenericType(TR)
                         TV.SetBaseTypeConstraint(visitor)
                         accept_item_method.SetReturnType(TR)
-                        accept_item_method.SetParameters(TV, target.Type, typeof<int>)
+                        accept_item_method.SetParameters(TV, target.Type.MakeByRefType(), typeof<int>)
                         let _ = accept_item_method.DefineParameter(1, ParameterAttributes.None, "visitor")
                         let _ = accept_item_method.DefineParameter(2, ParameterAttributes.None, "value")
                         let _ = accept_item_method.DefineParameter(3, ParameterAttributes.None, "index")
@@ -508,7 +513,7 @@ type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle
 
                             load_dep dep ilg
 
-                            load_case_ref ilg
+                            load_case_unref ilg
 
                             ilg.Emit(OpCodes.Call, field.GetMethod)
 
@@ -557,7 +562,7 @@ type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle
                     tuple_impl
 
                 let tuple_impl = emit_tuple_impl ()
-                
+
                 //#endregion
 
                 let v_variant_tuple_method =
@@ -568,7 +573,7 @@ type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle
                 let local_tuple_impl = ilg.DeclareLocal(tuple_impl)
                 ilg.Emit(OpCodes.Ldloc, local_tuple_impl)
                 ilg.Emit(OpCodes.Ldarg_2)
-                
+
                 create_variant ilg
                 load__union_style ilg
                 load__variant_style ilg

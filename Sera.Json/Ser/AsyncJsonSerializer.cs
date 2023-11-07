@@ -493,7 +493,7 @@ public class AsyncJsonSerializer
         {
             if (first) first = false;
             else await writer.Write(",");
-            var err = await vision.AcceptItem<ValueTask<bool>, TupleSeraVisitor>(TupleVisitor, value, i);
+            var err = await vision.AcceptItem<ValueTask<bool>, TupleSeraVisitor>(TupleVisitor, ref value, i);
             if (err) throw new SerializeException($"Unable to get item {i} of tuple {value}");
         }
         await writer.Write("]");

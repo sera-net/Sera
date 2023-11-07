@@ -30,8 +30,8 @@ public readonly struct DepsSerTupleWrapper<T, D, C> : ITupleSeraVision<T>
     public int Size => C.Impl1!.Size;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R AcceptItem<R, V>(V visitor, T value, int index) where V : ATupleSeraVisitor<R>
-        => C.Impl1!.AcceptItem<R, V>(visitor, value, index);
+    public R AcceptItem<R, V>(V visitor, ref T value, int index) where V : ATupleSeraVisitor<R>
+        => C.Impl1!.AcceptItem<R, V>(visitor, ref value, index);
 }
 
 public readonly struct BoxedDepsSerTupleWrapper<T, D, C> : ITupleSeraVision<T>
@@ -41,6 +41,6 @@ public readonly struct BoxedDepsSerTupleWrapper<T, D, C> : ITupleSeraVision<T>
     public int Size => C.Impl1!.Value.Size;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R AcceptItem<R, V>(V visitor, T value, int index) where V : ATupleSeraVisitor<R>
-        => C.Impl1!.Value.AcceptItem<R, V>(visitor, value, index);
+    public R AcceptItem<R, V>(V visitor, ref T value, int index) where V : ATupleSeraVisitor<R>
+        => C.Impl1!.Value.AcceptItem<R, V>(visitor, ref value, index);
 }

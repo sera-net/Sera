@@ -478,7 +478,7 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
         {
             if (first) first = false;
             else Writer.Write((byte)((byte)TypeToken.Seq | (byte)SplitToken.Split << 3));
-            vision.AcceptItem<Unit, TupleSeraVisitor>(TupleVisitor, value, i);
+            vision.AcceptItem<Unit, TupleSeraVisitor>(TupleVisitor, ref value, i);
         }
         Writer.Write((byte)((byte)TypeToken.Seq | (byte)SplitToken.End << 3));
         return default;
