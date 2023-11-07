@@ -597,7 +597,7 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
     public override Unit VUnion<V, T>(V vision, T value)
     {
         UnionVisitor ??= new(this);
-        return vision.AcceptUnion<Unit, UnionSeraVisitor>(UnionVisitor, value);
+        return vision.AcceptUnion<Unit, UnionSeraVisitor>(UnionVisitor, ref value);
     }
 
     private UnionSeraVisitor? UnionVisitor;

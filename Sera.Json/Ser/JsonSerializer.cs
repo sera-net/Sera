@@ -729,7 +729,7 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
     public override Unit VUnion<V, T>(V vision, T value)
     {
         UnionVisitor ??= new(this);
-        return vision.AcceptUnion<Unit, UnionSeraVisitor>(UnionVisitor, value);
+        return vision.AcceptUnion<Unit, UnionSeraVisitor>(UnionVisitor, ref value);
     }
 
     private UnionSeraVisitor? UnionVisitor;

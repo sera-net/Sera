@@ -13,7 +13,7 @@ open _Union_Mod
 
 type List<'T> = System.Collections.Generic.List<'T>
 
-type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle, mode: SeraUnionMode) =
+type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle) =
     inherit _Union(info)
 
     let mutable TypeBuilder: TypeBuilder = null
@@ -191,7 +191,7 @@ type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle
         let visitor = ReflectionUtils.TypeDel__AUnionSeraVisitor.MakeGenericType(TR)
         TV.SetBaseTypeConstraint(visitor)
         accept_union_method.SetReturnType(TR)
-        accept_union_method.SetParameters(TV, target.Type)
+        accept_union_method.SetParameters(TV, target.Type.MakeByRefType())
         let _ = accept_union_method.DefineParameter(1, ParameterAttributes.None, "visitor")
         let _ = accept_union_method.DefineParameter(2, ParameterAttributes.None, "value")
         accept_union_method.SetImplementationFlags(MethodImplAttributes.AggressiveInlining)
@@ -227,33 +227,39 @@ type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle
         //#region variants
 
         if info.cases.Length = 0 then
-            if mode <> SeraUnionMode.NonExhaustive then
-                // #region return visitor.VEmpty();
+            // #region return visitor.VEmpty();
 
-                ilg.Emit(OpCodes.Ldarg_1)
-                ilg.Emit(OpCodes.Box, TV)
-                ilg.Emit(OpCodes.Callvirt, v_empty_method)
-                ilg.Emit(OpCodes.Ret)
+            ilg.Emit(OpCodes.Ldarg_1)
+            ilg.Emit(OpCodes.Box, TV)
+            ilg.Emit(OpCodes.Callvirt, v_empty_method)
+            ilg.Emit(OpCodes.Ret)
 
-                //#endregion
-                ()
+            //#endregion
+            ()
         else
             let table = info.table
             let labels = info.cases |> Seq.map (fun _ -> ilg.DefineLabel()) |> Seq.toArray
 
             //load tag
             if target.IsValueType then
-                ilg.Emit(OpCodes.Ldarga, 2)
+                ilg.Emit(OpCodes.Ldarg_2)
                 ilg.Emit(OpCodes.Call, get_tag)
             else
                 ilg.Emit(OpCodes.Ldarg_2)
+                ilg.Emit(OpCodes.Ldind_Ref)
                 ilg.Emit(OpCodes.Call, get_tag)
 
             //#region apply offset
 
             if table.offset > 0 then
-                ilg.Emit(OpCodes.Ldc_I4, table.offset)
-                ilg.Emit(OpCodes.Add)
+                raise (
+                    IllegalUnionException(
+                        target.Type,
+                        $"The tag of the target union {target.Type} does not start from 0"
+                    )
+                )
+                // ilg.Emit(OpCodes.Ldc_I4, table.offset)
+                // ilg.Emit(OpCodes.Add)
                 ()
 
             //endregion
@@ -276,42 +282,15 @@ type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle
 
         //#region default
 
-        if mode = SeraUnionMode.NonExhaustive then
-            //#region return visitor.VVariant(new Variant(VariantTag.Create(value), union_style, null);
+        //#region return visitor.VNone();
 
-            ilg.MarkLabel(label_default)
-            ilg.Emit(OpCodes.Ldarg_1)
-            ilg.Emit(OpCodes.Box, TV)
-            ilg.Emit(OpCodes.Ldarg_2)
-            ilg.Emit(OpCodes.Call, CreateVariantTag)
-            ilg.Emit(OpCodes.Newobj, NewVariantByTag)
+        ilg.MarkLabel(label_default)
+        ilg.Emit(OpCodes.Ldarg_1)
+        ilg.Emit(OpCodes.Box, TV)
+        ilg.Emit(OpCodes.Callvirt, v_none_method)
+        ilg.Emit(OpCodes.Ret)
 
-            // #region load union_style
-
-            if union_style_field = null then
-                ilg.Emit(OpCodes.Ldnull)
-            else
-                ilg.Emit(OpCodes.Ldsfld, union_style_field)
-
-            //#endregion
-
-            ilg.Emit(OpCodes.Ldnull)
-            ilg.Emit(OpCodes.Callvirt, v_variant_method)
-            ilg.Emit(OpCodes.Ret)
-
-            //#endregion
-            ()
-        else
-            //#region return visitor.VNone();
-
-            ilg.MarkLabel(label_default)
-            ilg.Emit(OpCodes.Ldarg_1)
-            ilg.Emit(OpCodes.Box, TV)
-            ilg.Emit(OpCodes.Callvirt, v_none_method)
-            ilg.Emit(OpCodes.Ret)
-
-            //#endregion
-            ()
+        //#endregion
 
         //#endregion
 
@@ -362,17 +341,7 @@ type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle
                     let get_method = dep.MakeBoxGetMethodInfo()
                     ilg.Emit(OpCodes.Call, get_method)
 
-            let inline load_case_ref (ilg: ILGenerator) =
-                let field = case.fields[0]
-
-                if target.Type.IsValueType then
-                    ilg.Emit(OpCodes.Ldarga, 2)
-                else
-                    let case_type = field.DeclaringType
-                    ilg.Emit(OpCodes.Ldarg_2)
-                    ilg.Emit(OpCodes.Castclass, case_type)
-
-            let inline load_case_unref (ilg: ILGenerator) =
+            let inline load_case (ilg: ILGenerator) =
                 let field = case.fields[0]
 
                 if target.Type.IsValueType then
@@ -416,7 +385,7 @@ type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle
 
                 load_dep dep ilg
 
-                load_case_ref ilg
+                load_case ilg
 
                 ilg.Emit(OpCodes.Call, field.GetMethod)
 
@@ -513,7 +482,7 @@ type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle
 
                             load_dep dep ilg
 
-                            load_case_unref ilg
+                            load_case ilg
 
                             ilg.Emit(OpCodes.Call, field.GetMethod)
 
@@ -573,6 +542,7 @@ type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle
                 let local_tuple_impl = ilg.DeclareLocal(tuple_impl)
                 ilg.Emit(OpCodes.Ldloc, local_tuple_impl)
                 ilg.Emit(OpCodes.Ldarg_2)
+                ilg.Emit(OpCodes.Ldobj, target.Type)
 
                 create_variant ilg
                 load__union_style ilg

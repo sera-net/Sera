@@ -39,5 +39,5 @@ public interface IUnionSeraVision<T>
 {
     public string Name { get; }
 
-    public R AcceptUnion<R, V>(V visitor, T value) where V : AUnionSeraVisitor<R>;
+    public R AcceptUnion<R, V>(V visitor, ref T value) where V : AUnionSeraVisitor<R>;
 }

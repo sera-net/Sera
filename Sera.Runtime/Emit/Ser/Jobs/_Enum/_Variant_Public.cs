@@ -197,7 +197,7 @@ internal class _Variant_Public
         var visitor = typeof(AUnionSeraVisitor<>).MakeGenericType(TR);
         TV.SetBaseTypeConstraint(visitor);
         accept_union_method.SetReturnType(TR);
-        accept_union_method.SetParameters(TV, target.Type);
+        accept_union_method.SetParameters(TV, target.Type.MakeByRefType());
         accept_union_method.DefineParameter(1, ParameterAttributes.None, "visitor");
         accept_union_method.DefineParameter(2, ParameterAttributes.None, "value");
         accept_union_method.SetImplementationFlags(MethodImplAttributes.AggressiveInlining);
@@ -206,7 +206,7 @@ internal class _Variant_Public
             var v_variant_method = TypeBuilder.GetMethod(visitor, ReflectionUtils.AUnionSeraVisitor_VVariant);
             var v_none_method = TypeBuilder.GetMethod(visitor, ReflectionUtils.AUnionSeraVisitor_VNone);
             var v_empty_method = TypeBuilder.GetMethod(visitor, ReflectionUtils.AUnionSeraVisitor_VEmpty);
-            
+
             var ilg = accept_union_method.GetILGenerator();
 
             var label_default = ilg.DefineLabel();
@@ -230,6 +230,7 @@ internal class _Variant_Public
                         ilg.Emit(OpCodes.Box, TV);
                         ilg.Emit(OpCodes.Ldstr, item.Name);
                         ilg.Emit(OpCodes.Ldarg_2);
+                        ilg.Emit(OpCodes.Ldobj, target.Type);
                         ilg.Emit(OpCodes.Call, CreateVariantTag);
                         ilg.Emit(OpCodes.Newobj, NewVariantByNameTag);
 
@@ -270,6 +271,7 @@ internal class _Variant_Public
                     #region load value
 
                     ilg.Emit(OpCodes.Ldarg_2);
+                    ilg.Emit(OpCodes.Ldobj, target.Type);
 
                     #endregion
 
@@ -331,6 +333,7 @@ internal class _Variant_Public
                         #region if value == Enum.X then goto label
 
                         ilg.Emit(OpCodes.Ldarg_2);
+                        ilg.Emit(OpCodes.Ldobj, target.Type);
                         if (UnderlyingType == typeof(long) || UnderlyingType == typeof(ulong))
                             ilg.Emit(OpCodes.Ldc_I8, item.Tag.ToLong());
                         else
@@ -367,6 +370,7 @@ internal class _Variant_Public
 
                     ilg.Emit(OpCodes.Ldsfld, MetasField);
                     ilg.Emit(OpCodes.Ldarg_2);
+                    ilg.Emit(OpCodes.Ldobj, target.Type);
                     ilg.Emit(OpCodes.Ldloca_S, (byte)meta_loc.LocalIndex);
                     ilg.Emit(OpCodes.Callvirt, try_gey_meta);
 
@@ -387,6 +391,7 @@ internal class _Variant_Public
                     #endregion
 
                     ilg.Emit(OpCodes.Ldarg_2);
+                    ilg.Emit(OpCodes.Ldobj, target.Type);
                     ilg.Emit(OpCodes.Call, CreateVariantTag);
                     ilg.Emit(OpCodes.Newobj, NewVariantByNameTag);
 
@@ -450,6 +455,7 @@ internal class _Variant_Public
                 ilg.Emit(OpCodes.Ldarg_1);
                 ilg.Emit(OpCodes.Box, TV);
                 ilg.Emit(OpCodes.Ldarg_2);
+                ilg.Emit(OpCodes.Ldobj, target.Type);
                 ilg.Emit(OpCodes.Call, CreateVariantTag);
                 ilg.Emit(OpCodes.Newobj, NewVariantByTag);
 

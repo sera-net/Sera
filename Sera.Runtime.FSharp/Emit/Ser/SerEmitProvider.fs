@@ -41,10 +41,4 @@ type internal SerEmitProvider() =
         let style = UnionStyle.FromAttr(union_attr, format_attr)
         let info = UnionReflectionUtils.GetUnionInfo(target.Type)
 
-        let mode =
-            if union_attr = null then
-                SeraUnionMode.None
-            else
-                union_attr.Mode
-
-        Jobs._Union._Public (name, info, style, mode)
+        Jobs._Union._Public (name, info, style)

@@ -59,15 +59,23 @@ public readonly struct VariantTag : IEquatable<VariantTag>, IComparable<VariantT
     public long Int64 => _union.Int64;
     public ulong UInt64 => _union.UInt64;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VariantTag Create(sbyte value) => new(new _union_ { SByte = value }, VariantTagKind.SByte);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VariantTag Create(byte value) => new(new _union_ { Byte = value }, VariantTagKind.Byte);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VariantTag Create(short value) => new(new _union_ { Int16 = value }, VariantTagKind.Int16);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VariantTag Create(ushort value) => new(new _union_ { UInt16 = value }, VariantTagKind.UInt16);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VariantTag Create(int value) => new(new _union_ { Int32 = value }, VariantTagKind.Int32);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VariantTag Create(uint value) => new(new _union_ { UInt32 = value }, VariantTagKind.UInt32);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VariantTag Create(long value) => new(new _union_ { Int64 = value }, VariantTagKind.Int64);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VariantTag Create(ulong value) => new(new _union_ { UInt64 = value }, VariantTagKind.UInt64);
-
+    
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public T? TryAs<T>() where T : unmanaged => Kind switch
     {

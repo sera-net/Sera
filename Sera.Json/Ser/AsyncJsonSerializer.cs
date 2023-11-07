@@ -683,7 +683,7 @@ public class AsyncJsonSerializer
     public override ValueTask VUnion<V, T>(V vision, T value)
     {
         UnionVisitor ??= new(this);
-        return vision.AcceptUnion<ValueTask, UnionSeraVisitor>(UnionVisitor, value);
+        return vision.AcceptUnion<ValueTask, UnionSeraVisitor>(UnionVisitor, ref value);
     }
 
     private UnionSeraVisitor? UnionVisitor;

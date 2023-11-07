@@ -219,13 +219,17 @@ public class SeraUnionAttribute : Attribute
     public string AdjacentValueName { get; set; } = "c";
 }
 
+/// <summary>
+/// Whether to exhaustively match
+/// <para>F# union is always <see cref="Exhaustive"/></para>
+/// </summary>
 [SeraUnion(Mode = Exhaustive)]
 public enum SeraUnionMode : byte
 {
     None,
-    /// <summary>No more variants will be added in the future, default value for f# union</summary>
+    /// <summary>No more variants will be added in the future</summary>
     Exhaustive,
-    /// <summary>More variations may be added in the future, default value for enum</summary>
+    /// <summary>More variations may be added in the future <para>C# enum default value</para></summary>
     NonExhaustive,
 }
 
