@@ -23,6 +23,8 @@
         <Compile Include="Emit\Ser\Jobs\Misc\_Option.fs"/>
         <Compile Include="Emit\Ser\Jobs\_Union\_Union.fs"/>
         <Compile Include="Emit\Ser\Jobs\_Union\_Public.fs"/>
+        <Compile Include="Emit\Ser\Jobs\_Union\_Private_Impls.fs" />
+        <Compile Include="Emit\Ser\Jobs\_Union\_Private.fs" />
         <Compile Include="Emit\Ser\SerEmitProvider.fs"/>
         <Compile Include="SeraRuntime.fs"/>
     </ItemGroup>

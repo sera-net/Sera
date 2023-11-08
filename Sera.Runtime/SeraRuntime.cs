@@ -11,8 +11,6 @@ public static class SeraRuntime
 
     public static void Reg(ISeraRuntimePlugin plugin) => plugins.TryAdd(plugin, 0);
 
-    public static void UnReg(ISeraRuntimePlugin plugin) => plugins.TryRemove(plugin, out _);
-
     internal static IEnumerable<ISeraEmitProvider> GetSerEmitProviders() => plugins.Select(a => a.Key)
         .Select(a => a.GetSerEmitProvider());
 

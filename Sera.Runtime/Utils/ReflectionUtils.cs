@@ -29,6 +29,16 @@ public static class ReflectionUtils
     public const string Name__IUnionSeraVision_AcceptUnion = nameof(IUnionSeraVision<object>.AcceptUnion);
     public const string Name__ITupleSeraVision_AcceptItem = nameof(ITupleSeraVision<object>.AcceptItem);
     public const string Name__IStructSeraVision_AcceptField = nameof(IStructSeraVision<object>.AcceptField);
+    public const string Name__AUnionSeraVisitor_VVariant = nameof(AUnionSeraVisitor<object>.VVariant);
+    public const string Name__AUnionSeraVisitor_VNone = nameof(AUnionSeraVisitor<object>.VNone);
+    public const string Name__AUnionSeraVisitor_VEmpty = nameof(AUnionSeraVisitor<object>.VEmpty);
+    public const string Name__AUnionSeraVisitor_VVariantValue = nameof(AUnionSeraVisitor<object>.VVariantValue);
+    public const string Name__AUnionSeraVisitor_VVariantTuple = nameof(AUnionSeraVisitor<object>.VVariantTuple);
+    public const string Name__AUnionSeraVisitor_VVariantStruct = nameof(AUnionSeraVisitor<object>.VVariantStruct);
+    public const string Name__ATupleSeraVisitor_VNone = nameof(ATupleSeraVisitor<object>.VNone);
+    public const string Name__ATupleSeraVisitor_VItem = nameof(ATupleSeraVisitor<object>.VItem);
+    public const string Name__AStructSeraVisitor_VNone = nameof(AStructSeraVisitor<object>.VNone);
+    public const string Name__AStructSeraVisitor_VField = nameof(AStructSeraVisitor<object>.VField);
     public static readonly Type TypeDel__ASeraVisitor = typeof(ASeraVisitor<>);
     public static readonly Type TypeDel__ISeraVision = typeof(ISeraVision<>);
     public static readonly Type TypeDel__IUnionSeraVision = typeof(IUnionSeraVision<>);

@@ -17,7 +17,7 @@ internal class _Private(string StructName, StructMember[] Members) : _Struct(Mem
 
     public override void Init(EmitStub stub, EmitMeta target)
     {
-        ImplType = typeof(PrivateStructSerializeImpl<>).MakeGenericType(target.Type);
+        ImplType = typeof(PrivateStructImpl<>).MakeGenericType(target.Type);
     }
 
     public override Type GetEmitType(EmitStub stub, EmitMeta target, EmitDeps deps)
@@ -70,7 +70,7 @@ internal class _Private(string StructName, StructMember[] Members) : _Struct(Mem
             var target = typeof(T);
 
             var guid = Guid.NewGuid();
-            var dyn_method_name = ReflectionUtils.GetAsmName($"Ser_{typeof(T).Name}_{guid}");
+            var dyn_method_name = ReflectionUtils.GetAsmName($"Ser_{typeof(T).Name}_{guid:N}");
             var dyn_method = new DynamicMethod(
                 dyn_method_name,
                 MethodAttributes.Public | MethodAttributes.Static, CallingConventions.Standard,

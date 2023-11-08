@@ -41,4 +41,7 @@ type internal SerEmitProvider() =
         let style = UnionStyle.FromAttr(union_attr, format_attr)
         let info = UnionReflectionUtils.GetUnionInfo(target.Type)
 
-        Jobs._Union._Public (name, info, style)
+        if target.Type.IsVisible then
+            Jobs._Union._Public (name, info, style)
+        else
+            Jobs._Union._Private (name, info, style)

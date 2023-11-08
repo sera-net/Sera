@@ -1,16 +1,15 @@
-﻿using System;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using Sera.Core;
 
 namespace Sera.Runtime.Emit.Ser.Internal;
 
-public readonly struct PrivateStructSerializeImpl<T> : ISeraVision<T>, IStructSeraVision<T>
+public readonly struct PrivateStructImpl<T> : ISeraVision<T>, IStructSeraVision<T>
 {
     private sealed record Data(object meta_key, string name, int field_count);
 
     private readonly Data data;
 
-    internal PrivateStructSerializeImpl(object meta_key, string name, int field_count)
+    internal PrivateStructImpl(object meta_key, string name, int field_count)
         => data = new(meta_key, name, field_count);
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

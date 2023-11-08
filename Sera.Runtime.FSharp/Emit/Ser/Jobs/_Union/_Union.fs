@@ -11,13 +11,13 @@ open Sera.Runtime.Emit.Ser
 open Sera.Runtime.FSharp.Emit.Ser.Jobs
 open Sera.Runtime.FSharp.Utils
 open Sera.Runtime.Utils
+open Sera.Runtime.Utils.Internal
 
 module _Union_Mod =
     [<Literal>]
-    let MaxIfNums = 16
-
-    [<Literal>]
     let UnionStyleFieldName = "_union_style"
+    [<Literal>]
+    let VariantStyleFieldName = "_variant_style"
 
     let NewVariantByTag =
         typeof<Variant>
@@ -27,8 +27,16 @@ module _Union_Mod =
         typeof<Variant>
             .GetConstructor(BindingFlags.Public ||| BindingFlags.Instance, [| typeof<string>; typeof<VariantTag> |])
 
+    let CreateVariantTag =
+        typeof<VariantTag>
+            .GetMethod(
+                ReflectionUtils.Name__VariantTag_Create,
+                BindingFlags.Static ||| BindingFlags.Public,
+                [| typeof<int> |]
+            )
+
 [<AbstractClass>]
-type internal _Union(info: UnionInfo) =
+type internal _Union(union_info: UnionInfo) =
     inherit _Base()
 
     [<DefaultValue>]
@@ -44,7 +52,7 @@ type internal _Union(info: UnionInfo) =
         let tag_deps = Dictionary<int, List<int>>()
         let deps = List<DepMeta>()
 
-        for case in info.cases do
+        for case in union_info.cases do
             if case.fields.Length = 0 then
                 tag_deps.Add(case.tag, List())
             else

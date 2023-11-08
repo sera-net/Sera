@@ -11,6 +11,8 @@
     <ItemGroup>
         <Compile Include="UnitTest1.fs" />
         <Compile Include="TestRuntime.fs" />
+        <Compile Include="TestRuntime\TestUnion.fs" />
+        <Compile Include="TestRuntime\TestUnionPrivate.fs" />
     </ItemGroup>
 
     <ItemGroup>

@@ -11,30 +11,21 @@ open Sera.Runtime.Utils.Internal
 open Sera.Runtime.FSharp.Utils
 open _Union_Mod
 
-type List<'T> = System.Collections.Generic.List<'T>
+type private SList<'T> = System.Collections.Generic.List<'T>
 
-type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle) =
-    inherit _Union(info)
+type internal _Public(union_name: string, union_info: UnionInfo, union_style: UnionStyle) =
+    inherit _Union(union_info)
 
     let mutable TypeBuilder: TypeBuilder = null
     let mutable RuntimeType: Type = null
-    let mutable CreateVariantTag: MethodInfo = null
 
     let mutable union_style_field: FieldBuilder = null
 
-    let mutable VariantStyles: List<struct (FieldBuilder * VariantStyle)> = List()
+    let mutable VariantStyles: SList<struct (FieldBuilder * VariantStyle)> = SList()
 
     override this.Init(stub, target) =
         TypeBuilder <- this.CreateTypeBuilderStruct($"Ser_{target.Type.Name}")
         TypeBuilder.MarkReadonly()
-
-        CreateVariantTag <-
-            typeof<VariantTag>
-                .GetMethod(
-                    ReflectionUtils.Name__VariantTag_Create,
-                    BindingFlags.Static ||| BindingFlags.Public,
-                    [| typeof<int> |]
-                )
 
     override this.GetEmitPlaceholderType(stub, target) = TypeBuilder
     override this.GetEmitType(stub, target, deps) = TypeBuilder
@@ -53,7 +44,7 @@ type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle
             let rt_union_style_field =
                 RuntimeType.GetField(UnionStyleFieldName, BindingFlags.NonPublic ||| BindingFlags.Static)
 
-            rt_union_style_field.SetValue(null, unionStyle)
+            rt_union_style_field.SetValue(null, union_style)
 
         for struct (field, style) in VariantStyles do
             let rt_field =
@@ -94,7 +85,6 @@ type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle
         //#region return visitor.VUnion<Self, T>(this, value)
 
         ilg.Emit(OpCodes.Ldarg_1)
-        ilg.Emit(OpCodes.Box, TV)
         ilg.Emit(OpCodes.Ldarg_0)
         ilg.Emit(OpCodes.Ldobj, TypeBuilder)
         ilg.Emit(OpCodes.Ldarg_2)
@@ -162,13 +152,13 @@ type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle
         name_property.SetGetMethod(get_name_method)
 
         let ilg = get_name_method.GetILGenerator()
-        ilg.Emit(OpCodes.Ldstr, UnionName)
+        ilg.Emit(OpCodes.Ldstr, union_name)
         ilg.Emit(OpCodes.Ret)
 
         get_name_method
 
     member private this.EmitUnion_AcceptUnion(target, deps) =
-        if unionStyle <> null then
+        if union_style <> null then
             union_style_field <-
                 TypeBuilder.DefineField(
                     UnionStyleFieldName,
@@ -226,19 +216,18 @@ type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle
 
         //#region variants
 
-        if info.cases.Length = 0 then
+        if union_info.cases.Length = 0 then
             // #region return visitor.VEmpty();
 
             ilg.Emit(OpCodes.Ldarg_1)
-            ilg.Emit(OpCodes.Box, TV)
             ilg.Emit(OpCodes.Callvirt, v_empty_method)
             ilg.Emit(OpCodes.Ret)
 
             //#endregion
             ()
         else
-            let table = info.table
-            let labels = info.cases |> Seq.map (fun _ -> ilg.DefineLabel()) |> Seq.toArray
+            let table = union_info.table
+            let labels = union_info.cases |> Seq.map (fun _ -> ilg.DefineLabel()) |> Seq.toArray
 
             //load tag
             if target.IsValueType then
@@ -274,35 +263,29 @@ type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle
 
             //endregion
 
-            this.EmitUnion_Cases(target, deps, ilg, labels, TR, TV, visitor, v_variant_method)
+            this.EmitUnion_Cases(target, deps, ilg, labels, visitor, v_variant_method)
 
+            //#region default
+
+            //#region return visitor.VNone();
+
+            ilg.MarkLabel(label_default)
+            ilg.Emit(OpCodes.Ldarg_1)
+            ilg.Emit(OpCodes.Callvirt, v_none_method)
+            ilg.Emit(OpCodes.Ret)
+
+            //#endregion
+
+            //#endregion
             ()
 
         //#endregion
 
-        //#region default
-
-        //#region return visitor.VNone();
-
-        ilg.MarkLabel(label_default)
-        ilg.Emit(OpCodes.Ldarg_1)
-        ilg.Emit(OpCodes.Box, TV)
-        ilg.Emit(OpCodes.Callvirt, v_none_method)
-        ilg.Emit(OpCodes.Ret)
-
-        //#endregion
-
-        //#endregion
-
-        let tmp = ilg.DeclareLocal(TR)
-        ilg.Emit(OpCodes.Ldloc, tmp)
-        ilg.Emit(OpCodes.Ret)
-
         accept_union_method
 
-    member private this.EmitUnion_Cases(target, deps, ilg, labels, _TR, TV, visitor, v_variant_method) =
-        for i = 0 to info.cases.Length - 1 do
-            let case = info.cases[i]
+    member private this.EmitUnion_Cases(target, deps, ilg, labels, visitor, v_variant_method) =
+        for i = 0 to union_info.cases.Length - 1 do
+            let case = union_info.cases[i]
             let label = labels[i]
             let style = case.style
             let format = case.format
@@ -356,7 +339,6 @@ type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle
 
             ilg.MarkLabel(label)
             ilg.Emit(OpCodes.Ldarg_1)
-            ilg.Emit(OpCodes.Box, TV)
 
             //#endregion
 
@@ -478,7 +460,6 @@ type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle
 
                             ilg.MarkLabel(label)
                             ilg.Emit(OpCodes.Ldarg_1)
-                            ilg.Emit(OpCodes.Box, TV)
 
                             load_dep dep ilg
 
@@ -498,7 +479,6 @@ type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle
 
                         ilg.MarkLabel(label_default)
                         ilg.Emit(OpCodes.Ldarg_1)
-                        ilg.Emit(OpCodes.Box, TV)
                         ilg.Emit(OpCodes.Callvirt, v_none_method)
                         ilg.Emit(OpCodes.Ret)
 
@@ -580,7 +560,7 @@ type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle
                         this.EmitUnion_Struct_Name(
                             struct_impl,
                             ReflectionUtils.Name__IStructSeraVision_Name,
-                            $"{UnionName}.{case.name}"
+                            $"{union_name}.{case.name}"
                         )
 
                     //#region accept field method
@@ -629,7 +609,7 @@ type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle
                         //#region items
 
                         for i = 0 to case.fields.Length - 1 do
-                            //#region return visitor.VItem(dep, value.field);
+                            //#region return visitor.VField(dep, name, key, value.field);
 
                             let field = case.fields[i]
                             let label = labels[i]
@@ -640,7 +620,6 @@ type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle
 
                             ilg.MarkLabel(label)
                             ilg.Emit(OpCodes.Ldarg_1)
-                            ilg.Emit(OpCodes.Box, TV)
 
                             load_dep dep ilg
 
@@ -663,7 +642,6 @@ type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle
 
                         ilg.MarkLabel(label_default)
                         ilg.Emit(OpCodes.Ldarg_1)
-                        ilg.Emit(OpCodes.Box, TV)
                         ilg.Emit(OpCodes.Callvirt, v_none_method)
                         ilg.Emit(OpCodes.Ret)
 
@@ -686,7 +664,7 @@ type internal _Public(UnionName: string, info: UnionInfo, unionStyle: UnionStyle
                             .GetProperty(ReflectionUtils.Name__IStructSeraVision_Count)
                             .GetMethod
                     )
-                    
+
                     struct_impl.DefineMethodOverride(
                         get_name_method,
                         interface_type
