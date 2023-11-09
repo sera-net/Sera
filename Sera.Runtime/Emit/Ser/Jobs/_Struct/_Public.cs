@@ -6,6 +6,7 @@ using System.Reflection.Emit;
 using Sera.Core;
 using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Utils;
+using Sera.Runtime.Utils.Internal;
 
 namespace Sera.Runtime.Emit.Ser.Jobs._Struct;
 
@@ -170,7 +171,7 @@ internal sealed class _Public(string StructName, StructMember[] Members) : _Stru
         var visitor = typeof(AStructSeraVisitor<>).MakeGenericType(TR);
         TV.SetBaseTypeConstraint(visitor);
         accept_field_method.SetReturnType(TR);
-        accept_field_method.SetParameters(TV, target.Type, typeof(int));
+        accept_field_method.SetParameters(TV, target.Type.MakeByRefType(), typeof(int));
         accept_field_method.DefineParameter(1, ParameterAttributes.None, "visitor");
         accept_field_method.DefineParameter(2, ParameterAttributes.None, "value");
         accept_field_method.DefineParameter(3, ParameterAttributes.None, "field");
@@ -235,7 +236,7 @@ internal sealed class _Public(string StructName, StructMember[] Members) : _Stru
                         #region access Get(ref value)
 
                         ilg.Emit(OpCodes.Ldsfld, access);
-                        ilg.Emit(OpCodes.Ldarga, 2);
+                        ilg.Emit(OpCodes.Ldarg_2);
                         ilg.Emit(OpCodes.Callvirt, access_invoke);
 
                         #endregion
@@ -244,7 +245,7 @@ internal sealed class _Public(string StructName, StructMember[] Members) : _Stru
                     {
                         #region load value
 
-                        ilg.Emit(OpCodes.Ldarga, 2);
+                        ilg.Emit(OpCodes.Ldarg_2);
 
                         #endregion
 
@@ -259,6 +260,7 @@ internal sealed class _Public(string StructName, StructMember[] Members) : _Stru
                         #region load value
 
                         ilg.Emit(OpCodes.Ldarg_2);
+                        ilg.Emit(OpCodes.Ldind_Ref);
 
                         #endregion
 
@@ -280,7 +282,7 @@ internal sealed class _Public(string StructName, StructMember[] Members) : _Stru
                         #region access Get(ref value)
 
                         ilg.Emit(OpCodes.Ldsfld, access);
-                        ilg.Emit(OpCodes.Ldarga, 2);
+                        ilg.Emit(OpCodes.Ldarg_2);
                         ilg.Emit(OpCodes.Callvirt, access_invoke);
 
                         #endregion
@@ -290,6 +292,8 @@ internal sealed class _Public(string StructName, StructMember[] Members) : _Stru
                         #region load value
 
                         ilg.Emit(OpCodes.Ldarg_2);
+                        if (!target.IsValueType)
+                            ilg.Emit(OpCodes.Ldind_Ref);
 
                         #endregion
 

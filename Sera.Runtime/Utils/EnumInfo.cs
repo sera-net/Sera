@@ -60,9 +60,7 @@ internal static class EnumUtils
 
     private static readonly MethodInfo _TryMakeJumpTable_MethodInfo = typeof(EnumUtils)
         .GetMethod(nameof(_TryMakeJumpTable), BindingFlags.Static | BindingFlags.NonPublic)!;
-
-    private const int MaxJumpTableSizeAllowed = 255;
-
+    
     private static EnumJumpTables? _TryMakeJumpTable<V>(EnumInfo[] items)
         where V : unmanaged, INumber<V>
     {
@@ -76,7 +74,7 @@ internal static class EnumUtils
         var min = values.First().v;
         var max = values.Last().v;
         var size = max.PrimitiveToInt128() - min.PrimitiveToInt128();
-        if (size >= MaxJumpTableSizeAllowed) return null;
+        if (size >= Utils.MaxJumpTableSizeAllowed) return null;
         var offset = 0 - min.PrimitiveToInt128();
 
         var last = values.Length - 1;

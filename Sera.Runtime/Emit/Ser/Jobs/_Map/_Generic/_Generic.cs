@@ -6,11 +6,15 @@ using System.Collections.Immutable;
 using System.Reflection;
 using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Utils;
+using Sera.Runtime.Utils.Internal;
 
 namespace Sera.Runtime.Emit.Ser.Jobs._Map._Generic;
 
-internal abstract class _Generic(Type KeyType, Type ValType) : _Map
+internal abstract class _Generic(Type key_type, Type val_type) : _Map
 {
+    public Type KeyType => key_type;
+    public Type ValType => val_type;
+
     protected virtual (NullabilityInfo?, NullabilityInfo?) GetElementNullabilityInfo(EmitMeta target)
     {
         var type = target.Type;
@@ -36,11 +40,11 @@ internal abstract class _Generic(Type KeyType, Type ValType) : _Map
         var (key_nullable, val_nullable) = GetElementNullabilityInfo(target);
         var key_transforms = !KeyType.IsValueType && key_nullable is not
             { ReadState: NullabilityState.NotNull }
-            ? SerializeEmitProvider.NullableClassImplTransforms
+            ? NullableClassImplTransforms
             : EmitTransform.EmptyTransforms;
         var val_transforms = !ValType.IsValueType && val_nullable is not
             { ReadState: NullabilityState.NotNull }
-            ? SerializeEmitProvider.NullableClassImplTransforms
+            ? NullableClassImplTransforms
             : EmitTransform.EmptyTransforms;
         var key_meta = new DepMeta(
             new(TypeMetas.GetTypeMeta(KeyType, new NullabilityMeta(key_nullable)), target.Styles.TakeFormats()),

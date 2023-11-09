@@ -59,13 +59,28 @@ public readonly struct VariantTag : IEquatable<VariantTag>, IComparable<VariantT
     public long Int64 => _union.Int64;
     public ulong UInt64 => _union.UInt64;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VariantTag Create(sbyte value) => new(new _union_ { SByte = value }, VariantTagKind.SByte);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VariantTag Create(byte value) => new(new _union_ { Byte = value }, VariantTagKind.Byte);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VariantTag Create(short value) => new(new _union_ { Int16 = value }, VariantTagKind.Int16);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VariantTag Create(ushort value) => new(new _union_ { UInt16 = value }, VariantTagKind.UInt16);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VariantTag Create(int value) => new(new _union_ { Int32 = value }, VariantTagKind.Int32);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VariantTag Create(uint value) => new(new _union_ { UInt32 = value }, VariantTagKind.UInt32);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VariantTag Create(long value) => new(new _union_ { Int64 = value }, VariantTagKind.Int64);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static VariantTag Create(ulong value) => new(new _union_ { UInt64 = value }, VariantTagKind.UInt64);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
@@ -269,11 +284,15 @@ public enum VariantPriority : byte
     NameFirst,
 }
 
+/// <summary>
+/// Union format
+/// </summary>
 public enum UnionFormat
 {
     Any,
     /// <summary>
     /// Json is <code>{ "Tag": Value }</code>
+    /// <para>If the variant has no value it will be directly tag, json is <code>"Tag"</code></para>
     /// </summary>
     External,
     /// <summary>
@@ -290,15 +309,29 @@ public enum UnionFormat
     Tuple,
     /// <summary>
     /// Json is <code>Value</code>
+    /// <para>If the variant has no value it will be directly tag, json is <code>"Tag"</code></para>
     /// </summary>
     Untagged,
 }
 
+/// <summary>
+/// 
+/// </summary>
+/// <param name="VariantPriority">Variant tag priority</param>
+/// <param name="VariantFormats">The format used when the variant tag as number</param>
+/// <param name="Format">Union format</param>
+/// <param name="CompactTag">Whether to treat the variant as a tag when it has no value when the format is <see cref="UnionFormat.Internal"/> | <see cref="UnionFormat.Adjacent"/> | <see cref="UnionFormat.Tuple"/></param>
+/// <param name="InternalTagName">The name of the tag when the format is <see cref="UnionFormat.Internal"/></param>
+/// <param name="InternalValueName">Field name if the variant value cannot be treated as a structure when the format is <see cref="UnionFormat.Internal"/></param>
+/// <param name="AdjacentTagName">The name of the tag when the format is <see cref="UnionFormat.Adjacent"/></param>
+/// <param name="AdjacentValueName">The name of the value when the format is <see cref="UnionFormat.Adjacent"/></param>
 public record UnionStyle(
     VariantPriority VariantPriority = VariantPriority.Any,
     SeraFormats? VariantFormats = null,
     UnionFormat Format = UnionFormat.Any,
+    bool CompactTag = false,
     string InternalTagName = "type",
+    string InternalValueName = "value",
     string AdjacentTagName = "t",
     string AdjacentValueName = "c"
 )
@@ -312,7 +345,9 @@ public record UnionStyle(
             VariantPriority = attr.Priority,
             VariantFormats = SeraFormats.FromAttr(formats),
             Format = attr.Format,
+            CompactTag = attr.CompactTag,
             InternalTagName = attr.InternalTagName,
+            InternalValueName = attr.InternalValueName,
             AdjacentTagName = attr.AdjacentTagName,
             AdjacentValueName = attr.AdjacentValueName,
         };
@@ -324,7 +359,7 @@ public record VariantStyle(
 )
 {
     public static VariantStyle Default { get; } = new();
-    
+
     public static VariantStyle? FromAttr(SeraVariantAttribute? attr, SeraFormatsAttribute? formats) => attr == null
         ? null
         : new()

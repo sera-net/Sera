@@ -7,17 +7,12 @@ using System.Reflection;
 using Sera.Core;
 using Sera.Core.Impls.Ser;
 using Sera.Runtime.Utils;
+using Sera.Runtime.Utils.Internal;
 
 namespace Sera.Runtime.Emit.Ser;
 
 internal class SerializeEmitProvider : AEmitProvider
 {
-    public static readonly EmitTransform[] NullableClassImplTransforms =
-        { new Transforms._NullableClassImpl() };
-
-    public static readonly EmitTransform[] ReferenceTypeTransforms =
-        { new Transforms._ReferenceImpl() };
-
     #region impls
 
     private static readonly object BytesImpl = new BytesImpl();

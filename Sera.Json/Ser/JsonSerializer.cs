@@ -537,7 +537,7 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
         {
             if (first) first = false;
             else writer.Write(",");
-            var err = vision.AcceptItem<bool, TupleSeraVisitor>(TupleVisitor, value, i);
+            var err = vision.AcceptItem<bool, TupleSeraVisitor>(TupleVisitor, ref value, i);
             if (err) throw new SerializeException($"Unable to get item {i} of tuple {value}");
         }
         writer.Write("]");
@@ -549,7 +549,7 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
 
     private class TupleSeraVisitor(JsonSerializer Base) : ATupleSeraVisitor<bool>(Base)
     {
-        public override bool VItem<T, V>(V vision, T value)
+        public override bool VItem<V, T>(V vision, T value)
         {
             vision.Accept<Unit, JsonSerializer>(Base, value);
             return false;
@@ -699,7 +699,7 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
         {
             if (first) first = false;
             else writer.Write(",");
-            var err = vision.AcceptField<bool, StructSeraVisitor>(StructVisitor, value, i);
+            var err = vision.AcceptField<bool, StructSeraVisitor>(StructVisitor, ref value, i);
             if (err) throw new SerializeException($"Unable to get field nth {i} of {value}");
         }
         writer.Write("}");
@@ -729,7 +729,7 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
     public override Unit VUnion<V, T>(V vision, T value)
     {
         UnionVisitor ??= new(this);
-        return vision.AcceptUnion<Unit, UnionSeraVisitor>(UnionVisitor, value);
+        return vision.AcceptUnion<Unit, UnionSeraVisitor>(UnionVisitor, ref value);
     }
 
     private UnionSeraVisitor? UnionVisitor;
@@ -804,7 +804,38 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
         public override Unit VVariant(Variant variant,
             UnionStyle? union_style = null, VariantStyle? variant_style = null)
         {
-            VVariant(variant, union_style, variant_style, false);
+            var s = union_style ?? Base.formatter.DefaultUnionStyle;
+            if (s.CompactTag)
+            {
+                VVariant(variant, union_style, variant_style, false);
+                return default;
+            }
+            var format = s.Format is not UnionFormat.Any ? s.Format : Base.formatter.DefaultUnionFormat;
+            switch (format)
+            {
+                case UnionFormat.Internal:
+                    Base.writer.Write("{");
+                    Base.writer.WriteString(s.InternalTagName, true);
+                    Base.writer.Write(":");
+                    VVariant(variant, union_style, variant_style, false);
+                    Base.writer.Write("}");
+                    break;
+                case UnionFormat.Adjacent:
+                    Base.writer.Write("{");
+                    Base.writer.WriteString(s.AdjacentTagName, true);
+                    Base.writer.Write(":");
+                    VVariant(variant, union_style, variant_style, false);
+                    Base.writer.Write("}");
+                    break;
+                case UnionFormat.Tuple:
+                    Base.writer.Write("[");
+                    VVariant(variant, union_style, variant_style, false);
+                    Base.writer.Write("]");
+                    break;
+                default:
+                    VVariant(variant, union_style, variant_style, false);
+                    break;
+            }
             return default;
         }
 
@@ -823,7 +854,16 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
                     Base.writer.Write("}");
                     break;
                 case UnionFormat.Internal:
-                    goto case UnionFormat.External;
+                    Base.writer.Write("{");
+                    Base.writer.WriteString(s.InternalTagName, true);
+                    Base.writer.Write(":");
+                    VVariant(variant, union_style, variant_style, false);
+                    Base.writer.Write(",");
+                    Base.writer.WriteString(s.InternalValueName, true);
+                    Base.writer.Write(":");
+                    vision.Accept<Unit, JsonSerializer>(Base, value);
+                    Base.writer.Write("}");
+                    break;
                 case UnionFormat.Adjacent:
                     Base.writer.Write("{");
                     Base.writer.WriteString(s.AdjacentTagName, true);
@@ -851,10 +891,19 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
             return default;
         }
 
+        public override Unit VVariantTuple<V, T>(V vision, T value, Variant variant, UnionStyle? union_style = null,
+            VariantStyle? variant_style = null)
+            => VVariantValue(ByImpls<T>.ByTuple(vision), value, variant, union_style, variant_style);
+
         public override Unit VVariantStruct<V, T>(V vision, T value, Variant variant,
             UnionStyle? union_style = null, VariantStyle? variant_style = null)
         {
             var s = union_style ?? Base.formatter.DefaultUnionStyle;
+            var format = s.Format is not UnionFormat.Any ? s.Format : Base.formatter.DefaultUnionFormat;
+            if (format is not UnionFormat.Internal)
+            {
+                return VVariantValue(ByImpls<T>.ByStruct(vision), value, variant, union_style, variant_style);
+            }
             var size = vision.Count;
             var last_state = Base.state;
             Base.state = JsonSerializerState.None;
@@ -866,7 +915,7 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
             for (var i = 0; i < size; i++)
             {
                 Base.writer.Write(",");
-                var err = vision.AcceptField<bool, StructSeraVisitor>(Base.StructVisitor, value, i);
+                var err = vision.AcceptField<bool, StructSeraVisitor>(Base.StructVisitor, ref value, i);
                 if (err) throw new SerializeException($"Unable to get field nth {i} of {value}");
             }
             Base.writer.Write("}");

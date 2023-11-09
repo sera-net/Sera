@@ -15,7 +15,7 @@ namespace Sera.Runtime.Utils;
 
 internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisitor<Unit>, IDisposable, IAsyncDisposable
 {
-    public Stream Stream { get; } = stream;
+    public Stream Stream => stream;
     private readonly BinaryWriter Writer = new(stream);
 
     public override ISeraOptions Options { get; } = options;
@@ -478,7 +478,7 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
         {
             if (first) first = false;
             else Writer.Write((byte)((byte)TypeToken.Seq | (byte)SplitToken.Split << 3));
-            vision.AcceptItem<Unit, TupleSeraVisitor>(TupleVisitor, value, i);
+            vision.AcceptItem<Unit, TupleSeraVisitor>(TupleVisitor, ref value, i);
         }
         Writer.Write((byte)((byte)TypeToken.Seq | (byte)SplitToken.End << 3));
         return default;
@@ -488,7 +488,7 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
 
     private class TupleSeraVisitor(BytesSerializer Base) : ATupleSeraVisitor<Unit>(Base)
     {
-        public override Unit VItem<T, V>(V vision, T value)
+        public override Unit VItem<V, T>(V vision, T value)
             => vision.Accept<Unit, BytesSerializer>(Base, value);
 
         public override Unit VNone() => default;
@@ -570,7 +570,7 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
         {
             if (first) first = false;
             else Writer.Write((byte)((byte)TypeToken.Map | (byte)SplitToken.Split << 3));
-            vision.AcceptField<Unit, StructSeraVisitor>(StructVisitor, value, i);
+            vision.AcceptField<Unit, StructSeraVisitor>(StructVisitor, ref value, i);
         }
         Writer.Write((byte)((byte)TypeToken.Map | (byte)SplitToken.End << 3));
         return default;
@@ -597,7 +597,7 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
     public override Unit VUnion<V, T>(V vision, T value)
     {
         UnionVisitor ??= new(this);
-        return vision.AcceptUnion<Unit, UnionSeraVisitor>(UnionVisitor, value);
+        return vision.AcceptUnion<Unit, UnionSeraVisitor>(UnionVisitor, ref value);
     }
 
     private UnionSeraVisitor? UnionVisitor;
@@ -631,6 +631,18 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
             Base.VString(str);
             Base.Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.Mid << 3));
             vision.Accept<Unit, BytesSerializer>(Base, value);
+            Base.Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.End << 3));
+            return default;
+        }
+
+        public override Unit VVariantTuple<V, T>(V vision, T value, Variant variant, UnionStyle? union_style = null,
+            VariantStyle? variant_style = null)
+        {
+            Base.Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.Start << 3));
+            var str = variant.ToString();
+            Base.VString(str);
+            Base.Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.Mid << 3));
+            Base.VTuple(vision, value);
             Base.Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.End << 3));
             return default;
         }

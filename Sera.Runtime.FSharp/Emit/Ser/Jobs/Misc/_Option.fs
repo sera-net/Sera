@@ -8,7 +8,7 @@ open Sera.Runtime.Emit.Deps
 open Sera.Runtime.FSharp.Emit.Ser.Jobs
 open Sera.Runtime.Utils
 
-type _Option(UnderlyingType: Type) =
+type internal _Option(UnderlyingType: Type) =
     inherit _Base()
 
     let mutable RuntimeType: Type = null

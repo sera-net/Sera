@@ -28,7 +28,7 @@ public readonly struct VectorImpl(SeraFormats? formats = null) : ISeraVision<Vec
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public R AcceptItem<R, V>(V visitor, Vector2 value, int index) where V : ATupleSeraVisitor<R>
+        public R AcceptItem<R, V>(V visitor, ref Vector2 value, int index) where V : ATupleSeraVisitor<R>
             => visitor.VItem(new PrimitiveImpl(formats), value[index]);
     }
 
@@ -41,10 +41,10 @@ public readonly struct VectorImpl(SeraFormats? formats = null) : ISeraVision<Vec
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public R AcceptItem<R, V>(V visitor, Vector3 value, int index) where V : ATupleSeraVisitor<R>
+        public R AcceptItem<R, V>(V visitor, ref Vector3 value, int index) where V : ATupleSeraVisitor<R>
             => visitor.VItem(new PrimitiveImpl(formats), value[index]);
     }
-    
+
     public readonly struct Vector4Impl(SeraFormats? formats = null) : ITupleSeraVision<Vector4>
     {
         public int Size
@@ -54,7 +54,7 @@ public readonly struct VectorImpl(SeraFormats? formats = null) : ISeraVision<Vec
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public R AcceptItem<R, V>(V visitor, Vector4 value, int index) where V : ATupleSeraVisitor<R>
+        public R AcceptItem<R, V>(V visitor, ref Vector4 value, int index) where V : ATupleSeraVisitor<R>
             => visitor.VItem(new PrimitiveImpl(formats), value[index]);
     }
 }
@@ -96,7 +96,7 @@ public readonly struct VectorImpl<T, D>(D dep) :
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public R AcceptItem<R, V>(V visitor, Vector<T> value, int index) where V : ATupleSeraVisitor<R>
+        public R AcceptItem<R, V>(V visitor, ref Vector<T> value, int index) where V : ATupleSeraVisitor<R>
             => visitor.VItem(dep, value[index]);
     }
 
@@ -109,7 +109,7 @@ public readonly struct VectorImpl<T, D>(D dep) :
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public R AcceptItem<R, V>(V visitor, Vector64<T> value, int index) where V : ATupleSeraVisitor<R>
+        public R AcceptItem<R, V>(V visitor, ref Vector64<T> value, int index) where V : ATupleSeraVisitor<R>
             => visitor.VItem(dep, value[index]);
     }
 
@@ -122,7 +122,7 @@ public readonly struct VectorImpl<T, D>(D dep) :
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public R AcceptItem<R, V>(V visitor, Vector128<T> value, int index) where V : ATupleSeraVisitor<R>
+        public R AcceptItem<R, V>(V visitor, ref Vector128<T> value, int index) where V : ATupleSeraVisitor<R>
             => visitor.VItem(dep, value[index]);
     }
 
@@ -135,7 +135,7 @@ public readonly struct VectorImpl<T, D>(D dep) :
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public R AcceptItem<R, V>(V visitor, Vector256<T> value, int index) where V : ATupleSeraVisitor<R>
+        public R AcceptItem<R, V>(V visitor, ref Vector256<T> value, int index) where V : ATupleSeraVisitor<R>
             => visitor.VItem(dep, value[index]);
     }
 
@@ -149,7 +149,7 @@ public readonly struct VectorImpl<T, D>(D dep) :
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public R AcceptItem<R, V>(V visitor, Vector512<T> value, int index) where V : ATupleSeraVisitor<R>
+        public R AcceptItem<R, V>(V visitor, ref Vector512<T> value, int index) where V : ATupleSeraVisitor<R>
             => visitor.VItem(dep, value[index]);
     }
 }

@@ -493,7 +493,7 @@ public class AsyncJsonSerializer
         {
             if (first) first = false;
             else await writer.Write(",");
-            var err = await vision.AcceptItem<ValueTask<bool>, TupleSeraVisitor>(TupleVisitor, value, i);
+            var err = await vision.AcceptItem<ValueTask<bool>, TupleSeraVisitor>(TupleVisitor, ref value, i);
             if (err) throw new SerializeException($"Unable to get item {i} of tuple {value}");
         }
         await writer.Write("]");
@@ -504,7 +504,7 @@ public class AsyncJsonSerializer
 
     private class TupleSeraVisitor(AsyncJsonSerializer Base) : ATupleSeraVisitor<ValueTask<bool>>(Base)
     {
-        public override async ValueTask<bool> VItem<T, V>(V vision, T value)
+        public override async ValueTask<bool> VItem<V, T>(V vision, T value)
         {
             await vision.Accept<ValueTask, AsyncJsonSerializer>(Base, value);
             return false;
@@ -654,7 +654,7 @@ public class AsyncJsonSerializer
         {
             if (first) first = false;
             else await writer.Write(",");
-            var err = await vision.AcceptField<ValueTask<bool>, StructSeraVisitor>(StructVisitor, value, i);
+            var err = await vision.AcceptField<ValueTask<bool>, StructSeraVisitor>(StructVisitor, ref value, i);
             if (err) throw new SerializeException($"Unable to get field nth {i} of {value}");
         }
         await writer.Write("}");
@@ -683,7 +683,7 @@ public class AsyncJsonSerializer
     public override ValueTask VUnion<V, T>(V vision, T value)
     {
         UnionVisitor ??= new(this);
-        return vision.AcceptUnion<ValueTask, UnionSeraVisitor>(UnionVisitor, value);
+        return vision.AcceptUnion<ValueTask, UnionSeraVisitor>(UnionVisitor, ref value);
     }
 
     private UnionSeraVisitor? UnionVisitor;
@@ -753,9 +753,42 @@ public class AsyncJsonSerializer
             }
         }
 
-        public override ValueTask VVariant(Variant variant,
+        public override async ValueTask VVariant(Variant variant,
             UnionStyle? union_style = null, VariantStyle? variant_style = null)
-            => VVariant(variant, union_style, variant_style, false);
+        {
+            var s = union_style ?? Base.formatter.DefaultUnionStyle;
+            if (s.CompactTag)
+            {
+                await VVariant(variant, union_style, variant_style, false);
+                return;
+            }
+            var format = s.Format is not UnionFormat.Any ? s.Format : Base.formatter.DefaultUnionFormat;
+            switch (format)
+            {
+                case UnionFormat.Internal:
+                    await Base.writer.Write("{");
+                    await Base.writer.WriteString(s.InternalTagName, true);
+                    await Base.writer.Write(":");
+                    await VVariant(variant, union_style, variant_style, false);
+                    await Base.writer.Write("}");
+                    break;
+                case UnionFormat.Adjacent:
+                    await Base.writer.Write("{");
+                    await Base.writer.WriteString(s.AdjacentTagName, true);
+                    await Base.writer.Write(":");
+                    await VVariant(variant, union_style, variant_style, false);
+                    await Base.writer.Write("}");
+                    break;
+                case UnionFormat.Tuple:
+                    await Base.writer.Write("[");
+                    await VVariant(variant, union_style, variant_style, false);
+                    await Base.writer.Write("]");
+                    break;
+                default:
+                    await VVariant(variant, union_style, variant_style, false);
+                    break;
+            }
+        }
 
         public override async ValueTask VVariantValue<V, T>(V vision, T value, Variant variant,
             UnionStyle? union_style = null, VariantStyle? variant_style = null)
@@ -772,7 +805,16 @@ public class AsyncJsonSerializer
                     await Base.writer.Write("}");
                     break;
                 case UnionFormat.Internal:
-                    goto case UnionFormat.External;
+                    await Base.writer.Write("{");
+                    await Base.writer.WriteString(s.InternalTagName, true);
+                    await Base.writer.Write(":");
+                    await VVariant(variant, union_style, variant_style, false);
+                    await Base.writer.Write(",");
+                    await Base.writer.WriteString(s.InternalValueName, true);
+                    await Base.writer.Write(":");
+                    await vision.Accept<ValueTask, AsyncJsonSerializer>(Base, value);
+                    await Base.writer.Write("}");
+                    break;
                 case UnionFormat.Adjacent:
                     await Base.writer.Write("{");
                     await Base.writer.WriteString(s.AdjacentTagName, true);
@@ -799,10 +841,21 @@ public class AsyncJsonSerializer
             }
         }
 
+        public override ValueTask VVariantTuple<V, T>(V vision, T value, Variant variant,
+            UnionStyle? union_style = null,
+            VariantStyle? variant_style = null)
+            => VVariantValue(ByImpls<T>.ByTuple(vision), value, variant, union_style, variant_style);
+
         public override async ValueTask VVariantStruct<V, T>(V vision, T value, Variant variant,
             UnionStyle? union_style = null, VariantStyle? variant_style = null)
         {
             var s = union_style ?? Base.formatter.DefaultUnionStyle;
+            var format = s.Format is not UnionFormat.Any ? s.Format : Base.formatter.DefaultUnionFormat;
+            if (format is not UnionFormat.Internal)
+            {
+                await VVariantValue(ByImpls<T>.ByStruct(vision), value, variant, union_style, variant_style);
+                return;
+            }
             var size = vision.Count;
             var last_state = Base.state;
             Base.state = JsonSerializerState.None;
@@ -814,7 +867,8 @@ public class AsyncJsonSerializer
             for (var i = 0; i < size; i++)
             {
                 await Base.writer.Write(",");
-                var err = await vision.AcceptField<ValueTask<bool>, StructSeraVisitor>(Base.StructVisitor, value, i);
+                var err = await vision.AcceptField<ValueTask<bool>, StructSeraVisitor>(Base.StructVisitor, ref value,
+                    i);
                 if (err) throw new SerializeException($"Unable to get field nth {i} of {value}");
             }
             await Base.writer.Write("}");

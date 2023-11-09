@@ -4,6 +4,7 @@ using System.Reflection;
 using Sera.Core.Impls.Ser;
 using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Utils;
+using Sera.Runtime.Utils.Internal;
 
 namespace Sera.Runtime.Emit.Ser.Jobs;
 
@@ -21,7 +22,7 @@ internal class _Tuples(bool IsValueTuple, Type[] ItemTypes) : _Base
     }
 
     public override EmitTransform[] CollectTransforms(EmitStub stub, EmitMeta target)
-        => target.IsValueType ? EmitTransform.EmptyTransforms : SerializeEmitProvider.ReferenceTypeTransforms;
+        => target.IsValueType ? EmitTransform.EmptyTransforms : ReferenceTypeTransforms;
 
     private int GetTupleSize(Type target, int size = 0)
     {
@@ -46,7 +47,7 @@ internal class _Tuples(bool IsValueTuple, Type[] ItemTypes) : _Base
             var item_nullable = nullable?[i];
             var transforms = i != 7 && !t.IsValueType && item_nullable is not
                 { NullabilityInfo.ReadState: NullabilityState.NotNull }
-                ? SerializeEmitProvider.NullableClassImplTransforms
+                ? NullableClassImplTransforms
                 : EmitTransform.EmptyTransforms;
             return new DepMeta(new(TypeMetas.GetTypeMeta(t, item_nullable), target.Styles.TakeFormats()),
                 transforms, KeepRaw: i == 7);

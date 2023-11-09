@@ -19,7 +19,7 @@ public readonly struct Enum2Impl : ISeraVision<Enum2>, IUnionSeraVision<Enum2>
 
     public string Name => nameof(Enum2);
 
-    public R AcceptUnion<R, V>(V visitor, Enum2 value) where V : AUnionSeraVisitor<R>
+    public R AcceptUnion<R, V>(V visitor, ref Enum2 value) where V : AUnionSeraVisitor<R>
         => value switch
         {
             Enum2.A => visitor.VVariant(new Variant(nameof(Enum2.A), VariantTag.Create((int)Enum2.A)), style, style2),

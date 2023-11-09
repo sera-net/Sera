@@ -180,7 +180,7 @@ public abstract class ASeraVisitor<R> : SeraBase
 
 public abstract class ATupleSeraVisitor<R>(SeraBase Base) : SeraBaseForward(Base)
 {
-    public abstract R VItem<T, V>(V vision, T value)
+    public abstract R VItem<V, T>(V vision, T value)
         where V : ISeraVision<T>;
 
     public abstract R VNone();
@@ -238,6 +238,10 @@ public abstract class AUnionSeraVisitor<R>(SeraBase Base) : SeraBaseForward(Base
     public abstract R VVariantValue<V, T>(V vision, T value, Variant variant,
         UnionStyle? union_style = null, VariantStyle? variant_style = null)
         where V : ISeraVision<T>;
+
+    public abstract R VVariantTuple<V, T>(V vision, T value, Variant variant,
+        UnionStyle? union_style = null, VariantStyle? variant_style = null)
+        where V : ITupleSeraVision<T>;
 
     public abstract R VVariantStruct<V, T>(V vision, T value, Variant variant,
         UnionStyle? union_style = null, VariantStyle? variant_style = null)

@@ -23,8 +23,8 @@ public readonly struct PrivateEnumImpl<T> : ISeraVision<T>, IUnionSeraVision<T> 
     public string Name => inner.Name;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R AcceptUnion<R, V>(V visitor, T value) where V : AUnionSeraVisitor<R>
-        => inner.AcceptUnion<R, V>(visitor, value);
+    public R AcceptUnion<R, V>(V visitor, ref T value) where V : AUnionSeraVisitor<R>
+        => inner.AcceptUnion<R, V>(visitor, ref value);
 
     private sealed class Inner(
         string unionName, Func<T, VariantTag> toTag,
@@ -35,7 +35,7 @@ public readonly struct PrivateEnumImpl<T> : ISeraVision<T>, IUnionSeraVision<T> 
         public string Name => unionName;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public R AcceptUnion<R, V>(V visitor, T value) where V : AUnionSeraVisitor<R>
+        public R AcceptUnion<R, V>(V visitor, ref T value) where V : AUnionSeraVisitor<R>
         {
             if (metas.TryGetValue(value, out var meta))
             {

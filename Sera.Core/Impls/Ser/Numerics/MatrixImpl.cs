@@ -22,7 +22,7 @@ public readonly struct MatrixImpl(SeraFormats? formats = null) : ISeraVision<Mat
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public R AcceptItem<R, V>(V visitor, Matrix3x2 value, int index) where V : ATupleSeraVisitor<R>
+        public R AcceptItem<R, V>(V visitor, ref Matrix3x2 value, int index) where V : ATupleSeraVisitor<R>
             => index switch
             {
                 0 => visitor.VItem(new PrimitiveImpl(formats), value.M11),
@@ -44,7 +44,7 @@ public readonly struct MatrixImpl(SeraFormats? formats = null) : ISeraVision<Mat
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public R AcceptItem<R, V>(V visitor, Matrix4x4 value, int index) where V : ATupleSeraVisitor<R>
+        public R AcceptItem<R, V>(V visitor, ref Matrix4x4 value, int index) where V : ATupleSeraVisitor<R>
             => index switch
             {
                 0 => visitor.VItem(new PrimitiveImpl(formats), value.M11),

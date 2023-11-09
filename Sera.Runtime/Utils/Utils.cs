@@ -4,8 +4,10 @@ using Sera.Core;
 
 namespace Sera.Runtime.Utils;
 
-internal static class Utils
+public static class Utils
 {
+    public const int MaxJumpTableSizeAllowed = 255;
+
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static VariantTag MakeVariantTag<V>(this V value) => value switch
     {
@@ -38,4 +40,7 @@ internal static class Utils
         char v => v,
         _ => throw new ArgumentException($"{typeof(V)} is not a primitive type"),
     };
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static T LdIndT<T>(ref T value) => value;
 }

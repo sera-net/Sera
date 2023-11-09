@@ -171,10 +171,11 @@ public sealed class SeraFormatsAttribute : Attribute
     public string? CustomGuidTextFormat { get; set; }
 }
 
-[AttributeUsage(AttributeTargets.Field  | AttributeTargets.Property)]
+[AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
 public sealed class SeraVariantAttribute : Attribute
 {
     public VariantPriority Priority { get; set; } = VariantPriority.Any;
+    public VariantFormat Format { get; set; } = VariantFormat.None;
 
     public SeraVariantAttribute() { }
 
@@ -184,24 +185,60 @@ public sealed class SeraVariantAttribute : Attribute
     }
 }
 
+public enum VariantFormat
+{
+    None,
+    /// <summary>
+    /// If f# union has only one variant and variant name is Item then this is the default
+    /// <code language="fs">type A = A of int</code>
+    /// <code language="js">{ "A": 123 }</code>
+    /// </summary>
+    Value,
+    /// <summary>
+    /// Only for f# union; If the name of each variant in f# union is ItemN then this is the default
+    /// <code language="fs">type A = A of int</code>
+    /// <code language="js">{ "A": [123] }</code>
+    /// </summary>
+    Tuple,
+    /// <summary>
+    /// Only for f# union; The default of f #union in other cases
+    /// <code language="fs">type A = A of a: int</code>
+    /// <code language="js">{ "A": { "a": 123 } }</code>
+    /// </summary>
+    Struct,
+}
+
 [AttributeUsage(AttributeTargets.Enum | AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Interface)]
 public class SeraUnionAttribute : Attribute
 {
     public SeraUnionMode Mode { get; set; }
+    /// <summary>Variant tag priority</summary>
     public VariantPriority Priority { get; set; } = VariantPriority.Any;
+    /// <summary>Union format</summary>
     public UnionFormat Format { get; set; } = UnionFormat.Any;
+    /// <summary>Whether to treat the variant as a tag when it has no value when the format is <see cref="UnionFormat.Internal"/> | <see cref="UnionFormat.Adjacent"/> | <see cref="UnionFormat.Tuple"/></summary>
+    public bool CompactTag { get; set; } = false;
+    /// <summary>The name of the tag when the format is <see cref="UnionFormat.Internal"/></summary>
     public string InternalTagName { get; set; } = "type";
+    /// <summary>Field name if the variant value cannot be treated as a structure when the format is <see cref="UnionFormat.Internal"/></summary>
+    public string InternalValueName { get; set; } = "value";
+    /// <summary>The name of the tag when the format is <see cref="UnionFormat.Adjacent"/></summary>
     public string AdjacentTagName { get; set; } = "t";
+    /// <summary>The name of the value when the format is <see cref="UnionFormat.Adjacent"/></summary>
     public string AdjacentValueName { get; set; } = "c";
 }
 
+/// <summary>
+/// Whether to exhaustively match
+/// <para>F# union is always <see cref="Exhaustive"/></para>
+/// </summary>
 [SeraUnion(Mode = Exhaustive)]
 public enum SeraUnionMode : byte
 {
     None,
-    /// <summary>No more variants will be added in the future, default value for f# union</summary>
+    /// <summary>No more variants will be added in the future</summary>
     Exhaustive,
-    /// <summary>More variations may be added in the future, default value for enum</summary>
+    /// <summary>More variations may be added in the future <para>C# enum default value</para></summary>
     NonExhaustive,
 }
 

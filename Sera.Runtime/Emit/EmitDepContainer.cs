@@ -5,6 +5,7 @@ using System.Reflection.Emit;
 using Sera.Core.Impls.Deps;
 using Sera.Runtime.Emit.Ser.Internal;
 using Sera.Runtime.Utils;
+using Sera.Runtime.Utils.Internal;
 
 namespace Sera.Runtime.Emit.Deps;
 
@@ -167,4 +168,22 @@ public static class EmitDepContainer
         var type = type_builder.CreateType();
         return type;
     }
+
+    public static void SetData(Type container, object? data)
+    {
+        var field = container.GetField(ImplFieldName, BindingFlags.Public | BindingFlags.Static)!;
+        field.SetValue(null, data);
+    }
+
+    public static object? GetData(Type container)
+    {
+        var field = container.GetField(ImplFieldName, BindingFlags.Public | BindingFlags.Static)!;
+        return field.GetValue(null);
+    }
+
+    public static FieldInfo GetField(Type container)
+        => container.GetField(ImplFieldName, BindingFlags.Public | BindingFlags.Static)!;
+
+    public static PropertyInfo GetProperty(Type container)
+        => container.GetProperty(ImplPropName, BindingFlags.Public | BindingFlags.Static)!;
 }

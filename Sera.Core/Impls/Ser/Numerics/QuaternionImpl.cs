@@ -18,7 +18,7 @@ public readonly struct QuaternionImpl(SeraFormats? formats = null) :
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R AcceptItem<R, V>(V visitor, Quaternion value, int index) where V : ATupleSeraVisitor<R>
+    public R AcceptItem<R, V>(V visitor, ref Quaternion value, int index) where V : ATupleSeraVisitor<R>
         => index switch
         {
             0 => visitor.VItem(new PrimitiveImpl(formats), value.X),

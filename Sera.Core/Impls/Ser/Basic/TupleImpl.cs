@@ -14,7 +14,7 @@ public readonly struct TupleImpl : ISeraVision<ValueTuple>, ITupleSeraVision<Val
     public int Size => 0;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R AcceptItem<R, V>(V visitor, ValueTuple _, int index) where V : ATupleSeraVisitor<R>
+    public R AcceptItem<R, V>(V visitor, ref ValueTuple _, int index) where V : ATupleSeraVisitor<R>
         => visitor.VNone();
 }
 
@@ -37,7 +37,7 @@ public readonly struct TupleImpl<T1, D1>(D1 d1) :
     public int Size => 1;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R AcceptItem<R, V>(V visitor, ValueTuple<T1> value, int index) where V : ATupleSeraVisitor<R>
+    public R AcceptItem<R, V>(V visitor, ref ValueTuple<T1> value, int index) where V : ATupleSeraVisitor<R>
         => index switch
         {
             0 => visitor.VItem(d1, value.Item1),
@@ -45,7 +45,7 @@ public readonly struct TupleImpl<T1, D1>(D1 d1) :
         };
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R AcceptItem<R, V>(V visitor, Tuple<T1> value, int index) where V : ATupleSeraVisitor<R>
+    public R AcceptItem<R, V>(V visitor, ref Tuple<T1> value, int index) where V : ATupleSeraVisitor<R>
         => index switch
         {
             0 => visitor.VItem(d1, value.Item1),
@@ -74,7 +74,7 @@ public readonly struct TupleImpl<T1, T2, D1, D2>(D1 d1, D2 d2) :
     public int Size => 2;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R AcceptItem<R, V>(V visitor, ValueTuple<T1, T2> value, int index) where V : ATupleSeraVisitor<R>
+    public R AcceptItem<R, V>(V visitor, ref ValueTuple<T1, T2> value, int index) where V : ATupleSeraVisitor<R>
         => index switch
         {
             0 => visitor.VItem(d1, value.Item1),
@@ -83,7 +83,7 @@ public readonly struct TupleImpl<T1, T2, D1, D2>(D1 d1, D2 d2) :
         };
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R AcceptItem<R, V>(V visitor, Tuple<T1, T2> value, int index) where V : ATupleSeraVisitor<R>
+    public R AcceptItem<R, V>(V visitor, ref Tuple<T1, T2> value, int index) where V : ATupleSeraVisitor<R>
         => index switch
         {
             0 => visitor.VItem(d1, value.Item1),
@@ -114,7 +114,7 @@ public readonly struct TupleImpl<T1, T2, T3, D1, D2, D3>(D1 d1, D2 d2, D3 d3) :
     public int Size => 3;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R AcceptItem<R, V>(V visitor, ValueTuple<T1, T2, T3> value, int index) where V : ATupleSeraVisitor<R>
+    public R AcceptItem<R, V>(V visitor, ref ValueTuple<T1, T2, T3> value, int index) where V : ATupleSeraVisitor<R>
         => index switch
         {
             0 => visitor.VItem(d1, value.Item1),
@@ -124,7 +124,7 @@ public readonly struct TupleImpl<T1, T2, T3, D1, D2, D3>(D1 d1, D2 d2, D3 d3) :
         };
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R AcceptItem<R, V>(V visitor, Tuple<T1, T2, T3> value, int index) where V : ATupleSeraVisitor<R>
+    public R AcceptItem<R, V>(V visitor, ref Tuple<T1, T2, T3> value, int index) where V : ATupleSeraVisitor<R>
         => index switch
         {
             0 => visitor.VItem(d1, value.Item1),
@@ -157,7 +157,7 @@ public readonly struct TupleImpl<T1, T2, T3, T4, D1, D2, D3, D4>(D1 d1, D2 d2, D
     public int Size => 4;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R AcceptItem<R, V>(V visitor, ValueTuple<T1, T2, T3, T4> value, int index) where V : ATupleSeraVisitor<R>
+    public R AcceptItem<R, V>(V visitor, ref ValueTuple<T1, T2, T3, T4> value, int index) where V : ATupleSeraVisitor<R>
         => index switch
         {
             0 => visitor.VItem(d1, value.Item1),
@@ -168,7 +168,7 @@ public readonly struct TupleImpl<T1, T2, T3, T4, D1, D2, D3, D4>(D1 d1, D2 d2, D
         };
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R AcceptItem<R, V>(V visitor, Tuple<T1, T2, T3, T4> value, int index) where V : ATupleSeraVisitor<R>
+    public R AcceptItem<R, V>(V visitor, ref Tuple<T1, T2, T3, T4> value, int index) where V : ATupleSeraVisitor<R>
         => index switch
         {
             0 => visitor.VItem(d1, value.Item1),
@@ -203,7 +203,7 @@ public readonly struct TupleImpl<T1, T2, T3, T4, T5, D1, D2, D3, D4, D5>(D1 d1, 
     public int Size => 5;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R AcceptItem<R, V>(V visitor, ValueTuple<T1, T2, T3, T4, T5> value, int index)
+    public R AcceptItem<R, V>(V visitor, ref ValueTuple<T1, T2, T3, T4, T5> value, int index)
         where V : ATupleSeraVisitor<R>
         => index switch
         {
@@ -216,7 +216,7 @@ public readonly struct TupleImpl<T1, T2, T3, T4, T5, D1, D2, D3, D4, D5>(D1 d1, 
         };
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R AcceptItem<R, V>(V visitor, Tuple<T1, T2, T3, T4, T5> value, int index) where V : ATupleSeraVisitor<R>
+    public R AcceptItem<R, V>(V visitor, ref Tuple<T1, T2, T3, T4, T5> value, int index) where V : ATupleSeraVisitor<R>
         => index switch
         {
             0 => visitor.VItem(d1, value.Item1),
@@ -256,7 +256,7 @@ public readonly struct TupleImpl<T1, T2, T3, T4, T5, T6, D1, D2, D3, D4, D5, D6>
     public int Size => 6;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R AcceptItem<R, V>(V visitor, ValueTuple<T1, T2, T3, T4, T5, T6> value, int index)
+    public R AcceptItem<R, V>(V visitor, ref ValueTuple<T1, T2, T3, T4, T5, T6> value, int index)
         where V : ATupleSeraVisitor<R>
         => index switch
         {
@@ -270,7 +270,7 @@ public readonly struct TupleImpl<T1, T2, T3, T4, T5, T6, D1, D2, D3, D4, D5, D6>
         };
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R AcceptItem<R, V>(V visitor, Tuple<T1, T2, T3, T4, T5, T6> value, int index)
+    public R AcceptItem<R, V>(V visitor, ref Tuple<T1, T2, T3, T4, T5, T6> value, int index)
         where V : ATupleSeraVisitor<R>
         => index switch
         {
@@ -313,7 +313,7 @@ public readonly struct TupleImpl<T1, T2, T3, T4, T5, T6, T7, D1, D2, D3, D4, D5,
     public int Size => 7;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R AcceptItem<R, V>(V visitor, ValueTuple<T1, T2, T3, T4, T5, T6, T7> value, int index)
+    public R AcceptItem<R, V>(V visitor, ref ValueTuple<T1, T2, T3, T4, T5, T6, T7> value, int index)
         where V : ATupleSeraVisitor<R>
         => index switch
         {
@@ -328,7 +328,7 @@ public readonly struct TupleImpl<T1, T2, T3, T4, T5, T6, T7, D1, D2, D3, D4, D5,
         };
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R AcceptItem<R, V>(V visitor, Tuple<T1, T2, T3, T4, T5, T6, T7> value, int index)
+    public R AcceptItem<R, V>(V visitor, ref Tuple<T1, T2, T3, T4, T5, T6, T7> value, int index)
         where V : ATupleSeraVisitor<R>
         => index switch
         {
@@ -371,7 +371,7 @@ public readonly struct TupleRestValueImpl<
     public int Size => size;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R AcceptItem<R, V>(V visitor, ValueTuple<T1, T2, T3, T4, T5, T6, T7, TR> value, int index)
+    public R AcceptItem<R, V>(V visitor, ref ValueTuple<T1, T2, T3, T4, T5, T6, T7, TR> value, int index)
         where V : ATupleSeraVisitor<R>
         => index switch
         {
@@ -382,7 +382,7 @@ public readonly struct TupleRestValueImpl<
             4 => visitor.VItem(d5, value.Item5),
             5 => visitor.VItem(d6, value.Item6),
             6 => visitor.VItem(d7, value.Item7),
-            >= 7 => dr.AcceptItem<R, V>(visitor, value.Rest, index - 7),
+            >= 7 => dr.AcceptItem<R, V>(visitor, ref value.Rest, index - 7),
             _ => visitor.VNone(),
         };
 }
@@ -411,20 +411,32 @@ public readonly struct TupleRestClassImpl<
     public int Size => size;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R AcceptItem<R, V>(V visitor, Tuple<T1, T2, T3, T4, T5, T6, T7, TR> value, int index)
+    public R AcceptItem<R, V>(V visitor, ref Tuple<T1, T2, T3, T4, T5, T6, T7, TR> value, int index)
         where V : ATupleSeraVisitor<R>
-        => index switch
+    {
+        switch (index)
         {
-            0 => visitor.VItem(d1, value.Item1),
-            1 => visitor.VItem(d2, value.Item2),
-            2 => visitor.VItem(d3, value.Item3),
-            3 => visitor.VItem(d4, value.Item4),
-            4 => visitor.VItem(d5, value.Item5),
-            5 => visitor.VItem(d6, value.Item6),
-            6 => visitor.VItem(d7, value.Item7),
-            >= 7 => dr.AcceptItem<R, V>(visitor, value.Rest, index - 7),
-            _ => visitor.VNone(),
-        };
+            case 0:
+                return visitor.VItem(d1, value.Item1);
+            case 1:
+                return visitor.VItem(d2, value.Item2);
+            case 2:
+                return visitor.VItem(d3, value.Item3);
+            case 3:
+                return visitor.VItem(d4, value.Item4);
+            case 4:
+                return visitor.VItem(d5, value.Item5);
+            case 5:
+                return visitor.VItem(d6, value.Item6);
+            case 6:
+                return visitor.VItem(d7, value.Item7);
+            case >= 7:
+                var rest = value.Rest;
+                return dr.AcceptItem<R, V>(visitor, ref rest, index - 7);
+            default:
+                return visitor.VNone();
+        }
+    }
 }
 
 #endregion

@@ -16,10 +16,38 @@ using Sera.Core.Providers.Ser;
 using Sera.Runtime.Emit;
 using SerImpl = Sera.Core.Impls.Ser;
 
-namespace Sera.Runtime.Utils;
+namespace Sera.Runtime.Utils.Internal;
 
-internal static class ReflectionUtils
+public static class ReflectionUtils
 {
+    public const string Name__VariantTag_Create = nameof(VariantTag.Create);
+    public const string Name__ISeraVision_Accept = nameof(ISeraVision<object>.Accept);
+    public const string Name__IUnionSeraVision_Name = nameof(IUnionSeraVision<object>.Name);
+    public const string Name__ITupleSeraVision_Size = nameof(ITupleSeraVision<object>.Size);
+    public const string Name__IStructSeraVision_Count = nameof(IStructSeraVision<object>.Count);
+    public const string Name__IStructSeraVision_Name = nameof(IStructSeraVision<object>.Name);
+    public const string Name__IUnionSeraVision_AcceptUnion = nameof(IUnionSeraVision<object>.AcceptUnion);
+    public const string Name__ITupleSeraVision_AcceptItem = nameof(ITupleSeraVision<object>.AcceptItem);
+    public const string Name__IStructSeraVision_AcceptField = nameof(IStructSeraVision<object>.AcceptField);
+    public const string Name__AUnionSeraVisitor_VVariant = nameof(AUnionSeraVisitor<object>.VVariant);
+    public const string Name__AUnionSeraVisitor_VNone = nameof(AUnionSeraVisitor<object>.VNone);
+    public const string Name__AUnionSeraVisitor_VEmpty = nameof(AUnionSeraVisitor<object>.VEmpty);
+    public const string Name__AUnionSeraVisitor_VVariantValue = nameof(AUnionSeraVisitor<object>.VVariantValue);
+    public const string Name__AUnionSeraVisitor_VVariantTuple = nameof(AUnionSeraVisitor<object>.VVariantTuple);
+    public const string Name__AUnionSeraVisitor_VVariantStruct = nameof(AUnionSeraVisitor<object>.VVariantStruct);
+    public const string Name__ATupleSeraVisitor_VNone = nameof(ATupleSeraVisitor<object>.VNone);
+    public const string Name__ATupleSeraVisitor_VItem = nameof(ATupleSeraVisitor<object>.VItem);
+    public const string Name__AStructSeraVisitor_VNone = nameof(AStructSeraVisitor<object>.VNone);
+    public const string Name__AStructSeraVisitor_VField = nameof(AStructSeraVisitor<object>.VField);
+    public static readonly Type TypeDel__ASeraVisitor = typeof(ASeraVisitor<>);
+    public static readonly Type TypeDel__ISeraVision = typeof(ISeraVision<>);
+    public static readonly Type TypeDel__IUnionSeraVision = typeof(IUnionSeraVision<>);
+    public static readonly Type TypeDel__AUnionSeraVisitor = typeof(AUnionSeraVisitor<>);
+    public static readonly Type TypeDel__ITupleSeraVision = typeof(ITupleSeraVision<>);
+    public static readonly Type TypeDel__ATupleSeraVisitor = typeof(ATupleSeraVisitor<>);
+    public static readonly Type TypeDel__IStructSeraVision = typeof(IStructSeraVision<>);
+    public static readonly Type TypeDel__AStructSeraVisitor = typeof(AStructSeraVisitor<>);
+
     public static bool IsTypeBuilder(this Type type) =>
         type is TypeBuilder ||
         type is { IsGenericType: true } && type.GetGenericArguments().AsParallel().Any(IsTypeBuilder);
@@ -55,6 +83,14 @@ internal static class ReflectionUtils
         typeof(ASeraVisitor<>).GetMethod(nameof(ASeraVisitor<Unit>.VStruct),
             BindingFlags.Public | BindingFlags.Instance)!;
 
+    public static MethodInfo ATupleSeraVisitor_VNone { get; } =
+        typeof(ATupleSeraVisitor<>).GetMethod(nameof(ATupleSeraVisitor<Unit>.VNone),
+            BindingFlags.Public | BindingFlags.Instance)!;
+    
+    public static MethodInfo ATupleSeraVisitor_VItem { get; } =
+        typeof(ATupleSeraVisitor<>).GetMethod(nameof(ATupleSeraVisitor<Unit>.VItem),
+            BindingFlags.Public | BindingFlags.Instance)!;
+    
     public static MethodInfo AStructSeraVisitor_VField { get; } =
         typeof(AStructSeraVisitor<>).GetMethod(nameof(AStructSeraVisitor<Unit>.VField),
             BindingFlags.Public | BindingFlags.Instance)!;
@@ -69,6 +105,18 @@ internal static class ReflectionUtils
 
     public static MethodInfo AUnionSeraVisitor_VVariant { get; } =
         typeof(AUnionSeraVisitor<>).GetMethod(nameof(AUnionSeraVisitor<Unit>.VVariant),
+            BindingFlags.Public | BindingFlags.Instance)!;
+
+    public static MethodInfo AUnionSeraVisitor_VVariantValue { get; } =
+        typeof(AUnionSeraVisitor<>).GetMethod(nameof(AUnionSeraVisitor<Unit>.VVariantValue),
+            BindingFlags.Public | BindingFlags.Instance)!;
+    
+    public static MethodInfo AUnionSeraVisitor_VVariantTuple { get; } =
+        typeof(AUnionSeraVisitor<>).GetMethod(nameof(AUnionSeraVisitor<Unit>.VVariantTuple),
+            BindingFlags.Public | BindingFlags.Instance)!;
+    
+    public static MethodInfo AUnionSeraVisitor_VVariantStruct { get; } =
+        typeof(AUnionSeraVisitor<>).GetMethod(nameof(AUnionSeraVisitor<Unit>.VVariantStruct),
             BindingFlags.Public | BindingFlags.Instance)!;
 
     public static MethodInfo AUnionSeraVisitor_VNone { get; } =
@@ -157,23 +205,22 @@ internal static class ReflectionUtils
         typeof(ImmutableHashSet<>),
         typeof(ImmutableArray<>),
     }.ToFrozenSet();
-    
+
     public static readonly FrozenSet<Type> DoubleGenericTypes = new[]
     {
         typeof(IDictionary<,>),
         typeof(IReadOnlyDictionary<,>),
-        
+
         typeof(FrozenDictionary<,>),
         typeof(Dictionary<,>),
         typeof(SortedDictionary<,>),
         typeof(SortedList<,>),
         typeof(ReadOnlyDictionary<,>),
-        
+
         typeof(ImmutableDictionary<,>),
         typeof(ImmutableSortedDictionary<,>),
-        
+
         typeof(ConditionalWeakTable<,>),
-        
     }.ToFrozenSet();
 
     public static FrozenSet<Type> ValueTuples { get; } = new HashSet<Type>

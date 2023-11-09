@@ -3,7 +3,6 @@
 open System
 open NUnit.Framework
 open Sera
-open Sera.Core
 open Sera.Json
 open Sera.Runtime
 open Sera.Runtime.FSharp
@@ -317,28 +316,6 @@ let TestPrivateOption2 () =
     Console.WriteLine(str)
 
     Assert.That(str, Is.EqualTo("{}"))
-
-    ()
-
-// #endregion
-
-// #region TestUnion1
-
-[<SeraUnion(Format = UnionFormat.External)>]
-type TypeTestUnion1 =
-    | [<SeraVariant(Priority = VariantPriority.TagFirst)>] TypeTestUnion1_A
-    | TypeTestUnion1_B of int
-
-[<Test>]
-let TestTypeTestUnion1 () =
-    let obj = TypeTestUnion1_A
-
-    let str = SeraJson.Serializer.Serialize(obj).To.String()
-
-    Console.WriteLine(str)
-
-    // Assert.That(str, Is.EqualTo("{}"))
-    // todo
 
     ()
 

@@ -7,6 +7,7 @@ using Sera.Core;
 using Sera.Runtime.Emit.Deps;
 using Sera.Runtime.Emit.Ser.Internal;
 using Sera.Runtime.Utils;
+using Sera.Runtime.Utils.Internal;
 
 namespace Sera.Runtime.Emit.Ser.Jobs._Enum;
 

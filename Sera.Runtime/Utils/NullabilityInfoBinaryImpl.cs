@@ -18,7 +18,7 @@ internal readonly struct NullabilityInfoBinarySerializeImpl : ISeraVision<Nullab
     public int Size => 4;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R AcceptItem<R, V>(V visitor, NullabilityInfo value, int index) where V : ATupleSeraVisitor<R>
+    public R AcceptItem<R, V>(V visitor, ref NullabilityInfo value, int index) where V : ATupleSeraVisitor<R>
         => index switch
         {
             0 => visitor.VItem(new PrimitiveImpl(), (byte)value.ReadState),

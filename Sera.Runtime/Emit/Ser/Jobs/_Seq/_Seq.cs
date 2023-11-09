@@ -3,5 +3,5 @@
 internal abstract class _Seq : _Base
 {
     public override EmitTransform[] CollectTransforms(EmitStub stub, EmitMeta target)
-        => target.IsValueType ? EmitTransform.EmptyTransforms : SerializeEmitProvider.ReferenceTypeTransforms;
+        => target.IsValueType ? EmitTransform.EmptyTransforms : ReferenceTypeTransforms;
 }
