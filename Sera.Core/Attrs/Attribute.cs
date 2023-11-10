@@ -82,12 +82,12 @@ public enum SeraRenameMode : byte
     UPPERCASE,
     /// <summary> Snake case <c>snake_case</c> </summary>
     snake_case,
-    /// <summary> Screaming snake case <c>SCREAMING_SNAKE_CASE</c> </summary>
-    SCREAMING_SNAKE_CASE,
+    /// <summary> Upper snake case <c>UPPER_SNAKE_CASE</c> </summary>
+    UPPER_SNAKE_CASE,
     /// <summary> Kebab case <c>kebab-case</c> </summary>
     kebab_case,
-    /// <summary> Screaming kebab case <c>SCREAMING-KEBAB-CASE</c> </summary>
-    SCREAMING_KEBAB_CASE,
+    /// <summary> Upper kebab case <c>UPPER-KEBAB-CASE</c> </summary>
+    UPPER_KEBAB_CASE,
 }
 
 [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class)]
