@@ -8,6 +8,7 @@ open Microsoft.FSharp.Reflection
 open Sera.Core
 open System.Linq
 open Sera
+open Sera.Utils
 
 type PSeq = ParallelEnumerable
 
@@ -88,6 +89,13 @@ module internal UnionReflectionUtils =
         buildJumpTable cases items value_index_map min max offset
 
     let GetUnionInfo (target: Type) =
+        let union_sera_attr = target.GetCustomAttribute<SeraAttribute>()
+
+        let union_rename =
+            if union_sera_attr <> null then
+                Nullable(union_sera_attr.Rename)
+            else
+                Nullable()
 
         let cases =
             FSharpType.GetUnionCases(target, BindingFlags.Public ||| BindingFlags.NonPublic)
@@ -95,6 +103,26 @@ module internal UnionReflectionUtils =
         let cases =
             query {
                 for case in cases do
+                    let variant_sera_attr =
+                        case.GetCustomAttributes(typeof<SeraAttribute>)
+                        |> Seq.cast<SeraAttribute>
+                        |> Seq.tryHead
+
+                    let variant_rename =
+                        match variant_sera_attr with
+                        | None -> Nullable()
+                        | Some value -> Nullable(value.Rename)
+
+                    let variant_name =
+                        match variant_sera_attr with
+                        | None -> case.Name
+                        | Some value -> value.Name
+
+                    let variant_name = if variant_name = null then case.Name else variant_name
+
+                    let rename = SeraRename.Or(variant_rename, union_rename)
+                    let name = SeraRename.Rename(variant_name, rename)
+
                     let variant_attr =
                         case.GetCustomAttributes(typeof<SeraVariantAttribute>)
                         |> Seq.cast<SeraVariantAttribute>
@@ -132,7 +160,7 @@ module internal UnionReflectionUtils =
 
                     select
                         { info = case
-                          name = case.Name
+                          name = name
                           tag = case.Tag
                           variant_attr = variant_attr
                           formats_attr = formats_attr

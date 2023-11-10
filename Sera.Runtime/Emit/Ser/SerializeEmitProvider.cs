@@ -8,6 +8,7 @@ using Sera.Core;
 using Sera.Core.Impls.Ser;
 using Sera.Runtime.Utils;
 using Sera.Runtime.Utils.Internal;
+using Sera.Utils;
 
 namespace Sera.Runtime.Emit.Ser;
 
@@ -96,8 +97,10 @@ internal class SerializeEmitProvider : AEmitProvider
 
     private EmitJob CreateStructJob(EmitMeta target, SeraAttribute? struct_sera_attr)
     {
+        var sera_attr = target.Type.GetCustomAttribute<SeraAttribute>();
         var struct_attr = target.Type.GetCustomAttribute<SeraStructAttribute>();
-        var name = struct_sera_attr?.Name ?? target.Type.Name; // todo rename
+        var name = struct_sera_attr?.Name ??
+                   SeraRename.Rename(target.Type.Name, sera_attr?.Rename ?? SeraRenameMode.None);
         var members = StructReflectionUtils.GetStructMembers(target.Type, SerOrDe.Ser, struct_sera_attr, struct_attr);
         if (target.Type.IsVisible && members.All(m => m.Type.IsVisible))
         {
@@ -115,8 +118,10 @@ internal class SerializeEmitProvider : AEmitProvider
 
     private EmitJob CreateEnumJob(EmitMeta target, SeraAttribute? struct_sera_attr)
     {
+        var sera_attr = target.Type.GetCustomAttribute<SeraAttribute>();
         var underlying_type = target.Type.GetEnumUnderlyingType();
-        var name = struct_sera_attr?.Name ?? target.Type.Name; // todo rename
+        var name = struct_sera_attr?.Name ??
+                   SeraRename.Rename(target.Type.Name, sera_attr?.Rename ?? SeraRenameMode.None);
         var flags = target.Type.GetCustomAttribute<FlagsAttribute>() != null;
         if (flags)
         {

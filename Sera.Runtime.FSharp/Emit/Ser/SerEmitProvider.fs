@@ -8,6 +8,7 @@ open Sera.Runtime
 open Sera.Runtime.Emit
 open Sera.Runtime.FSharp.Utils
 open Sera.Runtime.FSharp.Utils.Cont
+open Sera.Utils
 
 module internal SerEmitProviderModule =
     let option_type = typedefof<_ option>
@@ -35,7 +36,16 @@ type internal SerEmitProvider() =
             }
 
     member private this.CreateUnion(target: EmitMeta) : EmitJob =
-        let name = target.Type.Name // todo rename
+        let sera_attr = target.Type.GetCustomAttribute<SeraAttribute>()
+
+        let rename =
+            if sera_attr <> null then
+                sera_attr.Rename
+            else
+                SeraRenameMode.None
+
+        let name = SeraRename.Rename(target.Type.Name, rename)
+
         let union_attr = target.Type.GetCustomAttribute<SeraUnionAttribute>()
         let format_attr = target.Type.GetCustomAttribute<SeraFormatsAttribute>()
         let style = UnionStyle.FromAttr(union_attr, format_attr)

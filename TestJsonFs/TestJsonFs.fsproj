@@ -13,6 +13,7 @@
         <Compile Include="TestRuntime.fs" />
         <Compile Include="TestRuntime\TestUnion.fs" />
         <Compile Include="TestRuntime\TestUnionPrivate.fs" />
+        <Compile Include="TestRuntime\TestUnionRename.fs" />
     </ItemGroup>
 
     <ItemGroup>

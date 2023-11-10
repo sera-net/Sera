@@ -4,6 +4,7 @@ using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using Sera.Core;
+using Sera.Utils;
 
 namespace Sera.Runtime.Utils;
 
@@ -26,6 +27,7 @@ internal static class EnumUtils
 
     private static EnumInfo[] _GetEnumInfo<V>(Type target, bool distinct)
     {
+        var enum_sera_attr = target.GetCustomAttribute<SeraAttribute>();
         var names_set = target.GetEnumNames().ToHashSet();
         var fields = target.GetFields(BindingFlags.Static | BindingFlags.Public)
             .AsParallel().AsOrdered()
@@ -41,7 +43,8 @@ internal static class EnumUtils
                 var variant_attr = a.field.GetCustomAttribute<SeraVariantAttribute>();
                 var formats_attr = a.field.GetCustomAttribute<SeraFormatsAttribute>();
                 var style = VariantStyle.FromAttr(variant_attr, formats_attr);
-                var name = member_sera_attr?.Name ?? a.name; // todo auto rename
+                var rename = (member_sera_attr?.Rename).Or(enum_sera_attr?.Rename);
+                var name = member_sera_attr?.Name ?? SeraRename.Rename(a.name, rename);
                 return new EnumInfo(name, a.value.MakeVariantTag(), a.field, style);
             });
         if (distinct)
@@ -60,7 +63,7 @@ internal static class EnumUtils
 
     private static readonly MethodInfo _TryMakeJumpTable_MethodInfo = typeof(EnumUtils)
         .GetMethod(nameof(_TryMakeJumpTable), BindingFlags.Static | BindingFlags.NonPublic)!;
-    
+
     private static EnumJumpTables? _TryMakeJumpTable<V>(EnumInfo[] items)
         where V : unmanaged, INumber<V>
     {
