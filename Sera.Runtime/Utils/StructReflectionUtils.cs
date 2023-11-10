@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
+using Sera.Utils;
 
 namespace Sera.Runtime.Utils;
 
@@ -33,13 +34,14 @@ public static class StructReflectionUtils
         SeraFieldKeyAttribute? key_attr
     )
     {
-        // todo auto rename
-        var name = member_sera_attr?.Name ?? m.Name;
+        var rename = (member_sera_attr?.Rename).Or(struct_sera_attr?.Rename);
+        var name = member_sera_attr?.Name ?? SeraRename.Rename(m.Name, rename);
         var int_key = key_attr?.Key;
         return (name, int_key);
     }
 
-    public static StructMember[] GetStructMembers(Type target, SerOrDe ser_or_de, SeraAttribute? struct_sera_attr, SeraStructAttribute? struct_attr)
+    public static StructMember[] GetStructMembers(Type target, SerOrDe ser_or_de, SeraAttribute? struct_sera_attr,
+        SeraStructAttribute? struct_attr)
     {
         var members = target.GetMembers(
             BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic
@@ -102,7 +104,7 @@ public static class StructReflectionUtils
                 else return null;
             })
             .Where(a => a != null)
-            .Where(a => a is not { Type: { IsByRef: true } or { IsByRefLike: true } }) // todo support span
+            .Where(a => a is not { Type: { IsByRef: true } or { IsByRefLike: true } })
             .ToArray()!;
     }
 }

@@ -16,6 +16,14 @@ public readonly record struct SeraWord(ReadOnlyMemory<char> Word, SeraWordKind K
 
 public static class SeraRename
 {
+    public static SeraRenameMode Or(this SeraRenameMode? self, SeraRenameMode? other) =>
+        self switch
+        {
+            null => other ?? SeraRenameMode.None,
+            SeraRenameMode.None => other ?? SeraRenameMode.None,
+            { } r => r
+        };
+
     public static string Rename(string name, SeraRenameMode mode) => mode switch
     {
         SeraRenameMode.None or SeraRenameMode.Dont => name,

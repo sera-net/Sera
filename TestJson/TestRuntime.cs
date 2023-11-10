@@ -2804,7 +2804,7 @@ public class TestRuntime
     }
 
     #endregion
-    
+
     #region Nullable1
 
     [Test]
@@ -4233,6 +4233,108 @@ public class TestRuntime
 
         Console.WriteLine(str);
         Assert.That(str, Is.EqualTo("{\"a\":1,\"b\":2,\"c\":3}"));
+    }
+
+    #endregion
+
+    #region StructRename1
+
+    [Sera(Rename = SeraRenameMode.camelCase)]
+    public class StructRename1
+    {
+        public int Member1 { get; set; } = 123456;
+        public int SomeField { get; set; } = 654321;
+    }
+
+    [Test]
+    public void TestStructRename1()
+    {
+        var obj = new StructRename1();
+
+        var str = SeraJson.Serializer
+            .Serialize(obj).To.String();
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"member1\":123456,\"someField\":654321}"));
+    }
+
+    #endregion
+
+    #region StructRename2
+
+    [Sera(Rename = SeraRenameMode.snake_case)]
+    public class StructRename2
+    {
+        [Sera(Rename = SeraRenameMode.UPPERCASE)]
+        public int Member1 { get; set; } = 123456;
+        public int SomeField { get; set; } = 654321;
+    }
+
+    [Test]
+    public void TestStructRename2()
+    {
+        var obj = new StructRename2();
+
+        var str = SeraJson.Serializer
+            .Serialize(obj).To.String();
+
+        Console.WriteLine(str);
+        Assert.That(str, Is.EqualTo("{\"MEMBER1\":123456,\"some_field\":654321}"));
+    }
+
+    #endregion
+
+    #region EnumRename1
+
+    [Sera(Rename = SeraRenameMode.snake_case)]
+    public enum EnumRename1
+    {
+        SomeField,
+        Enum1,
+        [Sera(Rename = SeraRenameMode.kebab_case)]
+        some_field,
+        Vector3,
+    }
+
+    [Test]
+    public void TestEnumRename11()
+    {
+        {
+            var obj = EnumRename1.SomeField;
+
+            var str = SeraJson.Serializer
+                .Serialize(obj).To.String();
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"some_field\""));
+        }
+        {
+            var obj = EnumRename1.Enum1;
+
+            var str = SeraJson.Serializer
+                .Serialize(obj).To.String();
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"enum1\""));
+        }
+        {
+            var obj = EnumRename1.some_field;
+
+            var str = SeraJson.Serializer
+                .Serialize(obj).To.String();
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"some-field\""));
+        }
+        {
+            var obj = EnumRename1.Vector3;
+
+            var str = SeraJson.Serializer
+                .Serialize(obj).To.String();
+
+            Console.WriteLine(str);
+            Assert.That(str, Is.EqualTo("\"vector3\""));
+        }
     }
 
     #endregion
