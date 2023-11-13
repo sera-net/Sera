@@ -1,17 +1,8 @@
 ﻿using System.Reflection;
 using System.Runtime.CompilerServices;
+using Sera.Utils;
 
 namespace Sera.Runtime.Utils;
-
-public class Box<T>
-{
-    public T Value;
-
-    public Box(T value)
-    {
-        Value = value;
-    }
-}
 
 public static class Box
 {
