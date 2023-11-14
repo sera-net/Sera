@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using Sera.Core;
 using Sera.Utils;
 
@@ -12,16 +13,19 @@ public class JsonDeserializer(SeraJsonOptions options, AJsonReader reader) : ASe
     public override ISeraOptions Options => options;
     private readonly AJsonReader reader = reader;
 
-    public override IRuntimeProvider<ISeraColion<object?, ISeraAsmer<object?>>> RuntimeProvider =>
+    public override IRuntimeProvider<ISeraColion<ISeraAsmer<object?>>> RuntimeProvider =>
         RuntimeProviderOverride ?? throw new NotImplementedException("todo"); // EmptyDeRuntimeProvider.Instance
 
-    public IRuntimeProvider<ISeraColion<object?, ISeraAsmer<object?>>>? RuntimeProviderOverride { get; set; }
+    public IRuntimeProvider<ISeraColion<ISeraAsmer<object?>>>? RuntimeProviderOverride { get; set; }
 
-    public T Enter<C, T, A>(C colion) where C : ISeraColion<T, A> where A : ISeraAsmer<T>
+    public T Enter<C, B, A, T>(C colion, B asmable)
+        where C : ISeraColion<A>
+        where B : ISeraAsmable<A>
+        where A : ISeraAsmer<T>
     {
-        var asmer = new Box<A>(colion.Asmer(new Type<A>()));
-        colion.Collect<Unit, JsonDeserializer, Box<A>>(this, asmer, new());
-        return asmer.Value.Asm(new());
+        var asmer = new Box<A>(asmable.Asmer());
+        colion.Collect<Unit, JsonDeserializer, Box<A>>(this, asmer);
+        return asmer.Value.Asm();
     }
 
     #region Primitive
@@ -55,7 +59,7 @@ public class JsonDeserializer(SeraJsonOptions options, AJsonReader reader) : ASe
         {
             if (first) first = false;
             else reader.ReadComma();
-            var err = colion.CollectItem<bool, TupleSeraColctor, B>(ref tuple_colctor, asmer, i, new Type<T>());
+            var err = colion.CollectItem<bool, TupleSeraColctor, B>(ref tuple_colctor, asmer, i);
             if (err) throw new SerializeException($"Unable to write item {i} of tuple {typeof(T)}");
         }
         reader.ReadArrayEnd();
@@ -64,15 +68,49 @@ public class JsonDeserializer(SeraJsonOptions options, AJsonReader reader) : ASe
 
     private readonly struct TupleSeraColctor(JsonDeserializer Base) : ITupleSeraColctor<bool>
     {
-        public bool CItem<C, A, B, I>(C colion, B asmer, Type<A> a, Type<I> i) where C : ISeraColion<I, A>
-            where A : ISeraAsmer<I>
-            where B : IRef<A>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool CItem<C, A, B, I>(C colion, B asmer, Type<A> a, Type<I> i)
+            where C : ISeraColion<A> where B : IRef<A>
         {
-            colion.Collect<Unit, JsonDeserializer, B>(Base, asmer, i);
+            colion.Collect<Unit, JsonDeserializer, B>(Base, asmer);
             return false;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool CNone() => true;
+    }
+
+    #endregion
+
+    #region Seq
+
+    public override Unit CSeq<C, A, B, T, I>(C colion, B asmer, Type<A> a, Type<T> t, Type<I> i)
+    {
+        var first = true;
+        reader.ReadArrayStart();
+        var seq_colctor = new SeqSeraColctor(this);
+        asmer.GetRef().Init(null);
+        for (; reader.Has(); reader.MoveNext())
+        {
+            var token = reader.CurrentToken();
+            if (token.Kind is JsonTokenKind.ArrayEnd) break;
+            if (first) first = false;
+            else if (token.Kind is not JsonTokenKind.Comma) throw new NotImplementedException(); // todo error
+            colion.CollectItem<Unit, SeqSeraColctor, B>(ref seq_colctor, asmer);
+            asmer.GetRef().Add();
+        }
+        return default;
+    }
+
+    private readonly struct SeqSeraColctor(JsonDeserializer Base) : ISeqSeraColctor<Unit>
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Unit CItem<C, A, B, I>(C colion, B asmer, Type<A> a, Type<I> i)
+            where C : ISeraColion<A> where B : IRef<A>
+        {
+            colion.Collect<Unit, JsonDeserializer, B>(Base, asmer);
+            return default;
+        }
     }
 
     #endregion

@@ -7,7 +7,7 @@ public abstract class AJsonReader(SeraJsonOptions options)
     public SeraJsonOptions Options { get; } = options;
     public Encoding Encoding => Options.Encoding;
 
-    public abstract bool HasNext();
+    public abstract bool Has();
 
     public abstract void MoveNext();
 

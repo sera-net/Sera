@@ -1,7 +1,7 @@
 ﻿using System;
 using Sera.Utils;
-using SeraBase = Sera.Core.SeraBase<Sera.Core.ISeraColion<object?, Sera.Core.ISeraAsmer<object?>>>;
-using SeraBaseForward = Sera.Core.SeraBaseForward<Sera.Core.ISeraColion<object?, Sera.Core.ISeraAsmer<object?>>>;
+using SeraBase = Sera.Core.SeraBase<Sera.Core.ISeraColion<Sera.Core.ISeraAsmer<object?>>>;
+using SeraBaseForward = Sera.Core.SeraBaseForward<Sera.Core.ISeraColion<Sera.Core.ISeraAsmer<object?>>>;
 
 namespace Sera.Core;
 
@@ -9,12 +9,8 @@ public abstract class ASeraColctor<R> : SeraBase
 {
     #region Primitive
 
-    #region bool
-
     public abstract R CPrimitive<A, B>(B asmer, Type<A> a, Type<bool> t, SeraFormats? formats = null)
-        where A : ISeraValueAsmer<bool> where B : IRef<A>;
-
-    #endregion
+        where A : IValueSeraAsmer<bool> where B : IRef<A>;
 
     // todo other Primitive
 
@@ -23,7 +19,14 @@ public abstract class ASeraColctor<R> : SeraBase
     #region Tuple
 
     public abstract R CTuple<C, A, B, T>(C colion, B asmer, Type<A> a, Type<T> t)
-        where C : ISeraTupleColion<T, A> where A : ISeraAsmer<T> where B : IRef<A>;
+        where C : ITupleSeraColion<A> where A : ISeraAsmer<T> where B : IRef<A>;
+
+    #endregion
+
+    #region Seq
+
+    public abstract R CSeq<C, A, B, T, I>(C colion, B asmer, Type<A> a, Type<T> t, Type<I> i)
+        where C : ISeqSeraColion<A> where A : ISeqSeraAsmer where B : IRef<A>;
 
     #endregion
 }
@@ -31,7 +34,13 @@ public abstract class ASeraColctor<R> : SeraBase
 public interface ITupleSeraColctor<out R>
 {
     public abstract R CItem<C, A, B, I>(C colion, B asmer, Type<A> a, Type<I> i)
-        where C : ISeraColion<I, A> where A : ISeraAsmer<I> where B : IRef<A>;
+        where C : ISeraColion<A> where B : IRef<A>;
 
     public abstract R CNone();
+}
+
+public interface ISeqSeraColctor<out R>
+{
+    public abstract R CItem<C, A, B, I>(C colion, B asmer, Type<A> a, Type<I> i)
+        where C : ISeraColion<A> where B : IRef<A>;
 }

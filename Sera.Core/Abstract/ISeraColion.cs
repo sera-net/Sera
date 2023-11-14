@@ -1,29 +1,55 @@
-﻿using Sera.Utils;
+﻿using System;
+using Sera.Utils;
 
 namespace Sera.Core;
 
-public interface ISeraColion<T, A> where A : ISeraAsmer<T>
+public interface ISeraCtor<out T>
 {
-    public A Asmer(Type<A> a);
+    public T Ctor();
+}
 
-    public R Collect<R, C, B>(C colctor, B asmer, Type<T> t)
+public interface ISeraColion<A>
+{
+    public R Collect<R, C, B>(C colctor, B asmer)
         where C : ASeraColctor<R> where B : IRef<A>;
 }
 
-public interface ISeraAsmer<T>
+public interface ISeraAsmable<out A>
 {
-    public T Asm(Type<T> t);
+    public A Asmer();
 }
 
-public interface ISeraValueAsmer<in T>
+public interface ISeraAsmer<out T>
+{
+    public T Asm();
+}
+
+public interface IValueSeraAsmer<in T>
 {
     public void Provide(T value);
 }
 
-public interface ISeraTupleColion<T, A> where A : ISeraAsmer<T>
+public interface ITupleSeraColion<A>
 {
     public int Size { get; }
 
-    public R CollectItem<R, C, B>(ref C colctor, B asmer, int index, Type<T> t)
+    public R CollectItem<R, C, B>(ref C colctor, B asmer, int index)
         where C : ITupleSeraColctor<R> where B : IRef<A>;
+}
+
+public interface ICapSeraCtor<out T>
+{
+    public T Ctor(int? cap);
+}
+
+public interface ISeqSeraAsmer
+{
+    public void Init(int? count);
+    public void Add();
+}
+
+public interface ISeqSeraColion<A>
+{
+    public R CollectItem<R, C, B>(ref C colctor, B asmer)
+        where C : ISeqSeraColctor<R> where B : IRef<A>;
 }

@@ -4,7 +4,7 @@ using System.Reflection;
 
 namespace Sera.Utils;
 
-public struct Type<T> : IEquatable<Type<T>>, IEquatable<Type>, IReflect
+public readonly struct Type<T> : IEquatable<Type<T>>, IEquatable<Type>, IReflect
 {
     public Type TypeOf => typeof(T);
 
