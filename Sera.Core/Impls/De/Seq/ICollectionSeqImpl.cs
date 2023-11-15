@@ -12,6 +12,9 @@ public readonly struct ICollectionSeqImpl<T, I, N, D, A>(D d) :
     where D : ISeraColion<A>
     where A : ISeraAsmer<I>
 {
+    [AssocType("A")]
+    public abstract class _A(ICollectionSeqAsmer<T, I, N, A> type);
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R Collect<R, C, B>(C colctor, B asmer)
         where C : ASeraColctor<R> where B : IRef<ICollectionSeqAsmer<T, I, N, A>>
@@ -29,6 +32,9 @@ public readonly struct ICollectionSeqAsmable<T, I, N, D, A>(N ctor, D d) : ISera
     where D : ISeraAsmable<A>
     where A : ISeraAsmer<I>
 {
+    [AssocType("A")]
+    public abstract class _A(ICollectionSeqAsmer<T, I, N, A> type);
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ICollectionSeqAsmer<T, I, N, A> Asmer() => new(ctor, d.Asmer());
 }

@@ -1,5 +1,4 @@
-﻿using System;
-using Sera.Utils;
+﻿using Sera.Utils;
 
 namespace Sera.Core;
 
@@ -8,13 +7,13 @@ public interface ISeraCtor<out T>
     public T Ctor();
 }
 
-public interface ISeraColion<A>
+public interface ISeraColion<[AssocType] A>
 {
     public R Collect<R, C, B>(C colctor, B asmer)
         where C : ASeraColctor<R> where B : IRef<A>;
 }
 
-public interface ISeraAsmable<out A>
+public interface ISeraAsmable<[AssocType] out A>
 {
     public A Asmer();
 }
@@ -29,7 +28,7 @@ public interface IValueSeraAsmer<in T>
     public void Provide(T value);
 }
 
-public interface ITupleSeraColion<A>
+public interface ITupleSeraColion<[AssocType] A>
 {
     public int Size { get; }
 
@@ -48,7 +47,7 @@ public interface ISeqSeraAsmer
     public void Add();
 }
 
-public interface ISeqSeraColion<A>
+public interface ISeqSeraColion<[AssocType] A>
 {
     public R CollectItem<R, C, B>(ref C colctor, B asmer)
         where C : ISeqSeraColctor<R> where B : IRef<A>;

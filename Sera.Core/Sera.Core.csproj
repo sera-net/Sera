@@ -9,6 +9,7 @@
 	    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 		<Description>Format-agnostic (de)serialization abstraction layer</Description>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<NoWarn>CS9113</NoWarn>
     </PropertyGroup>
 
 	<ItemGroup>

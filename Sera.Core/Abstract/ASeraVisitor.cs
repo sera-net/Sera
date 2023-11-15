@@ -3,12 +3,13 @@ using System.Buffers;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
+using Sera.Utils;
 using SeraBase = Sera.Core.SeraBase<Sera.Core.ISeraVision<object?>>;
 using SeraBaseForward = Sera.Core.SeraBaseForward<Sera.Core.ISeraVision<object?>>;
 
 namespace Sera.Core;
 
-public abstract class ASeraVisitor<R> : SeraBase
+public abstract class ASeraVisitor<[AssocType] R> : SeraBase
 {
     #region Flush
 
@@ -178,7 +179,7 @@ public abstract class ASeraVisitor<R> : SeraBase
 
 #region Tuple
 
-public abstract class ATupleSeraVisitor<R>(SeraBase Base) : SeraBaseForward(Base)
+public abstract class ATupleSeraVisitor<[AssocType] R>(SeraBase Base) : SeraBaseForward(Base)
 {
     public abstract R VItem<V, T>(V vision, T value)
         where V : ISeraVision<T>;
@@ -190,7 +191,7 @@ public abstract class ATupleSeraVisitor<R>(SeraBase Base) : SeraBaseForward(Base
 
 #region Seq
 
-public abstract class ASeqSeraVisitor<R>(SeraBase Base) : SeraBaseForward(Base)
+public abstract class ASeqSeraVisitor<[AssocType] R>(SeraBase Base) : SeraBaseForward(Base)
 {
     public abstract R VItem<T, V>(V vision, T value)
         where V : ISeraVision<T>;
@@ -202,7 +203,7 @@ public abstract class ASeqSeraVisitor<R>(SeraBase Base) : SeraBaseForward(Base)
 
 #region Map
 
-public abstract class AMapSeraVisitor<R>(SeraBase Base) : SeraBaseForward(Base)
+public abstract class AMapSeraVisitor<[AssocType] R>(SeraBase Base) : SeraBaseForward(Base)
 {
     public abstract R VEntry<KV, VV, IK, IV>(KV keyVision, VV valueVision, IK key, IV value)
         where KV : ISeraVision<IK>
@@ -215,7 +216,7 @@ public abstract class AMapSeraVisitor<R>(SeraBase Base) : SeraBaseForward(Base)
 
 #region Struct
 
-public abstract class AStructSeraVisitor<R>(SeraBase Base) : SeraBaseForward(Base)
+public abstract class AStructSeraVisitor<[AssocType] R>(SeraBase Base) : SeraBaseForward(Base)
 {
     public abstract R VField<V, T>(V vision, T value, string name, long key) where V : ISeraVision<T>;
 
@@ -226,7 +227,7 @@ public abstract class AStructSeraVisitor<R>(SeraBase Base) : SeraBaseForward(Bas
 
 #region Union
 
-public abstract class AUnionSeraVisitor<R>(SeraBase Base) : SeraBaseForward(Base)
+public abstract class AUnionSeraVisitor<[AssocType] R>(SeraBase Base) : SeraBaseForward(Base)
 {
     public abstract R VEmpty();
 

@@ -7,6 +7,9 @@ namespace Sera.Json.De;
 
 public class JsonDeserializer(SeraJsonOptions options, AJsonReader reader) : ASeraColctor<Unit>
 {
+    [AssocType]
+    public abstract class R(Unit type);
+
     public override string FormatName => "json";
     public override string FormatMIME => "application/json";
     public override SeraFormatType FormatType => SeraFormatType.HumanReadableText;
@@ -68,6 +71,9 @@ public class JsonDeserializer(SeraJsonOptions options, AJsonReader reader) : ASe
 
     private readonly struct TupleSeraColctor(JsonDeserializer Base) : ITupleSeraColctor<bool>
     {
+        [AssocType("R")]
+        public abstract class _R(bool type);
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool CItem<C, A, B, I>(C colion, B asmer, Type<A> a, Type<I> i)
             where C : ISeraColion<A> where B : IRef<A>
@@ -104,6 +110,9 @@ public class JsonDeserializer(SeraJsonOptions options, AJsonReader reader) : ASe
 
     private readonly struct SeqSeraColctor(JsonDeserializer Base) : ISeqSeraColctor<Unit>
     {
+        [AssocType("R")]
+        public abstract class _R(Unit type);
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Unit CItem<C, A, B, I>(C colion, B asmer, Type<A> a, Type<I> i)
             where C : ISeraColion<A> where B : IRef<A>

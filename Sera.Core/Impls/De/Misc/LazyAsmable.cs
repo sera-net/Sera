@@ -7,6 +7,9 @@ namespace Sera.Core.Impls.De;
 public readonly struct LazyAsmable<D, A> : ISeraAsmable<A>, IRef<A>
     where D : ISeraAsmable<A>
 {
+    [AssocType("A")]
+    public abstract class _A(A type);
+    
     private readonly Lazy<Box<A>> lazy;
 
     public LazyAsmable(D dep)

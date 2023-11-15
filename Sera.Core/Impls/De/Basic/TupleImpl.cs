@@ -12,6 +12,9 @@ public readonly struct TupleImpl<T1, D1, A1>(D1 d1) :
     where D1 : ISeraColion<A1>
     where A1 : ISeraAsmer<T1>
 {
+    [AssocType]
+    public abstract class A(TupleAsmer<T1, A1> type);
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R Collect<R, C, B>(C colctor, B asmer) where C : ASeraColctor<R> where B : IRef<TupleAsmer<T1, A1>>
         => colctor.CTuple(this, asmer, new Type<TupleAsmer<T1, A1>>(), new Type<ValueTuple<T1>>());
@@ -35,6 +38,9 @@ public readonly struct TupleImpl<T1, D1, A1>(D1 d1) :
 public readonly struct TupleAsmable<T1, D1, A1>(D1 d1) : ISeraAsmable<TupleAsmer<T1, A1>>
     where D1 : ISeraAsmable<A1> where A1 : ISeraAsmer<T1>
 {
+    [AssocType]
+    public abstract class A(TupleAsmer<T1, A1> type);
+    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public TupleAsmer<T1, A1> Asmer() => new(d1.Asmer());
 }

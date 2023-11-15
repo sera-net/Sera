@@ -15,6 +15,9 @@ namespace Sera.Json.Ser;
 public class AsyncJsonSerializer
     (SeraJsonOptions options, AJsonFormatter formatter, AAsyncJsonWriter writer) : ASeraVisitor<ValueTask>
 {
+    [AssocType]
+    public abstract class R(ValueTask type);
+
     public AsyncJsonSerializer(AAsyncJsonWriter writer) : this(writer.Options, writer.Formatter, writer) { }
 
     private readonly AAsyncJsonWriter writer = writer;
@@ -504,6 +507,9 @@ public class AsyncJsonSerializer
 
     private class TupleSeraVisitor(AsyncJsonSerializer Base) : ATupleSeraVisitor<ValueTask<bool>>(Base)
     {
+        [AssocType("R")]
+        public abstract class _R(ValueTask<bool> type);
+
         public override async ValueTask<bool> VItem<V, T>(V vision, T value)
         {
             await vision.Accept<ValueTask, AsyncJsonSerializer>(Base, value);
@@ -544,6 +550,9 @@ public class AsyncJsonSerializer
 
     private class SeqSeraVisitor(AsyncJsonSerializer Base) : ASeqSeraVisitor<ValueTask>(Base)
     {
+        [AssocType("R")]
+        public abstract class _R(ValueTask type);
+
         public override ValueTask VItem<T, V>(V vision, T value)
             => vision.Accept<ValueTask, AsyncJsonSerializer>(Base, value);
 
@@ -580,6 +589,9 @@ public class AsyncJsonSerializer
 
     private class SeqMapSeraVisitor(AsyncJsonSerializer Base) : AMapSeraVisitor<ValueTask>(Base)
     {
+        [AssocType("R")]
+        public abstract class _R(ValueTask type);
+
         public override ValueTask VEntry<KV, VV, IK, IV>(KV keyVision, VV valueVision, IK key, IV value)
             => Base.VEntry(keyVision, valueVision, key, value);
 
@@ -622,6 +634,9 @@ public class AsyncJsonSerializer
 
     private class MapSeraVisitor(AsyncJsonSerializer Base) : AMapSeraVisitor<ValueTask>(Base)
     {
+        [AssocType("R")]
+        public abstract class _R(ValueTask type);
+
         public override async ValueTask VEntry<KV, VV, IK, IV>(KV keyVision, VV valueVision, IK key, IV value)
         {
             var str = key is null ? "null" : $"{key}";
@@ -665,6 +680,9 @@ public class AsyncJsonSerializer
 
     private class StructSeraVisitor(AsyncJsonSerializer Base) : AStructSeraVisitor<ValueTask<bool>>(Base)
     {
+        [AssocType("R")]
+        public abstract class _R(ValueTask<bool> type);
+
         public override async ValueTask<bool> VField<V, T>(V vision, T value, string name, long key)
         {
             await Base.writer.WriteString(name, true);
@@ -690,6 +708,9 @@ public class AsyncJsonSerializer
 
     private class UnionSeraVisitor(AsyncJsonSerializer Base) : AUnionSeraVisitor<ValueTask>(Base)
     {
+        [AssocType("R")]
+        public abstract class _R(ValueTask type);
+
         public override ValueTask VEmpty()
             => Base.writer.Write("{}");
 

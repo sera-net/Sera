@@ -5,6 +5,7 @@
         <LangVersion>12.0</LangVersion>
         <TargetFramework>net8.0</TargetFramework>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <NoWarn>CS9113</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>

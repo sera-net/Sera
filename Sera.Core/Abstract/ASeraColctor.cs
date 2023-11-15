@@ -5,7 +5,7 @@ using SeraBaseForward = Sera.Core.SeraBaseForward<Sera.Core.ISeraColion<Sera.Cor
 
 namespace Sera.Core;
 
-public abstract class ASeraColctor<R> : SeraBase
+public abstract class ASeraColctor<[AssocType] R> : SeraBase
 {
     #region Primitive
 
@@ -31,7 +31,7 @@ public abstract class ASeraColctor<R> : SeraBase
     #endregion
 }
 
-public interface ITupleSeraColctor<out R>
+public interface ITupleSeraColctor<[AssocType] out R>
 {
     public abstract R CItem<C, A, B, I>(C colion, B asmer, Type<A> a, Type<I> i)
         where C : ISeraColion<A> where B : IRef<A>;
@@ -39,7 +39,7 @@ public interface ITupleSeraColctor<out R>
     public abstract R CNone();
 }
 
-public interface ISeqSeraColctor<out R>
+public interface ISeqSeraColctor<[AssocType] out R>
 {
     public abstract R CItem<C, A, B, I>(C colion, B asmer, Type<A> a, Type<I> i)
         where C : ISeraColion<A> where B : IRef<A>;

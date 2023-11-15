@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using Sera.Utils;
 
 namespace Sera.Core.Impls.De;
 
@@ -14,6 +15,9 @@ public struct IdentityAsmer<T> : ISeraAsmer<T>, IValueSeraAsmer<T>
 
     public readonly struct Asmable : ISeraAsmable<IdentityAsmer<T>>
     {
+        [AssocType]
+        public abstract class A(IdentityAsmer<T> type);
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IdentityAsmer<T> Asmer() => new();
     }
