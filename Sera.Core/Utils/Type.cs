@@ -71,3 +71,7 @@ public readonly struct Type<T> : IEquatable<Type<T>>, IEquatable<Type>, IReflect
 
     #endregion
 }
+
+public interface InType<in T>;
+
+public interface OutType<out T>;

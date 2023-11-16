@@ -2,53 +2,35 @@
 
 namespace Sera.Core;
 
-public interface ISeraCtor<out T>
+public interface ISeraFunctor<in T, out U>
 {
-    public T Ctor();
+    public U Map(T value, InType<U>? u = null);
 }
 
-public interface ISeraColion<[AssocType] A>
+public interface ISeraEffector<T, in I>
 {
-    public R Collect<R, C, B>(C colctor, B asmer)
-        where C : ASeraColctor<R> where B : IRef<A>;
+    public void Effect(ref T target, I value);
 }
 
-public interface ISeraAsmable<[AssocType] out A>
+public interface ISeraColion<out T>
 {
-    public A Asmer();
+    public R Collect<R, C>(ref C colctor, InType<T>? t = null) where C : ISeraColctor<T, R>;
 }
 
-public interface ISeraAsmer<out T>
-{
-    public T Asm();
-}
-
-public interface IValueSeraAsmer<in T>
-{
-    public void Provide(T value);
-}
-
-public interface ITupleSeraColion<[AssocType] A>
+public interface ITupleSeraColion<B>
 {
     public int Size { get; }
 
-    public R CollectItem<R, C, B>(ref C colctor, B asmer, int index)
-        where C : ITupleSeraColctor<R> where B : IRef<A>;
+    public B Builder(Type<B> b = default);
+
+    public R CollectItem<R, C>(ref C colctor, int index, Type<B> b = default)
+        where C : ITupleSeraColctor<B, R>;
 }
 
-public interface ICapSeraCtor<out T>
+public interface ISeqSeraColion<B>
 {
-    public T Ctor(int? cap);
-}
+    public B Builder(int? cap, Type<B> b = default);
 
-public interface ISeqSeraAsmer
-{
-    public void Init(int? count);
-    public void Add();
-}
-
-public interface ISeqSeraColion<[AssocType] A>
-{
-    public R CollectItem<R, C, B>(ref C colctor, B asmer)
-        where C : ISeqSeraColctor<R> where B : IRef<A>;
+    public R CollectItem<R, C>(ref C colctor, Type<B> b = default)
+        where C : ISeqSeraColctor<B, R>;
 }

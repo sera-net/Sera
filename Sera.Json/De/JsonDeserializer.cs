@@ -5,119 +5,139 @@ using Sera.Utils;
 
 namespace Sera.Json.De;
 
-public class JsonDeserializer(SeraJsonOptions options, AJsonReader reader) : ASeraColctor<Unit>
+public class JsonDeserializer(SeraJsonOptions options, AJsonReader reader) : SeraBase<ISeraColion<object?>>
 {
-    [AssocType]
-    public abstract class R(Unit type);
-
     public override string FormatName => "json";
     public override string FormatMIME => "application/json";
     public override SeraFormatType FormatType => SeraFormatType.HumanReadableText;
     public override ISeraOptions Options => options;
-    private readonly AJsonReader reader = reader;
+    internal readonly AJsonReader reader = reader;
 
-    public override IRuntimeProvider<ISeraColion<ISeraAsmer<object?>>> RuntimeProvider =>
+    public override IRuntimeProvider<ISeraColion<object?>> RuntimeProvider =>
         RuntimeProviderOverride ?? throw new NotImplementedException("todo"); // EmptyDeRuntimeProvider.Instance
 
-    public IRuntimeProvider<ISeraColion<ISeraAsmer<object?>>>? RuntimeProviderOverride { get; set; }
+    public IRuntimeProvider<ISeraColion<object?>>? RuntimeProviderOverride { get; set; }
 
-    public T Enter<C, B, A, T>(C colion, B asmable)
-        where C : ISeraColion<A>
-        where B : ISeraAsmable<A>
-        where A : ISeraAsmer<T>
+    public T Collect<C, T>(C colion) where C : ISeraColion<T>
     {
-        var asmer = new Box<A>(asmable.Asmer());
-        colion.Collect<Unit, JsonDeserializer, Box<A>>(this, asmer);
-        return asmer.Value.Asm();
+        var c = new JsonDeserializer<T>(this);
+        return colion.Collect<T, JsonDeserializer<T>>(ref c);
     }
+}
+
+public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor<T, T>
+{
+    [AssocType]
+    public abstract class R(T type);
+
+    public string FormatName => impl.FormatName;
+    public string FormatMIME => impl.FormatMIME;
+    public SeraFormatType FormatType => impl.FormatType;
+    public ISeraOptions Options => impl.Options;
+    private readonly AJsonReader reader = impl.reader;
+
+    public ISeraColion<object?> RuntimeImpl => impl.RuntimeImpl;
 
     #region Primitive
 
-    public override Unit CPrimitive<A, B>(B asmer, Type<A> a, Type<bool> t, SeraFormats? formats = null)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<F>(F functor, Type<bool> t, SeraFormats? formats = null)
+        where F : ISeraFunctor<bool, T>
     {
+        T r;
         var token = reader.CurrentToken();
         if (token.Kind is JsonTokenKind.True)
         {
-            asmer.GetRef().Provide(true);
+            r = functor.Map(true);
         }
         else if (token.Kind is JsonTokenKind.False)
         {
-            asmer.GetRef().Provide(false);
+            r = functor.Map(false);
         }
         else throw new NotImplementedException(); // todo
-        return default;
+        return r;
     }
 
     #endregion
 
     #region tuple
 
-    public override Unit CTuple<C, A, B, T>(C colion, B asmer, Type<A> a, Type<T> t)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CTuple<C, B, F>(C colion, F functor, Type<B> b)
+        where C : ITupleSeraColion<B> where F : ISeraFunctor<B, T>
     {
-        var size = colion.Size;
-        var first = true;
         reader.ReadArrayStart();
-        var tuple_colctor = new TupleSeraColctor(this);
+        var size = colion.Size;
+        var colctor = new TupleSeraColctor<B>(colion.Builder(), impl);
+        var first = true;
         for (var i = 0; i < size; i++)
         {
             if (first) first = false;
             else reader.ReadComma();
-            var err = colion.CollectItem<bool, TupleSeraColctor, B>(ref tuple_colctor, asmer, i);
+            var err = colion.CollectItem<bool, TupleSeraColctor<B>>(ref colctor, i);
             if (err) throw new SerializeException($"Unable to write item {i} of tuple {typeof(T)}");
         }
         reader.ReadArrayEnd();
-        return default;
+        return functor.Map(colctor.builder);
     }
 
-    private readonly struct TupleSeraColctor(JsonDeserializer Base) : ITupleSeraColctor<bool>
+    private struct TupleSeraColctor<B>(B builder, JsonDeserializer impl) : ITupleSeraColctor<B, bool>
     {
         [AssocType("R")]
         public abstract class _R(bool type);
 
+        public B builder = builder;
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool CItem<C, A, B, I>(C colion, B asmer, Type<A> a, Type<I> i)
-            where C : ISeraColion<A> where B : IRef<A>
+        public bool CItem<C, E, I>(C colion, E effector, Type<I> i)
+            where C : ISeraColion<I> where E : ISeraEffector<B, I>
         {
-            colion.Collect<Unit, JsonDeserializer, B>(Base, asmer);
-            return false;
+            var c = new JsonDeserializer<I>(impl);
+            var r = colion.Collect<I, JsonDeserializer<I>>(ref c);
+            effector.Effect(ref builder, r);
+            return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool CNone() => true;
+        public bool CNone() => false;
     }
 
     #endregion
 
     #region Seq
 
-    public override Unit CSeq<C, A, B, T, I>(C colion, B asmer, Type<A> a, Type<T> t, Type<I> i)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CSeq<C, B, F>(C colion, F functor, Type<B> b) where C : ISeqSeraColion<B> where F : ISeraFunctor<B, T>
     {
-        var first = true;
         reader.ReadArrayStart();
-        var seq_colctor = new SeqSeraColctor(this);
-        asmer.GetRef().Init(null);
+        var colctor = new SeqSeraColctor<B>(colion.Builder(null), impl);
+        var first = true;
         for (; reader.Has(); reader.MoveNext())
         {
             var token = reader.CurrentToken();
             if (token.Kind is JsonTokenKind.ArrayEnd) break;
             if (first) first = false;
             else if (token.Kind is not JsonTokenKind.Comma) throw new NotImplementedException(); // todo error
-            colion.CollectItem<Unit, SeqSeraColctor, B>(ref seq_colctor, asmer);
-            asmer.GetRef().Add();
+            colion.CollectItem<Unit, SeqSeraColctor<B>>(ref colctor);
         }
-        return default;
+        reader.ReadArrayEnd();
+        return functor.Map(colctor.builder);
     }
-
-    private readonly struct SeqSeraColctor(JsonDeserializer Base) : ISeqSeraColctor<Unit>
+    
+    private struct SeqSeraColctor<B>(B builder, JsonDeserializer impl) : ISeqSeraColctor<B, Unit>
     {
         [AssocType("R")]
         public abstract class _R(Unit type);
 
+        public B builder = builder;
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Unit CItem<C, A, B, I>(C colion, B asmer, Type<A> a, Type<I> i)
-            where C : ISeraColion<A> where B : IRef<A>
+        public Unit CItem<C, E, I>(C colion, E effector, Type<I> i)
+            where C : ISeraColion<I> where E : ISeraEffector<B, I>
         {
-            colion.Collect<Unit, JsonDeserializer, B>(Base, asmer);
+            var c = new JsonDeserializer<I>(impl);
+            var r = colion.Collect<I, JsonDeserializer<I>>(ref c);
+            effector.Effect(ref builder, r);
             return default;
         }
     }

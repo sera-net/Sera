@@ -1,23 +1,25 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+using Sera.Core.Impls.De.Misc;
 using Sera.Utils;
 
 namespace Sera.Core.Impls.De;
 
 #region Size1
 
-public readonly struct TupleImpl<T1, D1, A1>(D1 d1) :
-    ISeraColion<TupleAsmer<T1, A1>>,
-    ITupleSeraColion<TupleAsmer<T1, A1>>
-    where D1 : ISeraColion<A1>
-    where A1 : ISeraAsmer<T1>
+public readonly struct TupleImpl<T1, D1>(D1 d1) :
+    ISeraColion<ValueTuple<T1>>,
+    ISeraColion<Tuple<T1>>,
+    ITupleSeraColion<ValueTuple<T1>>
+    where D1 : ISeraColion<T1>
 {
-    [AssocType]
-    public abstract class A(TupleAsmer<T1, A1> type);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public R Collect<R, C>(ref C colctor, InType<ValueTuple<T1>>? t) where C : ISeraColctor<ValueTuple<T1>, R>
+        => colctor.CTuple(this, new IdentityFunctor<ValueTuple<T1>>(), new Type<ValueTuple<T1>>());
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R Collect<R, C, B>(C colctor, B asmer) where C : ASeraColctor<R> where B : IRef<TupleAsmer<T1, A1>>
-        => colctor.CTuple(this, asmer, new Type<TupleAsmer<T1, A1>>(), new Type<ValueTuple<T1>>());
+    public R Collect<R, C>(ref C colctor, InType<Tuple<T1>>? t) where C : ISeraColctor<Tuple<T1>, R>
+        => colctor.CTuple(this, new ValueTuple2TupleFunctor(), new Type<ValueTuple<T1>>());
 
     public int Size
     {
@@ -26,41 +28,28 @@ public readonly struct TupleImpl<T1, D1, A1>(D1 d1) :
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R CollectItem<R, C, B>(ref C colctor, B asmer, int index)
-        where C : ITupleSeraColctor<R> where B : IRef<TupleAsmer<T1, A1>>
+    public ValueTuple<T1> Builder(Type<ValueTuple<T1>> b) => default;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public R CollectItem<R, C>(ref C colctor, int index, Type<ValueTuple<T1>> b)
+        where C : ITupleSeraColctor<ValueTuple<T1>, R>
         => index switch
         {
-            0 => colctor.CItem(d1, new TupleAsmer<T1, A1>.Item1Ref<B>(asmer), new Type<A1>(), new Type<T1>()),
+            0 => colctor.CItem(d1, new Item1Effector(), new Type<T1>()),
             _ => colctor.CNone(),
         };
-}
 
-public readonly struct TupleAsmable<T1, D1, A1>(D1 d1) : ISeraAsmable<TupleAsmer<T1, A1>>
-    where D1 : ISeraAsmable<A1> where A1 : ISeraAsmer<T1>
-{
-    [AssocType]
-    public abstract class A(TupleAsmer<T1, A1> type);
-    
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public TupleAsmer<T1, A1> Asmer() => new(d1.Asmer());
-}
-
-public struct TupleAsmer<T1, A1>(A1 a1) : ISeraAsmer<ValueTuple<T1>>, ISeraAsmer<Tuple<T1>>
-    where A1 : ISeraAsmer<T1>
-{
-    private A1 a1 = a1;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    ValueTuple<T1> ISeraAsmer<ValueTuple<T1>>.Asm() => new(a1.Asm());
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    Tuple<T1> ISeraAsmer<Tuple<T1>>.Asm() => new(a1.Asm());
-
-    public readonly struct Item1Ref<B>(B asmer) : IRef<A1>
-        where B : IRef<TupleAsmer<T1, A1>>
+    private readonly struct Item1Effector : ISeraEffector<ValueTuple<T1>, T1>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ref A1 GetRef() => ref asmer.GetRef().a1;
+        public void Effect(ref ValueTuple<T1> target, T1 value)
+            => target.Item1 = value;
+    }
+
+    public readonly struct ValueTuple2TupleFunctor : ISeraFunctor<ValueTuple<T1>, Tuple<T1>>
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Tuple<T1> Map(ValueTuple<T1> value, InType<Tuple<T1>>? u) => new(value.Item1);
     }
 }
 

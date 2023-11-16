@@ -1,16 +1,16 @@
-﻿using System;
+﻿using Sera.Core.SerDe;
 using Sera.Utils;
-using SeraBase = Sera.Core.SeraBase<Sera.Core.ISeraColion<Sera.Core.ISeraAsmer<object?>>>;
-using SeraBaseForward = Sera.Core.SeraBaseForward<Sera.Core.ISeraColion<Sera.Core.ISeraAsmer<object?>>>;
+using SeraBase = Sera.Core.SeraBase<Sera.Core.ISeraColion<object?>>;
+using SeraBaseForward = Sera.Core.SeraBaseForward<Sera.Core.ISeraColion<object?>>;
 
 namespace Sera.Core;
 
-public abstract class ASeraColctor<[AssocType] R> : SeraBase
+public interface ISeraColctor<in T, [AssocType] out R> : ISeraAbility<ISeraColion<object?>>
 {
     #region Primitive
 
-    public abstract R CPrimitive<A, B>(B asmer, Type<A> a, Type<bool> t, SeraFormats? formats = null)
-        where A : IValueSeraAsmer<bool> where B : IRef<A>;
+    public R CPrimitive<F>(F functor, Type<bool> t, SeraFormats? formats = null)
+        where F : ISeraFunctor<bool, T>;
 
     // todo other Primitive
 
@@ -18,29 +18,29 @@ public abstract class ASeraColctor<[AssocType] R> : SeraBase
 
     #region Tuple
 
-    public abstract R CTuple<C, A, B, T>(C colion, B asmer, Type<A> a, Type<T> t)
-        where C : ITupleSeraColion<A> where A : ISeraAsmer<T> where B : IRef<A>;
+    public R CTuple<C, B, F>(C colion, F functor, Type<B> b)
+        where C : ITupleSeraColion<B> where F : ISeraFunctor<B, T>;
 
     #endregion
 
     #region Seq
 
-    public abstract R CSeq<C, A, B, T, I>(C colion, B asmer, Type<A> a, Type<T> t, Type<I> i)
-        where C : ISeqSeraColion<A> where A : ISeqSeraAsmer where B : IRef<A>;
+    public R CSeq<C, B, F>(C colion, F functor, Type<B> b)
+        where C : ISeqSeraColion<B> where F : ISeraFunctor<B, T>;
 
     #endregion
 }
 
-public interface ITupleSeraColctor<[AssocType] out R>
+public interface ITupleSeraColctor<B, [AssocType] out R>
 {
-    public abstract R CItem<C, A, B, I>(C colion, B asmer, Type<A> a, Type<I> i)
-        where C : ISeraColion<A> where B : IRef<A>;
+    public R CItem<C, E, I>(C colion, E effector, Type<I> i)
+        where C : ISeraColion<I> where E : ISeraEffector<B, I>;
 
-    public abstract R CNone();
+    public R CNone();
 }
 
-public interface ISeqSeraColctor<[AssocType] out R>
+public interface ISeqSeraColctor<B, [AssocType] out R>
 {
-    public abstract R CItem<C, A, B, I>(C colion, B asmer, Type<A> a, Type<I> i)
-        where C : ISeraColion<A> where B : IRef<A>;
+    public R CItem<C, E, I>(C colion, E effector, Type<I> i)
+        where C : ISeraColion<I> where E : ISeraEffector<B, I>;
 }
