@@ -15,11 +15,11 @@ public readonly struct TupleImpl<T1, D1>(D1 d1) :
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R Collect<R, C>(ref C colctor, InType<ValueTuple<T1>>? t) where C : ISeraColctor<ValueTuple<T1>, R>
-        => colctor.CTuple(this, new IdentityFunctor<ValueTuple<T1>>(), new Type<ValueTuple<T1>>());
+        => colctor.CTuple(this, new IdentityMapper<ValueTuple<T1>>(), new Type<ValueTuple<T1>>());
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R Collect<R, C>(ref C colctor, InType<Tuple<T1>>? t) where C : ISeraColctor<Tuple<T1>, R>
-        => colctor.CTuple(this, new ValueTuple2TupleFunctor(), new Type<ValueTuple<T1>>());
+        => colctor.CTuple(this, new ValueTuple2TupleMapper(), new Type<ValueTuple<T1>>());
 
     public int Size
     {
@@ -46,7 +46,7 @@ public readonly struct TupleImpl<T1, D1>(D1 d1) :
             => target.Item1 = value;
     }
 
-    public readonly struct ValueTuple2TupleFunctor : ISeraFunctor<ValueTuple<T1>, Tuple<T1>>
+    public readonly struct ValueTuple2TupleMapper : ISeraMapper<ValueTuple<T1>, Tuple<T1>>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Tuple<T1> Map(ValueTuple<T1> value, InType<Tuple<T1>>? u) => new(value.Item1);

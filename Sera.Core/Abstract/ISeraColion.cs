@@ -2,7 +2,7 @@
 
 namespace Sera.Core;
 
-public interface ISeraFunctor<in T, out U>
+public interface ISeraMapper<in T, out U>
 {
     public U Map(T value, InType<U>? u = null);
 }
@@ -15,6 +15,12 @@ public interface ISeraEffector<T, in I>
 public interface ISeraColion<out T>
 {
     public R Collect<R, C>(ref C colctor, InType<T>? t = null) where C : ISeraColctor<T, R>;
+}
+
+public interface IOptionSeraColion<out T>
+{
+    public T CtorNone();
+    public R CollectSome<R, C>(ref C colctor, InType<T>? t = null) where C : ISomeSeraColctor<T, R>;
 }
 
 public interface ITupleSeraColion<B>

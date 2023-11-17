@@ -8,5 +8,5 @@ public readonly struct PrimitiveImpl(SeraFormats? formats = null) : ISeraColion<
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R Collect<R, C>(ref C colctor, InType<bool>? t) where C : ISeraColctor<bool, R>
-        => colctor.CPrimitive(new IdentityFunctor<bool>(), new Type<bool>(), formats);
+        => colctor.CPrimitive(new IdentityMapper<bool>(), new Type<bool>(), formats);
 }

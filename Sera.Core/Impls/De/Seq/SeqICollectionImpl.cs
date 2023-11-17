@@ -13,7 +13,7 @@ public readonly struct SeqICollectionImpl<T, I, D, N>(D d, N ctor) :
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R Collect<R, C>(ref C colctor, InType<T>? t = null) where C : ISeraColctor<T, R>
-        => colctor.CSeq(this, new IdentityFunctor<T>(), new Type<T>());
+        => colctor.CSeq(this, new IdentityMapper<T>(), new Type<T>());
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T Builder(int? cap, Type<T> b = default) => ctor.Ctor(cap);

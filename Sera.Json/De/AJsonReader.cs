@@ -13,21 +13,24 @@ public abstract class AJsonReader(SeraJsonOptions options)
 
     public abstract JsonToken CurrentToken();
 
-    /// <summary>,</summary>
+    /// <summary>Read <c>null</c> and move next</summary>
+    public abstract void ReadNull();
+
+    /// <summary>Read <c>,</c> and move next</summary>
     public abstract void ReadComma();
 
-    /// <summary>:</summary>
+    /// <summary>Read <c>:</c> and move next</summary>
     public abstract void ReadColon();
 
-    /// <summary>[</summary>
+    /// <summary>Read <c>[</c> and move next</summary>
     public abstract void ReadArrayStart();
 
-    /// <summary>]</summary>
+    /// <summary>Read <c>]</c> and move next</summary>
     public abstract void ReadArrayEnd();
 
-    /// <summary>{</summary>
+    /// <summary>Read <c>{</c> and move next</summary>
     public abstract void ReadObjectStart();
 
-    /// <summary>}</summary>
+    /// <summary>Read <c>}</c> and move next</summary>
     public abstract void ReadObjectEnd();
 }

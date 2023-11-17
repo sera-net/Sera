@@ -7,6 +7,8 @@ public readonly struct JsonToken(JsonTokenKind kind, SourcePos pos, ReadOnlyMemo
     public JsonTokenKind Kind { get; } = kind;
     public SourcePos Pos { get; } = pos;
     public ReadOnlyMemory<char> Text { get; } = Text;
+
+    public ReadOnlyMemory<char> AsString => Text[1..^1];
 }
 
 public enum JsonTokenKind

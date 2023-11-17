@@ -13,9 +13,6 @@ namespace Sera.Json.Ser;
 
 public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, AJsonWriter writer) : ASeraVisitor<Unit>
 {
-    [AssocType]
-    public abstract class R(Unit type);
-
     public JsonSerializer(AJsonWriter writer) : this(writer.Options, writer.Formatter, writer) { }
 
     private readonly AJsonWriter writer = writer;
@@ -552,9 +549,6 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
 
     private class TupleSeraVisitor(JsonSerializer Base) : ATupleSeraVisitor<bool>(Base)
     {
-        [AssocType("R")]
-        public abstract class _R(bool type);
-
         public override bool VItem<V, T>(V vision, T value)
         {
             vision.Accept<Unit, JsonSerializer>(Base, value);
@@ -596,9 +590,6 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
 
     private class SeqSeraVisitor(JsonSerializer Base) : ASeqSeraVisitor<Unit>(Base)
     {
-        [AssocType("R")]
-        public abstract class _R(Unit type);
-
         public override Unit VItem<T, V>(V vision, T value)
             => vision.Accept<Unit, JsonSerializer>(Base, value);
 
@@ -637,9 +628,6 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
 
     private class SeqMapSeraVisitor(JsonSerializer Base) : AMapSeraVisitor<Unit>(Base)
     {
-        [AssocType("R")]
-        public abstract class _R(Unit type);
-
         public override Unit VEntry<KV, VV, IK, IV>(KV keyVision, VV valueVision, IK key, IV value)
             => Base.VEntry(keyVision, valueVision, key, value);
 
@@ -679,9 +667,6 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
 
     private class MapSeraVisitor(JsonSerializer Base) : AMapSeraVisitor<Unit>(Base)
     {
-        [AssocType("R")]
-        public abstract class _R(Unit type);
-
         public override Unit VEntry<KV, VV, IK, IV>(KV keyVision, VV valueVision, IK key, IV value)
         {
             var str = key is null ? "null" : $"{key}";
@@ -726,9 +711,6 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
 
     private class StructSeraVisitor(JsonSerializer Base) : AStructSeraVisitor<bool>(Base)
     {
-        [AssocType("R")]
-        public abstract class _R(bool type);
-
         public override bool VField<V, T>(V vision, T value, string name, long key)
         {
             Base.writer.WriteString(name, true);
@@ -754,9 +736,6 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
 
     private class UnionSeraVisitor(JsonSerializer Base) : AUnionSeraVisitor<Unit>(Base)
     {
-        [AssocType("R")]
-        public abstract class _R(Unit type);
-
         public override Unit VEmpty()
         {
             Base.writer.Write("{}");

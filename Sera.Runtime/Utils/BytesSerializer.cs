@@ -15,9 +15,6 @@ namespace Sera.Runtime.Utils;
 
 internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisitor<Unit>, IDisposable, IAsyncDisposable
 {
-    [AssocType]
-    public abstract class R(Unit type);
-
     public Stream Stream => stream;
     private readonly BinaryWriter Writer = new(stream);
 
@@ -491,9 +488,6 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
 
     private class TupleSeraVisitor(BytesSerializer Base) : ATupleSeraVisitor<Unit>(Base)
     {
-        [AssocType("R")]
-        public abstract class _R(Unit type);
-
         public override Unit VItem<V, T>(V vision, T value)
             => vision.Accept<Unit, BytesSerializer>(Base, value);
 
@@ -523,9 +517,6 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
 
     private class SeqSeraVisitor(BytesSerializer Base) : ASeqSeraVisitor<Unit>(Base)
     {
-        [AssocType("R")]
-        public abstract class _R(Unit type);
-
         public override Unit VItem<T, V>(V vision, T value)
             => vision.Accept<Unit, BytesSerializer>(Base, value);
 
@@ -555,9 +546,6 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
 
     private class MapSeraVisitor(BytesSerializer Base) : AMapSeraVisitor<Unit>(Base)
     {
-        [AssocType("R")]
-        public abstract class _R(Unit type);
-
         public override Unit VEntry<KV, VV, IK, IV>(KV keyVision, VV valueVision, IK key, IV value)
         {
             keyVision.Accept<Unit, BytesSerializer>(Base, key);
@@ -592,9 +580,6 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
 
     private class StructSeraVisitor(BytesSerializer Base) : AStructSeraVisitor<Unit>(Base)
     {
-        [AssocType("R")]
-        public abstract class _R(Unit type);
-
         public override Unit VField<V, T>(V vision, T value, string name, long key)
         {
             Base.VPrimitive(key);
@@ -619,9 +604,6 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
 
     private class UnionSeraVisitor(BytesSerializer Base) : AUnionSeraVisitor<Unit>(Base)
     {
-        [AssocType("R")]
-        public abstract class _R(Unit type);
-
         public override Unit VEmpty()
         {
             Base.Writer.Write((byte)((byte)TypeToken.Variant | (byte)SplitToken.Start << 3));

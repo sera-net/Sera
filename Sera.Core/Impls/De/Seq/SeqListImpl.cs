@@ -10,7 +10,7 @@ public readonly struct SeqListImpl<I, D>(D d) : ISeraColion<List<I>>, ISeqSeraCo
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R Collect<R, C>(ref C colctor, InType<List<I>>? t = null) where C : ISeraColctor<List<I>, R>
-        => colctor.CSeq(this, new IdentityFunctor<List<I>>(), new Type<List<I>>());
+        => colctor.CSeq(this, new IdentityMapper<List<I>>(), new Type<List<I>>());
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public List<I> Builder(int? cap, Type<List<I>> b = default) =>

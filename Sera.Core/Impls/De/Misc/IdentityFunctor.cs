@@ -2,7 +2,7 @@
 
 namespace Sera.Core.Impls.De.Misc;
 
-public readonly struct IdentityFunctor<T> : ISeraFunctor<T, T>
+public readonly struct IdentityMapper<T> : ISeraMapper<T, T>
 {
     public T Map(T value, InType<T>? u) => value;
 }
