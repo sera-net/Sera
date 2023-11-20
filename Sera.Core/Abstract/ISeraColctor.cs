@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.Text;
 using Sera.Core.SerDe;
 using Sera.Utils;
@@ -14,6 +15,9 @@ public interface ISeraColctor<in T, [AssocType] out R> : ISeraAbility<ISeraColio
 
     public R CPrimitive<M>(M mapper, Type<bool> t, SeraFormats? formats = null)
         where M : ISeraMapper<bool, T>;
+    
+    public R CPrimitive<M>(M mapper, Type<float> t, SeraFormats? formats = null)
+        where M : ISeraMapper<float, T>;
 
     // todo other Primitive
 
@@ -83,6 +87,13 @@ public interface ISeraColctor<in T, [AssocType] out R> : ISeraAbility<ISeraColio
 
     #endregion
 
+    #region Entry
+
+    public R CEntry<C, B, M>(C colion, M mapper, Type<B> b)
+        where C : IEntrySeraColion<B> where M : ISeraMapper<B, T>;
+
+    #endregion
+
     #region Tuple
 
     public R CTuple<C, B, M>(C colion, M mapper, Type<B> b)
@@ -92,8 +103,15 @@ public interface ISeraColctor<in T, [AssocType] out R> : ISeraAbility<ISeraColio
 
     #region Seq
 
-    public R CSeq<C, B, M>(C colion, M mapper, Type<B> b)
-        where C : ISeqSeraColion<B> where M : ISeraMapper<B, T>;
+    public R CSeq<C, B, M, I>(C colion, M mapper, Type<B> b, Type<I> i)
+        where C : ISeqSeraColion<B, I> where M : ISeraMapper<B, T>;
+
+    #endregion
+
+    #region Map
+
+    public R CMap<C, B, M, IK, IV>(C colion, M mapper, Type<B> b, Type<IK> k, Type<IV> v)
+        where C : IMapSeraColion<B, IK, IV> where M : ISeraMapper<B, T>;
 
     #endregion
 }
@@ -104,6 +122,12 @@ public interface ISomeSeraColctor<in T, [AssocType] out R>
         where C : ISeraColion<U> where M : ISeraMapper<U, T>;
 }
 
+public interface IEntrySeraColctor<B, [AssocType] out R>
+{
+    public R CItem<C, E, I>(C colion, E effector, Type<I> i)
+        where C : ISeraColion<I> where E : ISeraEffector<B, I>;
+}
+
 public interface ITupleSeraColctor<B, [AssocType] out R>
 {
     public R CItem<C, E, I>(C colion, E effector, Type<I> i)
@@ -112,8 +136,16 @@ public interface ITupleSeraColctor<B, [AssocType] out R>
     public R CNone();
 }
 
-public interface ISeqSeraColctor<B, [AssocType] out R>
+public interface ISeqSeraColctor<B, I, [AssocType] out R>
 {
-    public R CItem<C, E, I>(C colion, E effector, Type<I> i)
+    public R CItem<C, E>(C colion, E effector)
         where C : ISeraColion<I> where E : ISeraEffector<B, I>;
+}
+
+public interface IMapSeraColctor<B, IK, IV, [AssocType] out R>
+{
+    public R CItem<CK, CV, E>(CK keyColion, CV valueColion, E effector)
+        where CK : ISeraColion<IK>
+        where CV : ISeraColion<IV>
+        where E : ISeraEffector<B, KeyValuePair<IK, IV>>;
 }

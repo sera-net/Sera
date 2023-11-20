@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -57,6 +58,11 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             return mapper.Map(false);
         }
         else throw new NotImplementedException(); // todo
+    }
+
+    public T CPrimitive<M>(M mapper, Type<float> t, SeraFormats? formats = null) where M : ISeraMapper<float, T>
+    {
+        throw new NotImplementedException();
     }
 
     #endregion
@@ -260,6 +266,36 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
 
     #endregion
 
+    #region Entry
+
+    public T CEntry<C, B, M>(C colion, M mapper, Type<B> b) where C : IEntrySeraColion<B> where M : ISeraMapper<B, T>
+    {
+        reader.ReadArrayStart();
+        var colctor = new EntrySeraColctor<B>(colion.Builder(), impl);
+        colion.CollectKey<Unit, EntrySeraColctor<B>>(ref colctor);
+        reader.ReadComma();
+        colion.CollectValue<Unit, EntrySeraColctor<B>>(ref colctor);
+        reader.ReadArrayEnd();
+        return mapper.Map(colctor.builder);
+    }
+
+    private struct EntrySeraColctor<B>(B builder, JsonDeserializer impl) : IEntrySeraColctor<B, Unit>
+    {
+        public B builder = builder;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Unit CItem<C, E, I>(C colion, E effector, Type<I> i)
+            where C : ISeraColion<I> where E : ISeraEffector<B, I>
+        {
+            var c = new JsonDeserializer<I>(impl);
+            var r = colion.Collect<I, JsonDeserializer<I>>(ref c);
+            effector.Effect(ref builder, r);
+            return default;
+        }
+    }
+
+    #endregion
+
     #region Tuple
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -304,10 +340,11 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
     #region Seq
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public T CSeq<C, B, M>(C colion, M mapper, Type<B> b) where C : ISeqSeraColion<B> where M : ISeraMapper<B, T>
+    public T CSeq<C, B, M, I>(C colion, M mapper, Type<B> b, Type<I> i)
+        where C : ISeqSeraColion<B, I> where M : ISeraMapper<B, T>
     {
         reader.ReadArrayStart();
-        var colctor = new SeqSeraColctor<B>(colion.Builder(null), impl);
+        var colctor = new SeqSeraColctor<B, I>(colion.Builder(null), impl);
         var first = true;
         for (; reader.Has(); reader.MoveNext())
         {
@@ -315,23 +352,111 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             if (token.Kind is JsonTokenKind.ArrayEnd) break;
             if (first) first = false;
             else if (token.Kind is not JsonTokenKind.Comma) throw new NotImplementedException(); // todo error
-            colion.CollectItem<Unit, SeqSeraColctor<B>>(ref colctor);
+            colion.CollectItem<Unit, SeqSeraColctor<B, I>>(ref colctor);
         }
         reader.ReadArrayEnd();
         return mapper.Map(colctor.builder);
     }
 
-    private struct SeqSeraColctor<B>(B builder, JsonDeserializer impl) : ISeqSeraColctor<B, Unit>
+    private struct SeqSeraColctor<B, I>(B builder, JsonDeserializer impl) : ISeqSeraColctor<B, I, Unit>
     {
         public B builder = builder;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Unit CItem<C, E, I>(C colion, E effector, Type<I> i)
+        public Unit CItem<C, E>(C colion, E effector)
             where C : ISeraColion<I> where E : ISeraEffector<B, I>
         {
             var c = new JsonDeserializer<I>(impl);
             var r = colion.Collect<I, JsonDeserializer<I>>(ref c);
             effector.Effect(ref builder, r);
+            return default;
+        }
+    }
+
+    #endregion
+
+    #region Map
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CMap<C, B, M, IK, IV>(C colion, M mapper, Type<B> b, Type<IK> k, Type<IV> v)
+        where C : IMapSeraColion<B, IK, IV> where M : ISeraMapper<B, T>
+        => typeof(IK) == typeof(string)
+            ? CObjectMap<C, B, M, IK, IV>(colion, mapper)
+            : CArrayMap<C, B, M, IK, IV>(colion, mapper);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private T CArrayMap<C, B, M, IK, IV>(C colion, M mapper)
+        where C : IMapSeraColion<B, IK, IV> where M : ISeraMapper<B, T>
+    {
+        reader.ReadArrayStart();
+        var colctor = new ArrayMapSeraColctor<B, IK, IV>(colion.Builder(null), impl);
+        var first = true;
+        for (; reader.Has(); reader.MoveNext())
+        {
+            var token = reader.CurrentToken();
+            if (token.Kind is JsonTokenKind.ArrayEnd) break;
+            if (first) first = false;
+            else if (token.Kind is not JsonTokenKind.Comma) throw new NotImplementedException(); // todo error
+            colion.CollectItem<Unit, ArrayMapSeraColctor<B, IK, IV>>(ref colctor);
+        }
+        reader.ReadArrayEnd();
+        return mapper.Map(colctor.builder);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private T CObjectMap<C, B, M, IK, IV>(C colion, M mapper)
+        where C : IMapSeraColion<B, IK, IV> where M : ISeraMapper<B, T>
+    {
+        var token = reader.CurrentToken();
+        if (token.Kind is JsonTokenKind.ArrayStart) return CArrayMap<C, B, M, IK, IV>(colion, mapper);
+        reader.ReadObjectStart();
+        var colctor = new ObjectMapSeraColctor<B, IK, IV>(colion.Builder(null), impl);
+        var first = true;
+        for (; reader.Has(); reader.MoveNext())
+        {
+            token = reader.CurrentToken();
+            if (token.Kind is JsonTokenKind.ObjectEnd) break;
+            if (first) first = false;
+            else if (token.Kind is not JsonTokenKind.Comma) throw new NotImplementedException(); // todo error
+            colion.CollectItem<Unit, ObjectMapSeraColctor<B, IK, IV>>(ref colctor);
+        }
+        reader.ReadObjectEnd();
+        return mapper.Map(colctor.builder);
+    }
+
+    private struct ArrayMapSeraColctor<B, IK, IV>(B builder, JsonDeserializer impl) : IMapSeraColctor<B, IK, IV, Unit>
+    {
+        public B builder = builder;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Unit CItem<CK, CV, E>(CK keyColion, CV valueColion, E effector)
+            where CK : ISeraColion<IK> where CV : ISeraColion<IV> where E : ISeraEffector<B, KeyValuePair<IK, IV>>
+        {
+            impl.reader.ReadArrayStart();
+            var ck = new JsonDeserializer<IK>(impl);
+            var vk = keyColion.Collect<IK, JsonDeserializer<IK>>(ref ck);
+            impl.reader.ReadComma();
+            var cv = new JsonDeserializer<IV>(impl);
+            var vv = valueColion.Collect<IV, JsonDeserializer<IV>>(ref cv);
+            impl.reader.ReadArrayEnd();
+            effector.Effect(ref builder, new(vk, vv));
+            return default;
+        }
+    }
+
+    private struct ObjectMapSeraColctor<B, IK, IV>(B builder, JsonDeserializer impl) : IMapSeraColctor<B, IK, IV, Unit>
+    {
+        public B builder = builder;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Unit CItem<CK, CV, E>(CK keyColion, CV valueColion, E effector)
+            where CK : ISeraColion<IK> where CV : ISeraColion<IV> where E : ISeraEffector<B, KeyValuePair<IK, IV>>
+        {
+            var vk = impl.reader.ReadString();
+            impl.reader.ReadColon();
+            var cv = new JsonDeserializer<IV>(impl);
+            var vv = valueColion.Collect<IV, JsonDeserializer<IV>>(ref cv);
+            effector.Effect(ref builder, new((IK)(object)vk, vv));
             return default;
         }
     }

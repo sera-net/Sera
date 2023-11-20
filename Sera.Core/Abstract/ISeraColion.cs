@@ -23,6 +23,17 @@ public interface IOptionSeraColion<out T>
     public R CollectSome<R, C>(ref C colctor, InType<T>? t = null) where C : ISomeSeraColctor<T, R>;
 }
 
+public interface IEntrySeraColion<B>
+{
+    public B Builder(Type<B> b = default);
+
+    public R CollectKey<R, C>(ref C colctor, Type<B> b = default)
+        where C : IEntrySeraColctor<B, R>;
+
+    public R CollectValue<R, C>(ref C colctor, Type<B> b = default)
+        where C : IEntrySeraColctor<B, R>;
+}
+
 public interface ITupleSeraColion<B>
 {
     public int Size { get; }
@@ -33,10 +44,18 @@ public interface ITupleSeraColion<B>
         where C : ITupleSeraColctor<B, R>;
 }
 
-public interface ISeqSeraColion<B>
+public interface ISeqSeraColion<B, I>
 {
     public B Builder(int? cap, Type<B> b = default);
 
     public R CollectItem<R, C>(ref C colctor, Type<B> b = default)
-        where C : ISeqSeraColctor<B, R>;
+        where C : ISeqSeraColctor<B, I, R>;
+}
+
+public interface IMapSeraColion<B, IK, IV>
+{
+    public B Builder(int? cap, Type<B> b = default);
+
+    public R CollectItem<R, C>(ref C colctor, Type<B> b = default)
+        where C : IMapSeraColctor<B, IK, IV, R>;
 }

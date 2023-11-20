@@ -15,6 +15,9 @@ public abstract class AJsonReader(SeraJsonOptions options)
 
     /// <summary>Read <c>null</c> and move next</summary>
     public abstract void ReadNull();
+    
+    /// <summary>Read <c>string</c> and move next</summary>
+    public abstract string ReadString();
 
     /// <summary>Read <c>,</c> and move next</summary>
     public abstract void ReadComma();

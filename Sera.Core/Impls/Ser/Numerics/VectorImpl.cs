@@ -4,8 +4,8 @@ using System.Runtime.Intrinsics;
 
 namespace Sera.Core.Impls.Ser;
 
-public readonly struct VectorImpl(SeraFormats? formats = null) : ISeraVision<Vector2>, ISeraVision<Vector3>,
-    ISeraVision<Vector4>
+public readonly struct VectorImpl(SeraFormats? formats = null)
+    : ISeraVision<Vector2>, ISeraVision<Vector3>, ISeraVision<Vector4>
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R Accept<R, V>(V visitor, Vector2 value) where V : ASeraVisitor<R>
