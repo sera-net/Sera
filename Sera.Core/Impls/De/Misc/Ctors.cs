@@ -30,6 +30,7 @@ public readonly struct NewCtor<T> :
 public readonly struct SeqCapCtor<I> :
     ICapSeraCtor<ICollection<I>>,
     ICapSeraCtor<List<I>>,
+    ICapSeraCtor<Vec<I>>,
     ICapSeraCtor<HashSet<I>>
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -38,6 +39,9 @@ public readonly struct SeqCapCtor<I> :
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public List<I> Ctor(int? cap, InType<List<I>>? t) => cap is { } c ? new(c) : new();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public Vec<I> Ctor(int? cap, InType<Vec<I>>? t) => cap is { } c ? new(c) : new();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public HashSet<I> Ctor(int? cap, InType<HashSet<I>>? t) => cap is { } c ? new(c) : new();
