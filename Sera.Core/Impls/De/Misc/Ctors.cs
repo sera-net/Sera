@@ -2,7 +2,7 @@
 using System.Runtime.CompilerServices;
 using Sera.Utils;
 
-namespace Sera.Core.Impls.De;
+namespace Sera.Core.Impls.De.Misc;
 
 public readonly struct DefaultCtor<T> :
     ISeraCtor<T?>,
