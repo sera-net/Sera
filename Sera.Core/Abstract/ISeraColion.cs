@@ -70,3 +70,13 @@ public interface IStructSeraColion<B>
     public R CollectField<R, C>(ref C colctor, int field, Type<B> b = default)
         where C : IStructSeraColctor<B, R>;
 }
+
+public interface IUnionSeraColion<out T>
+{
+    public SeraVariantInfos Variants { get; }
+
+    public T CollectEmpty();
+
+    public R CollectVariant<R, C>(ref C colctor, int variant, InType<T>? t = null)
+        where C : IUnionSeraColctor<T, R>;
+}

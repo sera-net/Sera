@@ -8,9 +8,9 @@ public readonly record struct SeraFieldInfo(string Name, long Key);
 
 public readonly record struct SeraFieldInfos
 {
-    public readonly SeraFieldInfo[] Infos;
-    public readonly FrozenDictionary<string, int> NameToIndex;
-    public readonly FrozenDictionary<long, int> KeyToIndex;
+    public SeraFieldInfo[] Infos { get; }
+    public FrozenDictionary<string, int> NameToIndex { get; }
+    public FrozenDictionary<long, int> KeyToIndex { get; }
 
     public int Count => Infos.Length;
 

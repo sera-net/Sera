@@ -531,4 +531,40 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
     }
 
     #endregion
+
+    #region Union
+
+    public T CUnion<C, B, M>(C colion, M mapper, Type<B> b, UnionStyle? union_style = null)
+        where C : IUnionSeraColion<B> where M : ISeraMapper<B, T>
+    {
+        throw new NotImplementedException();
+    }
+
+    private struct UnionSeraColctor(JsonDeserializer impl) : IUnionSeraColctor<T, T>
+    {
+        public T CVariant<N>(N ctor, VariantStyle? variant_style = null) where N : ISeraCtor<T> => ctor.Ctor();
+
+        public T CVariantValue<C, M, I>(C colion, M mapper, Type<I> i, VariantStyle? variant_style = null)
+            where C : ISeraColion<I> where M : ISeraMapper<I, T>
+        {
+            throw new NotImplementedException();
+        }
+
+        public T CVariantTuple<C, M, I>(C colion, M mapper, Type<I> i, VariantStyle? variant_style = null)
+            where C : ITupleSeraColion<I> where M : ISeraMapper<I, T>
+        {
+            throw new NotImplementedException();
+        }
+
+        public T CVariantStruct<C, M, I>(C colion, M mapper, Type<I> i, VariantStyle? variant_style = null)
+            where C : IStructSeraColion<I> where M : ISeraMapper<I, T>
+        {
+            throw new NotImplementedException();
+        }
+
+        public T CNone() => throw new DeserializeException(
+            $"Unable to read union {typeof(T)}");
+    }
+
+    #endregion
 }

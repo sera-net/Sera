@@ -100,6 +100,21 @@ public readonly struct VariantTag : IEquatable<VariantTag>, IComparable<VariantT
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public T As<T>() where T : unmanaged => TryAs<T>() ?? throw new ArgumentException();
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static VariantTag Parse(VariantTagKind kind, ReadOnlySpan<char> chars) => kind switch
+    {
+        VariantTagKind.SByte => Create(sbyte.Parse(chars)),
+        VariantTagKind.Byte => Create(byte.Parse(chars)),
+        VariantTagKind.Int16 => Create(short.Parse(chars)),
+        VariantTagKind.UInt16 => Create(ushort.Parse(chars)),
+        VariantTagKind.Int32 => Create(int.Parse(chars)),
+        VariantTagKind.UInt32 => Create(uint.Parse(chars)),
+        VariantTagKind.Int64 => Create(long.Parse(chars)),
+        VariantTagKind.UInt64 => Create(ulong.Parse(chars)),
+        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, null)
+    };
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int ToInt() => Kind switch
     {
         VariantTagKind.SByte => SByte,
@@ -113,6 +128,7 @@ public readonly struct VariantTag : IEquatable<VariantTag>, IComparable<VariantT
         _ => throw new ArgumentOutOfRangeException()
     };
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public long ToLong() => Kind switch
     {
         VariantTagKind.SByte => SByte,
@@ -126,6 +142,7 @@ public readonly struct VariantTag : IEquatable<VariantTag>, IComparable<VariantT
         _ => throw new ArgumentOutOfRangeException()
     };
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public object ToObject() => Kind switch
     {
         VariantTagKind.SByte => SByte,
@@ -139,6 +156,7 @@ public readonly struct VariantTag : IEquatable<VariantTag>, IComparable<VariantT
         _ => throw new ArgumentOutOfRangeException()
     };
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override string ToString() => Kind switch
     {
         VariantTagKind.SByte => SByte.ToString(),
@@ -152,6 +170,7 @@ public readonly struct VariantTag : IEquatable<VariantTag>, IComparable<VariantT
         _ => throw new ArgumentOutOfRangeException()
     };
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool Equals(VariantTag other) => Kind == other.Kind && Kind switch
     {
         VariantTagKind.SByte => SByte == other.SByte,

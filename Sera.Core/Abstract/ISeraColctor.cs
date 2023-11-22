@@ -114,11 +114,18 @@ public interface ISeraColctor<in T, [AssocType] out R> : ISeraAbility<ISeraColio
         where C : IMapSeraColion<B, IK, IV> where M : ISeraMapper<B, T>;
 
     #endregion
-    
+
     #region Struct
 
     public R CStruct<C, B, M>(C colion, M mapper, Type<B> b)
         where C : IStructSeraColion<B> where M : ISeraMapper<B, T>;
+
+    #endregion
+
+    #region Union
+
+    public R CUnion<C, B, M>(C colion, M mapper, Type<B> b, UnionStyle? union_style = null)
+        where C : IUnionSeraColion<B> where M : ISeraMapper<B, T>;
 
     #endregion
 }
@@ -163,5 +170,22 @@ public interface IStructSeraColctor<B, [AssocType] out R>
         where C : ISeraColion<I> where E : ISeraEffector<B, I>;
 
     public R CSkip();
+    public R CNone();
+}
+
+public interface IUnionSeraColctor<in T, [AssocType] out R>
+{
+    public R CVariant<N>(N ctor, VariantStyle? variant_style = null)
+        where N : ISeraCtor<T>;
+
+    public R CVariantValue<C, M, I>(C colion, M mapper, Type<I> i, VariantStyle? variant_style = null)
+        where C : ISeraColion<I> where M : ISeraMapper<I, T>;
+
+    public R CVariantTuple<C, M, I>(C colion, M mapper, Type<I> i, VariantStyle? variant_style = null)
+        where C : ITupleSeraColion<I> where M : ISeraMapper<I, T>;
+
+    public R CVariantStruct<C, M, I>(C colion, M mapper, Type<I> i, VariantStyle? variant_style = null)
+        where C : IStructSeraColion<I> where M : ISeraMapper<I, T>;
+
     public R CNone();
 }
