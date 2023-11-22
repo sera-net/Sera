@@ -311,7 +311,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             if (first) first = false;
             else reader.ReadComma();
             var err = colion.CollectItem<bool, TupleSeraColctor<B>>(ref colctor, i);
-            if (err) throw new SerializeException($"Unable to write item {i} of tuple {typeof(T)}");
+            if (err) throw new DeserializeException($"Unable to read item {i} of tuple {typeof(T)}");
         }
         reader.ReadArrayEnd();
         return mapper.Map(colctor.builder);
@@ -383,6 +383,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         => typeof(IK) == typeof(string)
             ? CObjectMap<C, B, M, IK, IV>(colion, mapper)
             : CArrayMap<C, B, M, IK, IV>(colion, mapper);
+
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private T CArrayMap<C, B, M, IK, IV>(C colion, M mapper)
@@ -459,6 +460,74 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             effector.Effect(ref builder, new((IK)(object)vk, vv));
             return default;
         }
+    }
+
+    #endregion
+
+    #region Struct
+
+    public T CStruct<C, B, M>(C colion, M mapper, Type<B> b) where C : IStructSeraColion<B> where M : ISeraMapper<B, T>
+    {
+        reader.ReadObjectStart();
+        var fields = colion.Fields;
+        var c = new StructSeraColctor<B>(colion.Builder(), impl);
+        var first = true;
+        for (;;)
+        {
+            if (first) first = false;
+            else reader.ReadComma();
+            var token = reader.CurrentToken();
+            if (token.Kind is JsonTokenKind.ObjectEnd) break;
+            if (token.Kind is not JsonTokenKind.String) throw new NotImplementedException(); // todo error
+            var field_name = token.AsString.ToString();
+            reader.ReadColon();
+            if (!fields.TryGet(field_name, out var info))
+            {
+                reader.SkipValue();
+                continue;
+            }
+            var r = colion.CollectField<StructRes, StructSeraColctor<B>>(ref c, info.index);
+            switch (r)
+            {
+                case StructRes.None:
+                    throw new DeserializeException(
+                        $"Unable to read field {field_name}({info.index}) of struct {typeof(T)}");
+                case StructRes.Skip:
+                    reader.SkipValue();
+                    break;
+                case StructRes.Field:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+        reader.ReadObjectEnd();
+        return mapper.Map(c.builder);
+    }
+
+    private enum StructRes : byte
+    {
+        None,
+        Skip,
+        Field,
+    }
+
+    private struct StructSeraColctor<B>(B builder, JsonDeserializer impl) : IStructSeraColctor<B, StructRes>
+    {
+        public B builder = builder;
+
+        public StructRes CField<C, E, I>(C colion, E effector, Type<I> i)
+            where C : ISeraColion<I> where E : ISeraEffector<B, I>
+        {
+            var c = new JsonDeserializer<I>(impl);
+            var r = colion.Collect<I, JsonDeserializer<I>>(ref c);
+            effector.Effect(ref builder, r);
+            return StructRes.Field;
+        }
+
+        public StructRes CSkip() => StructRes.Skip;
+
+        public StructRes CNone() => StructRes.None;
     }
 
     #endregion

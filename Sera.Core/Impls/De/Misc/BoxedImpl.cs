@@ -1,7 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using Sera.Utils;
 
-namespace Sera.Core.Impls.De.Misc;
+namespace Sera.Core.Impls.De;
 
 public readonly struct BoxedImpl<T, D>(Box<D> d) : ISeraColion<T>
     where D : ISeraColion<T>

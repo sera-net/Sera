@@ -15,7 +15,7 @@ public interface ISeraColctor<in T, [AssocType] out R> : ISeraAbility<ISeraColio
 
     public R CPrimitive<M>(M mapper, Type<bool> t, SeraFormats? formats = null)
         where M : ISeraMapper<bool, T>;
-    
+
     public R CPrimitive<M>(M mapper, Type<float> t, SeraFormats? formats = null)
         where M : ISeraMapper<float, T>;
 
@@ -114,6 +114,13 @@ public interface ISeraColctor<in T, [AssocType] out R> : ISeraAbility<ISeraColio
         where C : IMapSeraColion<B, IK, IV> where M : ISeraMapper<B, T>;
 
     #endregion
+    
+    #region Struct
+
+    public R CStruct<C, B, M>(C colion, M mapper, Type<B> b)
+        where C : IStructSeraColion<B> where M : ISeraMapper<B, T>;
+
+    #endregion
 }
 
 public interface ISomeSeraColctor<in T, [AssocType] out R>
@@ -148,4 +155,13 @@ public interface IMapSeraColctor<B, IK, IV, [AssocType] out R>
         where CK : ISeraColion<IK>
         where CV : ISeraColion<IV>
         where E : ISeraEffector<B, KeyValuePair<IK, IV>>;
+}
+
+public interface IStructSeraColctor<B, [AssocType] out R>
+{
+    public R CField<C, E, I>(C colion, E effector, Type<I> i)
+        where C : ISeraColion<I> where E : ISeraEffector<B, I>;
+
+    public R CSkip();
+    public R CNone();
 }

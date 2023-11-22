@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
-using Sera.Core.Impls.De.Misc;
+using Sera.Core.Impls.De;
 using Sera.Utils;
 
 namespace Sera.Core.Impls.De;

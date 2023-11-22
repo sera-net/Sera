@@ -1,4 +1,5 @@
-﻿using Sera.Utils;
+﻿using System;
+using Sera.Utils;
 
 namespace Sera.Core;
 
@@ -58,4 +59,14 @@ public interface IMapSeraColion<B, IK, IV>
 
     public R CollectItem<R, C>(ref C colctor, Type<B> b = default)
         where C : IMapSeraColctor<B, IK, IV, R>;
+}
+
+public interface IStructSeraColion<B>
+{
+    public SeraFieldInfos Fields { get; }
+
+    public B Builder(Type<B> b = default);
+
+    public R CollectField<R, C>(ref C colctor, int field, Type<B> b = default)
+        where C : IStructSeraColctor<B, R>;
 }

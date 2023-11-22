@@ -13,6 +13,8 @@ public abstract class AJsonReader(SeraJsonOptions options)
 
     public abstract JsonToken CurrentToken();
 
+    public abstract void SkipValue();
+    
     /// <summary>Read <c>null</c> and move next</summary>
     public abstract void ReadNull();
     
