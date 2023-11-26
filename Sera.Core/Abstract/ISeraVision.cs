@@ -28,7 +28,7 @@ public interface IMapSeraVision
 
 public interface IStructSeraVision<T>
 {
-    public string Name { get; }
+    public string? Name { get; }
 
     public int Count { get; }
 
@@ -37,7 +37,7 @@ public interface IStructSeraVision<T>
 
 public interface IUnionSeraVision<T>
 {
-    public string Name { get; }
+    public string? Name { get; }
 
     public R AcceptUnion<R, V>(V visitor, ref T value) where V : AUnionSeraVisitor<R>;
 }

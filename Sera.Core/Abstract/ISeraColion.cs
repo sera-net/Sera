@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Text;
+using Sera.TaggedUnion;
 using Sera.Utils;
 
 namespace Sera.Core;
@@ -63,11 +65,11 @@ public interface IMapSeraColion<B, IK, IV>
 
 public interface IStructSeraColion<B>
 {
-    public SeraFieldInfos Fields { get; }
+    public SeraFieldInfos? Fields { get; }
 
-    public B Builder(Type<B> b = default);
+    public B Builder(string? name, Type<B> b = default);
 
-    public R CollectField<R, C>(ref C colctor, int field, Type<B> b = default)
+    public R CollectField<R, C>(ref C colctor, int field, string? name, long? key, Type<B> b = default)
         where C : IStructSeraColctor<B, R>;
 }
 
@@ -80,3 +82,45 @@ public interface IUnionSeraColion<out T>
     public R CollectVariant<R, C>(ref C colctor, int variant, InType<T>? t = null)
         where C : IUnionSeraColctor<T, R>;
 }
+
+public interface ISelectSeraColion<out T>
+{
+    public ReadOnlyMemory<SelectKind>? Priority { get; }
+
+    public R CollectSelect<R, C>(ref C colctor, SeraSelect select, InType<T>? t = null)
+        where C : ISelectSeraColctor<T, R>;
+}
+
+[Union(ExternalTags = true, ExternalTagsName = "SelectKind")]
+public readonly partial struct SeraSelect
+{
+    [UnionTemplate]
+    private interface Template
+    {
+        void Primitive();
+        StringSeraSelect String();
+        void Bytes();
+        void Array();
+        void Unit();
+        void Option();
+        void Entry();
+        TupleSeraSelect Tuple();
+        SeqSeraSelect Seq();
+        MapSeraSelect Map();
+        StructSeraSelect Struct();
+        void Union();
+    }
+}
+
+public record StringSeraSelect(Encoding Encoding)
+{
+    public static StringSeraSelect Default { get; } = new(Encoding.Unicode);
+}
+
+public readonly record struct TupleSeraSelect(int Size);
+
+public readonly record struct SeqSeraSelect(int? Size);
+
+public readonly record struct MapSeraSelect(int? Size);
+
+public record StructSeraSelect(string Name, int? Size);

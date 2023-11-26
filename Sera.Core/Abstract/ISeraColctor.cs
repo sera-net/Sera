@@ -11,6 +11,14 @@ namespace Sera.Core;
 
 public interface ISeraColctor<in T, [AssocType] out R> : ISeraAbility<ISeraColion<object?>>
 {
+    #region Select
+
+    public R CSelect<C, M, U>(C colion, M mapper, Type<U> u)
+        where C : ISelectSeraColion<U>
+        where M : ISeraMapper<U, T>;
+
+    #endregion
+
     #region Primitive
 
     public R CPrimitive<M>(M mapper, Type<bool> t, SeraFormats? formats = null)
@@ -187,5 +195,13 @@ public interface IUnionSeraColctor<in T, [AssocType] out R>
     public R CVariantStruct<C, M, I>(C colion, M mapper, Type<I> i, VariantStyle? variant_style = null)
         where C : IStructSeraColion<I> where M : ISeraMapper<I, T>;
 
+    public R CNone();
+}
+
+public interface ISelectSeraColctor<in T, [AssocType] out R>
+{
+    public R CSome<C, M, U>(C colion, M mapper, Type<U> u)
+        where C : ISeraColion<U> where M : ISeraMapper<U, T>;
+    
     public R CNone();
 }

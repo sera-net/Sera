@@ -20,11 +20,9 @@ public readonly partial struct Any
         Any[] Tuple();
         List<Any> Seq();
         Dictionary<Any, Any> Map();
-        Dictionary<string, Any> Struct();
+        AnyStruct Struct();
         AnyUnion Union();
     }
 }
 
 public record AnyEntry(Any Key, Any Value);
-
-public record AnyUnion(Variant Variant, Any? Value);

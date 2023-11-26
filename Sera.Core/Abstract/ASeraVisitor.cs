@@ -218,7 +218,7 @@ public abstract class AMapSeraVisitor<[AssocType] R>(SeraBase Base) : SeraBaseFo
 
 public abstract class AStructSeraVisitor<[AssocType] R>(SeraBase Base) : SeraBaseForward(Base)
 {
-    public abstract R VField<V, T>(V vision, T value, string name, long key) where V : ISeraVision<T>;
+    public abstract R VField<V, T>(V vision, T value, string? name, long key) where V : ISeraVision<T>;
 
     public abstract R VNone();
 }

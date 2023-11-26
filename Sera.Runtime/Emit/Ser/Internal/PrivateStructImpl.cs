@@ -16,7 +16,7 @@ public readonly struct PrivateStructImpl<T> : ISeraVision<T>, IStructSeraVision<
     public R Accept<R, V>(V visitor, T value) where V : ASeraVisitor<R>
         => visitor.VStruct(this, value);
 
-    public string Name => data.name;
+    public string? Name => data.name;
     public int Count => data.field_count;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

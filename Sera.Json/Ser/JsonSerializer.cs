@@ -711,9 +711,9 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
 
     private class StructSeraVisitor(JsonSerializer Base) : AStructSeraVisitor<bool>(Base)
     {
-        public override bool VField<V, T>(V vision, T value, string name, long key)
+        public override bool VField<V, T>(V vision, T value, string? name, long key)
         {
-            Base.writer.WriteString(name, true);
+            Base.writer.WriteString(name ?? $"{key}", true);
             Base.writer.Write(":");
             vision.Accept<Unit, JsonSerializer>(Base, value);
             return false;

@@ -665,9 +665,9 @@ public class AsyncJsonSerializer
 
     private class StructSeraVisitor(AsyncJsonSerializer Base) : AStructSeraVisitor<ValueTask<bool>>(Base)
     {
-        public override async ValueTask<bool> VField<V, T>(V vision, T value, string name, long key)
+        public override async ValueTask<bool> VField<V, T>(V vision, T value, string? name, long key)
         {
-            await Base.writer.WriteString(name, true);
+            await Base.writer.WriteString(name ?? $"{key}", true);
             await Base.writer.Write(":");
             await vision.Accept<ValueTask, AsyncJsonSerializer>(Base, value);
             return false;

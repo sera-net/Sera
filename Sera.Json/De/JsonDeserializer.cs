@@ -42,6 +42,15 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
 
     #endregion
 
+    #region Select
+
+    public T CSelect<C, M, U>(C colion, M mapper, Type<U> u) where C : ISelectSeraColion<U> where M : ISeraMapper<U, T>
+    {
+        throw new NotImplementedException();
+    }
+
+    #endregion
+
     #region Primitive
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -469,8 +478,15 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
     public T CStruct<C, B, M>(C colion, M mapper, Type<B> b) where C : IStructSeraColion<B> where M : ISeraMapper<B, T>
     {
         reader.ReadObjectStart();
-        var fields = colion.Fields;
-        var c = new StructSeraColctor<B>(colion.Builder(), impl);
+        if (colion.Fields is { } fields)
+            return CStaticStruct<C, B, M>(colion, mapper, fields);
+        else return CDynamicStruct<C, B, M>(colion, mapper);
+    }
+
+    private T CStaticStruct<C, B, M>(C colion, M mapper, SeraFieldInfos fields)
+        where C : IStructSeraColion<B> where M : ISeraMapper<B, T>
+    {
+        var c = new StructSeraColctor<B>(colion.Builder(null), impl);
         var first = true;
         for (;;)
         {
@@ -486,12 +502,45 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
                 reader.SkipValue();
                 continue;
             }
-            var r = colion.CollectField<StructRes, StructSeraColctor<B>>(ref c, info.index);
+            var key = long.TryParse(field_name, out var key_) ? (long?)key_ : null;
+            var r = colion.CollectField<StructRes, StructSeraColctor<B>>(ref c, info.index, field_name, key);
             switch (r)
             {
                 case StructRes.None:
                     throw new DeserializeException(
                         $"Unable to read field {field_name}({info.index}) of struct {typeof(T)}");
+                case StructRes.Skip:
+                    reader.SkipValue();
+                    break;
+                case StructRes.Field:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+        reader.ReadObjectEnd();
+        return mapper.Map(c.builder);
+    }
+
+    private T CDynamicStruct<C, B, M>(C colion, M mapper)
+        where C : IStructSeraColion<B> where M : ISeraMapper<B, T>
+    {
+        var c = new StructSeraColctor<B>(colion.Builder(null), impl);
+        var first = true;
+        for (var index = 0;; index++)
+        {
+            if (first) first = false;
+            else reader.ReadComma();
+            var token = reader.CurrentToken();
+            if (token.Kind is JsonTokenKind.ObjectEnd) break;
+            if (token.Kind is not JsonTokenKind.String) throw new NotImplementedException(); // todo error
+            var field_name = token.AsString.ToString();
+            reader.ReadColon();
+            var key = long.TryParse(field_name, out var key_) ? (long?)key_ : null;
+            var r = colion.CollectField<StructRes, StructSeraColctor<B>>(ref c, index, field_name, key);
+            switch (r)
+            {
+                case StructRes.None:
                 case StructRes.Skip:
                     reader.SkipValue();
                     break;
