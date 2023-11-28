@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Text;
 using Sera.Utils;
 
 namespace Sera.Core.Impls.De;
@@ -11,41 +12,72 @@ public readonly struct AnyImpl(SeraFormats? formats = null) : ISeraColion<Any>, 
     public R Collect<R, C>(ref C colctor, InType<Any>? t = null) where C : ISeraColctor<Any, R>
         => colctor.CSelect(this, new IdentityMapper<Any>(), new Type<Any>());
 
-    public ReadOnlyMemory<SelectKind>? Priority => null;
+    public ReadOnlyMemory<Any.Kind>? Priorities => null;
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public R SelectPrimitive<R, C>(ref C colctor, InType<Any>? t = null)
+        where C : ISelectSeraColctor<Any, R>
+        => throw new NotImplementedException();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R CollectSelect<R, C>(ref C colctor, SeraSelect select, InType<Any>? t = null)
+    public R SelectString<R, C>(ref C colctor, Encoding encoding, InType<Any>? t = null)
         where C : ISelectSeraColctor<Any, R>
-        => select switch
-        {
-            { Tag: SelectKind.Primitive } => throw new NotImplementedException(),
-            { Tag: SelectKind.String } =>
-                colctor.CSome(new StringImpl(), new StringMapper(), new Type<string>()),
-            { Tag: SelectKind.Bytes } => throw new NotImplementedException(),
-            // colctor.CSome(new BytesImpl(), new BytesMapper(), new Type<byte[]>()),
-            { Tag: SelectKind.Array } =>
-                colctor.CSome(new ArrayImpl<Any, AnyImpl>(this), new ArrayMapper(), new Type<Any[]>()),
-            { Tag: SelectKind.Unit } =>
-                colctor.CSome(new UnitImpl<Unit>(), new UnitMapper(), new Type<Unit>()),
-            { Tag: SelectKind.Option } =>
-                colctor.CSome(new NullableImpl<Any, AnyImpl>(this), new OptionMapper(), new Type<Any?>()),
-            { Tag: SelectKind.Entry } =>
-                colctor.CSome(new EntryImpl<Any, Any, AnyImpl, AnyImpl>(this, this),
-                    new EntryMapper(), new Type<KeyValuePair<Any, Any>>()),
-            { Tag: SelectKind.Tuple, Tuple.Size: var size } =>
-                colctor.CSome(new TupleArrayImpl<Any, AnyImpl>(this, size),
-                    new TupleMapper(), new Type<Any[]>()),
-            { Tag: SelectKind.Seq } =>
-                colctor.CSome(new SeqListImpl<Any, AnyImpl>(this), new SeqMapper(), new Type<List<Any>>()),
-            { Tag: SelectKind.Map } =>
-                colctor.CSome(new MapDictionaryImpl<Any, Any, AnyImpl, AnyImpl>(this, this), new MapMapper(),
-                    new Type<Dictionary<Any, Any>>()),
-            { Tag: SelectKind.Struct } =>
-                colctor.CSome(new AnyStructImpl(this), new StructMapper(), new Type<AnyStruct>()),
-            { Tag: SelectKind.Union } => throw new NotImplementedException(),
-            _ => colctor.CNone(),
-        };
+        => colctor.CSome(new StringImpl(), new StringMapper(), new Type<string>());
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public R SelectBytes<R, C>(ref C colctor, InType<Any>? t = null)
+        where C : ISelectSeraColctor<Any, R>
+        => throw new NotImplementedException();
+    // colctor.CSome(new BytesImpl(), new BytesMapper(), new Type<byte[]>()),
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public R SelectArray<R, C>(ref C colctor, InType<Any>? t = null)
+        where C : ISelectSeraColctor<Any, R>
+        => colctor.CSome(new ArrayImpl<Any, AnyImpl>(this), new ArrayMapper(), new Type<Any[]>());
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public R SelectUnit<R, C>(ref C colctor, InType<Any>? t = null)
+        where C : ISelectSeraColctor<Any, R>
+        => colctor.CSome(new UnitImpl<Unit>(), new UnitMapper(), new Type<Unit>());
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public R SelectOption<R, C>(ref C colctor, InType<Any>? t = null)
+        where C : ISelectSeraColctor<Any, R>
+        => colctor.CSome(new NullableImpl<Any, AnyImpl>(this), new OptionMapper(), new Type<Any?>());
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public R SelectEntry<R, C>(ref C colctor, InType<Any>? t = null)
+        where C : ISelectSeraColctor<Any, R>
+        => colctor.CSome(new EntryImpl<Any, Any, AnyImpl, AnyImpl>(this, this),
+            new EntryMapper(), new Type<KeyValuePair<Any, Any>>());
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public R SelectTuple<R, C>(ref C colctor, int size, InType<Any>? t = null)
+        where C : ISelectSeraColctor<Any, R>
+        => colctor.CSome(new TupleArrayImpl<Any, AnyImpl>(this, size),
+            new TupleMapper(), new Type<Any[]>());
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public R SelectSeq<R, C>(ref C colctor, int? size, InType<Any>? t = null)
+        where C : ISelectSeraColctor<Any, R>
+        => colctor.CSome(new SeqListImpl<Any, AnyImpl>(this), new SeqMapper(), new Type<List<Any>>());
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public R SelectMap<R, C>(ref C colctor, int? size, InType<Any>? t = null)
+        where C : ISelectSeraColctor<Any, R>
+        => colctor.CSome(new MapDictionaryImpl<Any, Any, AnyImpl, AnyImpl>(this, this),
+            new MapMapper(), new Type<Dictionary<Any, Any>>());
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public R SelectStruct<R, C>(ref C colctor, string? name, int? size, InType<Any>? t = null)
+        where C : ISelectSeraColctor<Any, R>
+        => colctor.CSome(new AnyStructImpl(this), new StructMapper(), new Type<AnyStruct>());
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public R SelectUnion<R, C>(ref C colctor, string? name, InType<Any>? t = null)
+        where C : ISelectSeraColctor<Any, R>
+        => throw new NotImplementedException();
+    
     public readonly struct OptionMapper : ISeraMapper<Any?, Any>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

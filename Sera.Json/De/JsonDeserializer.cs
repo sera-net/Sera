@@ -9,18 +9,9 @@ using Sera.Utils;
 
 namespace Sera.Json.De;
 
-public class JsonDeserializer(SeraJsonOptions options, AJsonReader reader) : SeraBase<ISeraColion<object?>>
+public class JsonDeserializer(SeraJsonOptions options, AJsonReader reader) : AJsonDeserializer(options)
 {
-    public override string FormatName => "json";
-    public override string FormatMIME => "application/json";
-    public override SeraFormatType FormatType => SeraFormatType.HumanReadableText;
-    public override ISeraOptions Options => options;
     internal readonly AJsonReader reader = reader;
-
-    public override IRuntimeProvider<ISeraColion<object?>> RuntimeProvider =>
-        RuntimeProviderOverride ?? throw new NotImplementedException("todo"); // EmptyDeRuntimeProvider.Instance
-
-    public IRuntimeProvider<ISeraColion<object?>>? RuntimeProviderOverride { get; set; }
 
     public T Collect<C, T>(C colion) where C : ISeraColion<T>
     {
@@ -46,7 +37,124 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
 
     public T CSelect<C, M, U>(C colion, M mapper, Type<U> u) where C : ISelectSeraColion<U> where M : ISeraMapper<U, T>
     {
-        throw new NotImplementedException();
+        var token = reader.CurrentToken();
+        Unsafe.SkipInit(out T r);
+        var mark = SeraKinds.None;
+        List<Exception>? ex = null;
+        var pos = reader.CanSeek ? (long?)reader.Save() : null;
+        try
+        {
+            if (colion.Priorities.HasValue)
+                if (CSelect<C, M, U>(colion, mapper, token, ref mark, ref r, ref ex, pos,
+                        colion.Priorities.Value))
+                    return r;
+            if (CSelect<C, M, U>(colion, mapper, token, ref mark, ref r, ref ex, pos,
+                    AJsonDeserializer.SelectPriorities))
+                return r;
+            if (ex is { Count: > 0 }) throw new AggregateException(ex);
+            throw new NotImplementedException("todo"); // todo throw error
+        }
+        finally
+        {
+            if (pos.HasValue) reader.UnSave(pos.Value);
+        }
+    }
+
+    private bool CSelect<C, M, U>(in C colion, in M mapper, in JsonToken token,
+        ref SeraKinds mark, ref T r, ref List<Exception>? ex, long? pos, ReadOnlyMemory<Any.Kind> kinds)
+        where C : ISelectSeraColion<U> where M : ISeraMapper<U, T>
+    {
+        var c = new JsonDeserializer<U>.SelectSeraColctor(impl);
+        foreach (var anyKind in kinds)
+        {
+            var kind = anyKind.ToKinds();
+            if (mark.Has(kind)) continue;
+            if (pos.HasValue)
+            {
+                try
+                {
+                    if (CSelect(colion, token, kind, ref c))
+                    {
+                        r = mapper.Map(c.Value);
+                        return true;
+                    }
+                }
+                catch (Exception e)
+                {
+                    ex ??= new();
+                    ex.Add(e);
+                    reader.Load(pos.Value);
+                }
+            }
+            else
+            {
+                if (CSelect(colion, token, kind, ref c))
+                {
+                    r = mapper.Map(c.Value);
+                    return true;
+                }
+            }
+            mark.Set(kind);
+        }
+        return false;
+    }
+
+    private bool CSelect<C, U>(in C colion, in JsonToken token, SeraKinds kind,
+        ref JsonDeserializer<U>.SelectSeraColctor c)
+        where C : ISelectSeraColion<U>
+    {
+        switch (kind)
+        {
+            case SeraKinds.Primitive:
+                return colion.SelectPrimitive<bool, JsonDeserializer<U>.SelectSeraColctor>(ref c);
+            case SeraKinds.String:
+                if (token.Kind is not JsonTokenKind.String) return false;
+                return colion.SelectString<bool, JsonDeserializer<U>.SelectSeraColctor>(ref c, reader.Encoding);
+            case SeraKinds.Bytes:
+                if (token.Kind is not (JsonTokenKind.String or JsonTokenKind.ArrayStart)) return false;
+                return colion.SelectBytes<bool, JsonDeserializer<U>.SelectSeraColctor>(ref c);
+            case SeraKinds.Array:
+                if (token.Kind is not JsonTokenKind.ArrayStart) return false;
+                return colion.SelectArray<bool, JsonDeserializer<U>.SelectSeraColctor>(ref c);
+            case SeraKinds.Unit:
+                if (token.Kind is not JsonTokenKind.Null) return false;
+                return colion.SelectUnit<bool, JsonDeserializer<U>.SelectSeraColctor>(ref c);
+            case SeraKinds.Option:
+                return colion.SelectOption<bool, JsonDeserializer<U>.SelectSeraColctor>(ref c);
+            case SeraKinds.Entry:
+                if (token.Kind is not JsonTokenKind.ArrayStart) return false;
+                return colion.SelectEntry<bool, JsonDeserializer<U>.SelectSeraColctor>(ref c);
+            case SeraKinds.Tuple:
+                return false; // todo tuple
+            case SeraKinds.Seq:
+                if (token.Kind is not JsonTokenKind.ArrayStart) return false;
+                return colion.SelectSeq<bool, JsonDeserializer<U>.SelectSeraColctor>(ref c, null);
+            case SeraKinds.Map:
+                if (token.Kind is not JsonTokenKind.ObjectStart) return false;
+                return colion.SelectMap<bool, JsonDeserializer<U>.SelectSeraColctor>(ref c, null);
+            case SeraKinds.Struct:
+                if (token.Kind is not JsonTokenKind.ObjectStart) return false;
+                return colion.SelectStruct<bool, JsonDeserializer<U>.SelectSeraColctor>(ref c, null, null);
+            case SeraKinds.Union:
+                return colion.SelectUnion<bool, JsonDeserializer<U>.SelectSeraColctor>(ref c, null);
+            default:
+                throw new ArgumentOutOfRangeException(nameof(kind), kind, null);
+        }
+    }
+
+    private struct SelectSeraColctor(JsonDeserializer impl) : ISelectSeraColctor<T, bool>
+    {
+        public T Value = default!;
+
+        public bool CSome<C, M, U>(C colion, M mapper, Type<U> u) where C : ISeraColion<U> where M : ISeraMapper<U, T>
+        {
+            var c = new JsonDeserializer<U>(impl);
+            var r = colion.Collect<U, JsonDeserializer<U>>(ref c);
+            Value = mapper.Map(r);
+            return true;
+        }
+
+        public bool CNone() => false;
     }
 
     #endregion

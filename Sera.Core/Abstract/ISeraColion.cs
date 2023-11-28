@@ -85,42 +85,53 @@ public interface IUnionSeraColion<out T>
 
 public interface ISelectSeraColion<out T>
 {
-    public ReadOnlyMemory<SelectKind>? Priority { get; }
+    public ReadOnlyMemory<Any.Kind>? Priorities { get; }
+    
+    public R SelectPrimitive<R, C>(ref C colctor, InType<T>? t = null)
+        where C : ISelectSeraColctor<T, R>
+        => colctor.CNone();
 
-    public R CollectSelect<R, C>(ref C colctor, SeraSelect select, InType<T>? t = null)
-        where C : ISelectSeraColctor<T, R>;
+    public R SelectString<R, C>(ref C colctor, Encoding encoding, InType<T>? t = null)
+        where C : ISelectSeraColctor<T, R>
+        => colctor.CNone();
+
+    public R SelectBytes<R, C>(ref C colctor, InType<T>? t = null)
+        where C : ISelectSeraColctor<T, R>
+        => colctor.CNone();
+
+    public R SelectArray<R, C>(ref C colctor, InType<T>? t = null)
+        where C : ISelectSeraColctor<T, R>
+        => colctor.CNone();
+
+    public R SelectUnit<R, C>(ref C colctor, InType<T>? t = null)
+        where C : ISelectSeraColctor<T, R>
+        => colctor.CNone();
+
+    public R SelectOption<R, C>(ref C colctor, InType<T>? t = null)
+        where C : ISelectSeraColctor<T, R>
+        => colctor.CNone();
+
+    public R SelectEntry<R, C>(ref C colctor, InType<T>? t = null)
+        where C : ISelectSeraColctor<T, R>
+        => colctor.CNone();
+
+    public R SelectTuple<R, C>(ref C colctor, int size, InType<T>? t = null)
+        where C : ISelectSeraColctor<T, R>
+        => colctor.CNone();
+
+    public R SelectSeq<R, C>(ref C colctor, int? size, InType<T>? t = null)
+        where C : ISelectSeraColctor<T, R>
+        => colctor.CNone();
+
+    public R SelectMap<R, C>(ref C colctor, int? size, InType<T>? t = null)
+        where C : ISelectSeraColctor<T, R>
+        => colctor.CNone();
+
+    public R SelectStruct<R, C>(ref C colctor, string? name, int? size, InType<T>? t = null)
+        where C : ISelectSeraColctor<T, R>
+        => colctor.CNone();
+
+    public R SelectUnion<R, C>(ref C colctor, string? name, InType<T>? t = null)
+        where C : ISelectSeraColctor<T, R>
+        => colctor.CNone();
 }
-
-[Union(ExternalTags = true, ExternalTagsName = "SelectKind")]
-public readonly partial struct SeraSelect
-{
-    [UnionTemplate]
-    private interface Template
-    {
-        void Primitive();
-        StringSeraSelect String();
-        void Bytes();
-        void Array();
-        void Unit();
-        void Option();
-        void Entry();
-        TupleSeraSelect Tuple();
-        SeqSeraSelect Seq();
-        MapSeraSelect Map();
-        StructSeraSelect Struct();
-        void Union();
-    }
-}
-
-public record StringSeraSelect(Encoding Encoding)
-{
-    public static StringSeraSelect Default { get; } = new(Encoding.Unicode);
-}
-
-public readonly record struct TupleSeraSelect(int Size);
-
-public readonly record struct SeqSeraSelect(int? Size);
-
-public readonly record struct MapSeraSelect(int? Size);
-
-public record StructSeraSelect(string Name, int? Size);
