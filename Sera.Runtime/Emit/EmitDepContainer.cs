@@ -2,11 +2,11 @@
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using BetterCollections.Memories;
 using Sera.Core.Impls.Deps;
 using Sera.Runtime.Emit.Ser.Internal;
 using Sera.Runtime.Utils;
 using Sera.Runtime.Utils.Internal;
-using Sera.Utils;
 
 namespace Sera.Runtime.Emit.Deps;
 

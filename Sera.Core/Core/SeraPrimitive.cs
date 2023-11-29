@@ -2,8 +2,8 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
+using BetterCollections.Memories;
 using Sera.TaggedUnion;
-using Sera.Utils;
 
 namespace Sera.Core;
 

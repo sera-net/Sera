@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Text;
+using BetterCollections.Memories;
 
 namespace Sera.Utils;
 

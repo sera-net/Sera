@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using BetterCollections;
 using Sera.Core.Impls.De;
 using Sera.Utils;
 

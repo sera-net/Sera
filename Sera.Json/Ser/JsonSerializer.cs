@@ -3,11 +3,11 @@ using System.Buffers;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
+using BetterCollections.Memories;
 using Sera.Core;
 using Sera.Core.Formats;
 using Sera.Core.Impls.Ser;
 using Sera.Core.Providers.Ser;
-using Sera.Utils;
 
 namespace Sera.Json.Ser;
 

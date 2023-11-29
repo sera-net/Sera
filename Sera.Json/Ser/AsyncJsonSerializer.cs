@@ -4,6 +4,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using BetterCollections.Memories;
 using Sera.Core;
 using Sera.Core.Formats;
 using Sera.Core.Impls.Ser;
