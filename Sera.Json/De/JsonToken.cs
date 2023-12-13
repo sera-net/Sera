@@ -1,14 +1,23 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
+using Sera.Utils;
 
 namespace Sera.Json.De;
 
-public readonly struct JsonToken(JsonTokenKind kind, SourcePos pos, ReadOnlyMemory<char> Text)
+public readonly struct JsonToken(
+    JsonTokenKind kind,
+    SourcePos pos,
+    CompoundString Text)
 {
     public JsonTokenKind Kind { get; } = kind;
     public SourcePos Pos { get; } = pos;
-    public ReadOnlyMemory<char> Text { get; } = Text;
+    public CompoundString Text { get; } = Text;
+    
+    public override string ToString() => $"( {Kind.ToString(),-12}) at {Pos.ToString(),-12} \"{Text.AsString()}\"";
 
-    public ReadOnlyMemory<char> AsString => Text[1..^1];
+    public string AsString() => Text.AsString();
+    
+    public ReadOnlyMemory<char> AsMemory() => Text.AsMemory();
 }
 
 public enum JsonTokenKind
@@ -32,4 +41,28 @@ public enum JsonTokenKind
     ObjectEnd,
 }
 
-public record struct SourcePos(int Index, int Line, int Char);
+public record struct SourcePos(int Index, int Line, int Char)
+{
+    public override string ToString() => $"{Line + 1}:{Char + 1}";
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public SourcePos AddChar(int c) => new(Index + c, Line, Char + c);
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public SourcePos AddLine(int c) => new(Index + c, Line + c, 0);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void MutAddChar(int len)
+    {
+        Index += len;
+        Char += len;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void MutAddLine(int len)
+    {
+        Line += 1;
+        Index += len;
+        Char = 0;
+    }
+}

@@ -9,11 +9,8 @@ using Sera.Json.Ser;
 
 namespace TestJson;
 
-public class Tests
+public class TestStaticSerializer
 {
-    [SetUp]
-    public void Setup() { }
-
     [Test]
     public void TestPrimitiveBoolean1()
     {

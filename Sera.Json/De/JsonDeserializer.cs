@@ -39,7 +39,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
 
     public T CSelect<C, M, U>(C colion, M mapper, Type<U> u) where C : ISelectSeraColion<U> where M : ISeraMapper<U, T>
     {
-        var token = reader.CurrentToken();
+        var token = reader.CurrentToken;
         Unsafe.SkipInit(out T r);
         var mark = SeraKinds.None;
         List<Exception>? ex = null;
@@ -167,7 +167,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
     public T CPrimitive<M>(M mapper, Type<bool> t, SeraFormats? formats = null)
         where M : ISeraMapper<bool, T>
     {
-        var token = reader.CurrentToken();
+        var token = reader.CurrentToken;
         if (token.Kind is JsonTokenKind.True)
         {
             return mapper.Map(true);
@@ -220,9 +220,9 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private ReadOnlyMemory<char> CString()
     {
-        var token = reader.CurrentToken();
+        var token = reader.CurrentToken;
         if (token.Kind is not JsonTokenKind.String) throw new NotImplementedException(); // todo throw;
-        return token.AsString;
+        return token.AsMemory();
     }
 
     private byte[] CString(Encoding encoding)
@@ -272,9 +272,9 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         reader.ReadArrayStart();
         var vec = new Vec<I>();
         var first = true;
-        for (; reader.Has(); reader.MoveNext())
+        for (; reader.Has; reader.MoveNext())
         {
-            var token = reader.CurrentToken();
+            var token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ArrayEnd) break;
             if (first) first = false;
             else if (token.Kind is not JsonTokenKind.Comma) throw new NotImplementedException(); // todo error
@@ -300,9 +300,9 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         long index = 0;
         var vec = new Vec<I>();
         var first = true;
-        for (; reader.Has(); reader.MoveNext())
+        for (; reader.Has; reader.MoveNext())
         {
-            var token = reader.CurrentToken();
+            var token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ArrayEnd) break;
             if (first) first = false;
             else if (token.Kind is not JsonTokenKind.Comma) throw new NotImplementedException(); // todo error
@@ -366,7 +366,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T COption<C>(C colion) where C : IOptionSeraColion<T>
     {
-        var token = reader.CurrentToken();
+        var token = reader.CurrentToken;
         if (token.Kind is JsonTokenKind.Null) return colion.CtorNone();
         var colctor = new SomeSeraColctor(impl);
         return colion.CollectSome<T, SomeSeraColctor>(ref colctor);
@@ -465,9 +465,9 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         reader.ReadArrayStart();
         var colctor = new SeqSeraColctor<B, I>(colion.Builder(null), impl);
         var first = true;
-        for (; reader.Has(); reader.MoveNext())
+        for (; reader.Has; reader.MoveNext())
         {
-            var token = reader.CurrentToken();
+            var token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ArrayEnd) break;
             if (first) first = false;
             else if (token.Kind is not JsonTokenKind.Comma) throw new NotImplementedException(); // todo error
@@ -511,9 +511,9 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         reader.ReadArrayStart();
         var colctor = new ArrayMapSeraColctor<B, IK, IV>(colion.Builder(null), impl);
         var first = true;
-        for (; reader.Has(); reader.MoveNext())
+        for (; reader.Has; reader.MoveNext())
         {
-            var token = reader.CurrentToken();
+            var token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ArrayEnd) break;
             if (first) first = false;
             else if (token.Kind is not JsonTokenKind.Comma) throw new NotImplementedException(); // todo error
@@ -527,14 +527,14 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
     private T CObjectMap<C, B, M, IK, IV>(C colion, M mapper)
         where C : IMapSeraColion<B, IK, IV> where M : ISeraMapper<B, T>
     {
-        var token = reader.CurrentToken();
+        var token = reader.CurrentToken;
         if (token.Kind is JsonTokenKind.ArrayStart) return CArrayMap<C, B, M, IK, IV>(colion, mapper);
         reader.ReadObjectStart();
         var colctor = new ObjectMapSeraColctor<B, IK, IV>(colion.Builder(null), impl);
         var first = true;
-        for (; reader.Has(); reader.MoveNext())
+        for (; reader.Has; reader.MoveNext())
         {
-            token = reader.CurrentToken();
+            token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ObjectEnd) break;
             if (first) first = false;
             else if (token.Kind is not JsonTokenKind.Comma) throw new NotImplementedException(); // todo error
@@ -602,10 +602,10 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         {
             if (first) first = false;
             else reader.ReadComma();
-            var token = reader.CurrentToken();
+            var token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ObjectEnd) break;
             if (token.Kind is not JsonTokenKind.String) throw new NotImplementedException(); // todo error
-            var field_name = token.AsString.ToString();
+            var field_name = token.AsString();
             reader.ReadColon();
             if (!fields.TryGet(field_name, out var info))
             {
@@ -641,10 +641,10 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         {
             if (first) first = false;
             else reader.ReadComma();
-            var token = reader.CurrentToken();
+            var token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ObjectEnd) break;
             if (token.Kind is not JsonTokenKind.String) throw new NotImplementedException(); // todo error
-            var field_name = token.AsString.ToString();
+            var field_name = token.AsString();
             reader.ReadColon();
             var key = long.TryParse(field_name, out var key_) ? (long?)key_ : null;
             var r = colion.CollectField<StructRes, StructSeraColctor<B>>(ref c, index, field_name, key);
