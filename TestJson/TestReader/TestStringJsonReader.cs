@@ -19,7 +19,7 @@ public class TestStringJsonReader
         Assert.Multiple(() =>
         {
             Assert.That(tokens.Count, Is.EqualTo(10));
-            
+
             Assert.That(tokens[0].Kind, Is.EqualTo(JsonTokenKind.ArrayStart));
             Assert.That(tokens[1].Kind, Is.EqualTo(JsonTokenKind.Null));
             Assert.That(tokens[2].Kind, Is.EqualTo(JsonTokenKind.Comma));
@@ -32,11 +32,11 @@ public class TestStringJsonReader
             Assert.That(tokens[9].Kind, Is.EqualTo(JsonTokenKind.ArrayEnd));
         });
     }
-    
+
     [Test]
     public void TestNumber1()
     {
-        var json = "123 0 -1 -0 0.123 123.456 1e-5 1e5 1e+5 -123.456E-789 -1.2e3";
+        var json = "123 0 -1 -0 0.123 123.456 1e-5 1e5 1e+5 -123.456E+789 -1.2e3 0e3";
         var reader = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
         var tokens = new List<JsonToken>();
         for (; reader.Has; reader.MoveNext())
@@ -46,13 +46,13 @@ public class TestStringJsonReader
         Console.WriteLine(string.Join("\n", tokens));
         Assert.Multiple(() =>
         {
-            Assert.That(tokens.Count, Is.EqualTo(11));
+            Assert.That(tokens.Count, Is.EqualTo(12));
 
-            foreach (var token in tokens)        
+            foreach (var token in tokens)
             {
                 Assert.That(token.Kind, Is.EqualTo(JsonTokenKind.Number));
             }
-            
+
             Assert.That(tokens[0].Text.AsString(), Is.EqualTo("123"));
             Assert.That(tokens[1].Text.AsString(), Is.EqualTo("0"));
             Assert.That(tokens[2].Text.AsString(), Is.EqualTo("-1"));
@@ -62,15 +62,17 @@ public class TestStringJsonReader
             Assert.That(tokens[6].Text.AsString(), Is.EqualTo("1e-5"));
             Assert.That(tokens[7].Text.AsString(), Is.EqualTo("1e5"));
             Assert.That(tokens[8].Text.AsString(), Is.EqualTo("1e+5"));
-            Assert.That(tokens[9].Text.AsString(), Is.EqualTo("-123.456E-789"));
+            Assert.That(tokens[9].Text.AsString(), Is.EqualTo("-123.456E+789"));
             Assert.That(tokens[10].Text.AsString(), Is.EqualTo("-1.2e3"));
+            Assert.That(tokens[11].Text.AsString(), Is.EqualTo("0e3"));
         });
     }
-    
+
     [Test]
     public void TestString1()
     {
-        var json = "\"asd\" \"\" \"\\t\" \"123456789\" \"\\u2a5f\" \"123\\t456\" \"asd镍😂\" \"asd\\u954D\\uD83D\\uDE02\"";
+        var json =
+            "\"asd\" \"\" \"\\t\" \"123456789\" \"\\u2a5f\" \"123\\t456\" \"asd镍😂\" \"asd\\u954D\\uD83D\\uDE02\"";
         var reader = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
         var tokens = new List<JsonToken>();
         for (; reader.Has; reader.MoveNext())
@@ -82,11 +84,11 @@ public class TestStringJsonReader
         {
             Assert.That(tokens.Count, Is.EqualTo(8));
 
-            foreach (var token in tokens)        
+            foreach (var token in tokens)
             {
                 Assert.That(token.Kind, Is.EqualTo(JsonTokenKind.String));
             }
-            
+
             Assert.That(tokens[0].Text.AsString(), Is.EqualTo("asd"));
             Assert.That(tokens[1].Text.AsString(), Is.EqualTo(""));
             Assert.That(tokens[2].Text.AsString(), Is.EqualTo("\t"));
@@ -96,5 +98,180 @@ public class TestStringJsonReader
             Assert.That(tokens[6].Text.AsString(), Is.EqualTo("asd镍😂"));
             Assert.That(tokens[6].Text.AsString(), Is.EqualTo("asd镍😂"));
         });
+    }
+
+    [Test]
+    public void TestExceptions()
+    {
+        var e = Assert.Throws<JsonParseException>(() =>
+        {
+            var json = "asd";
+            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+        });
+        Console.WriteLine(e);
+        Console.WriteLine(0);
+        Console.WriteLine();
+
+        e = Assert.Throws<JsonParseException>(() =>
+        {
+            var json = "-";
+            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+        });
+        Console.WriteLine(e);
+        Console.WriteLine(1);
+        Console.WriteLine();
+
+        e = Assert.Throws<JsonParseException>(() =>
+        {
+            var json = "-a";
+            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+        });
+        Console.WriteLine(e);
+        Console.WriteLine(2);
+        Console.WriteLine();
+
+        e = Assert.Throws<JsonParseException>(() =>
+        {
+            var json = "0e";
+            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+        });
+        Console.WriteLine(e);
+        Console.WriteLine(3);
+        Console.WriteLine();
+
+        e = Assert.Throws<JsonParseException>(() =>
+        {
+            var json = "0e-";
+            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+        });
+        Console.WriteLine(e);
+        Console.WriteLine(4);
+        Console.WriteLine();
+
+        e = Assert.Throws<JsonParseException>(() =>
+        {
+            var json = "\"asd";
+            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+        });
+        Console.WriteLine(e);
+        Console.WriteLine(5);
+        Console.WriteLine();
+
+        e = Assert.Throws<JsonParseException>(() =>
+        {
+            var json = "\"asd\n";
+            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+        });
+        Console.WriteLine(e);
+        Console.WriteLine(6);
+        Console.WriteLine();
+
+        e = Assert.Throws<JsonParseException>(() =>
+        {
+            var json = "\"\\n asd";
+            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+        });
+        Console.WriteLine(e);
+        Console.WriteLine(7);
+        Console.WriteLine();
+
+        e = Assert.Throws<JsonParseException>(() =>
+        {
+            var json = "\"\\x";
+            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+        });
+        Console.WriteLine(e);
+        Console.WriteLine(8);
+        Console.WriteLine();
+
+        e = Assert.Throws<JsonParseException>(() =>
+        {
+            var json = "\"\\u";
+            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+        });
+        Console.WriteLine(e);
+        Console.WriteLine(9);
+        Console.WriteLine();
+
+        e = Assert.Throws<JsonParseException>(() =>
+        {
+            var json = "\"\\uzxc";
+            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+        });
+        Console.WriteLine(e);
+        Console.WriteLine(10);
+        Console.WriteLine();
+
+        e = Assert.Throws<JsonParseException>(() =>
+        {
+            var json = "\"\\uvbnm";
+            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+        });
+        Console.WriteLine(e);
+        Console.WriteLine(11);
+        Console.WriteLine();
+        
+        e = Assert.Throws<JsonParseException>(() =>
+        {
+            var json = "\"\\n asd \n";
+            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+        });
+        Console.WriteLine(e);
+        Console.WriteLine(12);
+        Console.WriteLine();
+        
+        e = Assert.Throws<JsonParseException>(() =>
+        {
+            var json = "nul";
+            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+        });
+        Console.WriteLine(e);
+        Console.WriteLine(13);
+        Console.WriteLine();
+        
+        e = Assert.Throws<JsonParseException>(() =>
+        {
+            var json = "tr";
+            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+        });
+        Console.WriteLine(e);
+        Console.WriteLine(14);
+        Console.WriteLine();
+        
+        e = Assert.Throws<JsonParseException>(() =>
+        {
+            var json = "fa";
+            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+        });
+        Console.WriteLine(e);
+        Console.WriteLine(15);
+        Console.WriteLine();
+        
+        e = Assert.Throws<JsonParseException>(() =>
+        {
+            var json = "nuxx";
+            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+        });
+        Console.WriteLine(e);
+        Console.WriteLine(16);
+        Console.WriteLine();
+        
+        e = Assert.Throws<JsonParseException>(() =>
+        {
+            var json = "trxx";
+            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+        });
+        Console.WriteLine(e);
+        Console.WriteLine(17);
+        Console.WriteLine();
+        
+        e = Assert.Throws<JsonParseException>(() =>
+        {
+            var json = "faxx";
+            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+        });
+        Console.WriteLine(e);
+        Console.WriteLine(18);
+        Console.WriteLine();
     }
 }

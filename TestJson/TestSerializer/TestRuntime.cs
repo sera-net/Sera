@@ -7,7 +7,7 @@ using Sera.Json;
 using Sera.Runtime;
 using Sera.Runtime.Emit.Ser;
 
-namespace TestJson;
+namespace TestJson.TestSerializer;
 
 public class TestRuntime
 {

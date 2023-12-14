@@ -7,7 +7,7 @@ using Sera.Core.Impls.Ser;
 using Sera.Json;
 using Sera.Json.Ser;
 
-namespace TestJson;
+namespace TestJson.TestSerializer;
 
 public class TestStaticSerializer
 {

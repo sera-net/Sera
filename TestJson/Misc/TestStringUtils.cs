@@ -1,6 +1,6 @@
 ﻿using Sera.Json.Utils;
 
-namespace TestJson;
+namespace TestJson.Misc;
 
 public class TestStringUtils
 {

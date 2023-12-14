@@ -1,4 +1,4 @@
-﻿namespace TestJson;
+﻿namespace TestJson.TestDeserializer;
 
 public class TestStaticDeSerializer
 {

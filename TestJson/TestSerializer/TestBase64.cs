@@ -4,7 +4,7 @@ using Sera;
 using Sera.Core.Impls.Ser;
 using Sera.Json;
 
-namespace TestJson;
+namespace TestJson.TestSerializer;
 
 public class TestBase64
 {

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -14,6 +15,8 @@ public sealed class StringJsonReader : AJsonReader
 
     #region Seek
 
+    private Dictionary<long, SourcePos>? SavePoints;
+
     public override bool CanSeek
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -23,19 +26,24 @@ public sealed class StringJsonReader : AJsonReader
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override long Save()
     {
-        throw new System.NotImplementedException();
+        SavePoints ??= new();
+        var pos = (long)last.Offset;
+        SavePoints[pos] = this.pos;
+        return pos;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override void Load(long pos)
     {
-        throw new System.NotImplementedException();
+        var save = SavePoints![pos];
+        last = ExternalSpan.From(source.AsSpan())[(int)pos..];
+        this.pos = save;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override void UnSave(long pos)
     {
-        throw new System.NotImplementedException();
+        SavePoints!.Remove(pos);
     }
 
     #endregion
@@ -118,6 +126,7 @@ public sealed class StringJsonReader : AJsonReader
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool FoundNumberNeg(ReadOnlySpan<char> span, int offset)
     {
+        if (offset >= span.Length) goto err;
         var c = span[offset];
         switch (c)
         {
@@ -126,6 +135,7 @@ public sealed class StringJsonReader : AJsonReader
             case '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9':
                 return FoundNumberDigit(span, offset + 1);
         }
+        err:
         var err_pos = pos.AddChar(offset);
         throw new JsonParseException($"No number after minus sign at {err_pos}", err_pos);
     }
@@ -187,6 +197,7 @@ public sealed class StringJsonReader : AJsonReader
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool FoundNumberExponentE(ReadOnlySpan<char> span, int offset)
     {
+        if (offset >= span.Length) goto err;
         var c = span[offset];
         switch (c)
         {
@@ -195,6 +206,7 @@ public sealed class StringJsonReader : AJsonReader
             case '0' or '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9':
                 return FoundNumberExponentDigit(span, offset + 1);
         }
+        err:
         var err_pos = pos.AddChar(offset);
         throw new JsonParseException($"Exponent part is missing a number at {err_pos}", err_pos);
     }
@@ -202,9 +214,11 @@ public sealed class StringJsonReader : AJsonReader
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool FoundNumberExponentSign(ReadOnlySpan<char> span, int offset)
     {
+        if (offset >= span.Length) goto err;
         var c = span[offset];
         if (c is '0' or '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9')
             return FoundNumberExponentDigit(span, offset + 1);
+        err:
         var err_pos = pos.AddChar(offset);
         throw new JsonParseException($"Exponent part is missing a number at {err_pos}", err_pos);
     }
@@ -212,7 +226,7 @@ public sealed class StringJsonReader : AJsonReader
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool FoundNumberExponentDigit(ReadOnlySpan<char> span, int offset)
     {
-        while(offset < span.Length)
+        while (offset < span.Length)
         {
             var c = span[offset];
             switch (c)
