@@ -34,6 +34,36 @@ public class TestStringJsonReader
     }
 
     [Test]
+    public void Test2()
+    {
+        var json = @"{
+    ""asd"": 123,
+    ""123"": ""zxc""
+}";
+        var reader = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+        var tokens = new List<JsonToken>();
+        for (; reader.Has; reader.MoveNext())
+        {
+            tokens.Add(reader.CurrentToken);
+        }
+        Console.WriteLine(string.Join("\n", tokens));
+        Assert.Multiple(() =>
+        {
+            Assert.That(tokens.Count, Is.EqualTo(9));
+            
+            Assert.That(tokens[0].Kind, Is.EqualTo(JsonTokenKind.ObjectStart));
+            Assert.That(tokens[1].Kind, Is.EqualTo(JsonTokenKind.String));
+            Assert.That(tokens[2].Kind, Is.EqualTo(JsonTokenKind.Colon));
+            Assert.That(tokens[3].Kind, Is.EqualTo(JsonTokenKind.Number));
+            Assert.That(tokens[4].Kind, Is.EqualTo(JsonTokenKind.Comma));
+            Assert.That(tokens[5].Kind, Is.EqualTo(JsonTokenKind.String));
+            Assert.That(tokens[6].Kind, Is.EqualTo(JsonTokenKind.Colon));
+            Assert.That(tokens[7].Kind, Is.EqualTo(JsonTokenKind.String));
+            Assert.That(tokens[8].Kind, Is.EqualTo(JsonTokenKind.ObjectEnd));
+        });
+    }
+
+    [Test]
     public void TestNumber1()
     {
         var json = "123 0 -1 -0 0.123 123.456 1e-5 1e5 1e+5 -123.456E+789 -1.2e3 0e3";
@@ -210,7 +240,7 @@ public class TestStringJsonReader
         Console.WriteLine(e);
         Console.WriteLine(11);
         Console.WriteLine();
-        
+
         e = Assert.Throws<JsonParseException>(() =>
         {
             var json = "\"\\n asd \n";
@@ -219,7 +249,7 @@ public class TestStringJsonReader
         Console.WriteLine(e);
         Console.WriteLine(12);
         Console.WriteLine();
-        
+
         e = Assert.Throws<JsonParseException>(() =>
         {
             var json = "nul";
@@ -228,7 +258,7 @@ public class TestStringJsonReader
         Console.WriteLine(e);
         Console.WriteLine(13);
         Console.WriteLine();
-        
+
         e = Assert.Throws<JsonParseException>(() =>
         {
             var json = "tr";
@@ -237,7 +267,7 @@ public class TestStringJsonReader
         Console.WriteLine(e);
         Console.WriteLine(14);
         Console.WriteLine();
-        
+
         e = Assert.Throws<JsonParseException>(() =>
         {
             var json = "fa";
@@ -246,7 +276,7 @@ public class TestStringJsonReader
         Console.WriteLine(e);
         Console.WriteLine(15);
         Console.WriteLine();
-        
+
         e = Assert.Throws<JsonParseException>(() =>
         {
             var json = "nuxx";
@@ -255,7 +285,7 @@ public class TestStringJsonReader
         Console.WriteLine(e);
         Console.WriteLine(16);
         Console.WriteLine();
-        
+
         e = Assert.Throws<JsonParseException>(() =>
         {
             var json = "trxx";
@@ -264,7 +294,7 @@ public class TestStringJsonReader
         Console.WriteLine(e);
         Console.WriteLine(17);
         Console.WriteLine();
-        
+
         e = Assert.Throws<JsonParseException>(() =>
         {
             var json = "faxx";

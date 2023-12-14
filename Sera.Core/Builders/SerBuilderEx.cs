@@ -5,15 +5,15 @@ using System.Threading.Tasks;
 using Sera.Core;
 using Sera.Core.Builders;
 using Sera.Core.Builders.Outputs;
+using Sera.Core.Builders.Ser;
 
 namespace Sera;
 
 public static class SeraBuilderForSer
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static SerBuilder<B, T> Serialize<B, T>(this B builder, T value)
-        where B : ISerBuilder
-        => new(builder, value);
+    public static SerBuilder<B> Make<B>(this B builder)
+        where B : ISerBuilder => new(builder);
 }
 
 public static class SeraBuilderForStaticSer

@@ -13,6 +13,8 @@ namespace Sera.Json.De;
 
 public class JsonDeserializer(SeraJsonOptions options, AJsonReader reader) : AJsonDeserializer(options)
 {
+    public JsonDeserializer(AJsonReader reader) : this(reader.Options, reader) { }
+
     internal readonly AJsonReader reader = reader;
 
     public T Collect<C, T>(C colion) where C : ISeraColion<T>
@@ -20,6 +22,8 @@ public class JsonDeserializer(SeraJsonOptions options, AJsonReader reader) : AJs
         var c = new JsonDeserializer<T>(this);
         return colion.Collect<T, JsonDeserializer<T>>(ref c);
     }
+
+    public JsonDeserializer<T> MakeColctor<T>() => new(this);
 }
 
 public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor<T, T>

@@ -1,4 +1,8 @@
-﻿namespace TestJson.TestDeserializer;
+﻿using Sera;
+using Sera.Core.Impls.De;
+using Sera.Json;
+
+namespace TestJson.TestDeserializer;
 
 public class TestStaticDeSerializer
 {
@@ -9,18 +13,11 @@ public class TestStaticDeSerializer
 
         var json = "true";
 
-        // var val = true;
+        var val = SeraJson.Deserializer
+            .Deserialize<bool>()
+            .Use(new PrimitiveImpl())
+            .Static.From.String(json);
 
-        // SeraJson.Serializer
-        //     .Serialize(val)
-        //     .Use(new PrimitiveImpl())
-        //     .Static.To.Stream(stream);
-        //
-        // stream.Position = 0;
-        // using var reader = new StreamReader(stream, Encoding.UTF8);
-        // var str = reader.ReadToEnd();
-        // Console.WriteLine(str);
-        //
-        // Assert.That(str, Is.EqualTo("true"));
+        Console.WriteLine(val);
     }
 }

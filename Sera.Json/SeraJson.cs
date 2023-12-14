@@ -1,18 +1,45 @@
 ﻿using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Sera.Core;
 using Sera.Core.Builders;
+using Sera.Core.Builders.De;
+using Sera.Core.Builders.Inputs;
 using Sera.Core.Builders.Outputs;
+using Sera.Core.Builders.Ser;
 using Sera.Json.Builders;
+using Sera.Json.De;
 using Sera.Json.Ser;
+using Sera.Utils;
 
 namespace Sera.Json
 {
 
     public static class SeraJson
     {
-        public static SerializerBuilder Serializer => new(SeraJsonOptions.Default, CompactJsonFormatter.Default);
+        public static SerBuilder<SerializerBuilder> Serializer =>
+            new(new(SeraJsonOptions.Default, CompactJsonFormatter.Default));
+        public static DeBuilder<DeserializerBuilder> Deserializer => new(new(SeraJsonOptions.Default));
+    }
+
+    public static class SerializerBuilderEx
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static SerBuilder<SerializerBuilder> WithOptions(this SerBuilder<SerializerBuilder> self,
+            SeraJsonOptions options)
+            => new(self.Target.WithOptions(options));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static SerBuilder<SerializerBuilder> WithFormatter(this SerBuilder<SerializerBuilder> self,
+            AJsonFormatter formatter)
+            => new(self.Target.WithFormatter(formatter));
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static DeBuilder<DeserializerBuilder> WithOptions(this DeBuilder<DeserializerBuilder> self,
+            SeraJsonOptions options)
+            => new(self.Target.WithOptions(options));
     }
 
 }
@@ -44,6 +71,18 @@ namespace Sera.Json.Builders
             where A : AcceptASeraVisitor<ValueTask, R>
             => accept.Accept(new AsyncJsonSerializer(new AsyncStreamJsonWriter(Options, Formatter, stream))
                 { RuntimeProviderOverride = param.RuntimeProvider });
+    }
+
+    public readonly record struct DeserializerBuilder(SeraJsonOptions Options) :
+        IDeBuilder, IStringInput
+    {
+        public DeserializerBuilder WithOptions(SeraJsonOptions options) =>
+            this with { Options = options };
+
+        public R BuildStringInput<T, R, A>(A accept, InputBuildParam param, CompoundString str)
+            where A : AcceptASeraColctor<T, T, R>
+            => accept.Accept(new JsonDeserializer(new StringJsonReader(Options, str))
+                { RuntimeProviderOverride = param.RuntimeProvider }.MakeColctor<T>());
     }
 
 }
