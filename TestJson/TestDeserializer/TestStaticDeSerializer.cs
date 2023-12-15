@@ -17,7 +17,7 @@ public class TestStaticDeSerializer
             .Deserialize<bool>()
             .Use(new PrimitiveImpl())
             .Static.From.String(json);
-
+        
         Console.WriteLine(val);
     }
 }

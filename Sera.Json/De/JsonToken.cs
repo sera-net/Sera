@@ -12,11 +12,11 @@ public readonly struct JsonToken(
     public JsonTokenKind Kind { get; } = kind;
     public SourcePos Pos { get; } = pos;
     public CompoundString Text { get; } = Text;
-    
+
     public override string ToString() => $"( {Kind.ToString(),-12}) at {Pos.ToString(),-12} \"{Text.AsString()}\"";
 
     public string AsString() => Text.AsString();
-    
+    public ReadOnlySpan<char> AsSpan() => Text.AsSpan();
     public ReadOnlyMemory<char> AsMemory() => Text.AsMemory();
 }
 
@@ -47,7 +47,7 @@ public record struct SourcePos(int Index, int Line, int Char)
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public SourcePos AddChar(int c) => new(Index + c, Line, Char + c);
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public SourcePos AddLine(int c) => new(Index + c, Line + c, 0);
 

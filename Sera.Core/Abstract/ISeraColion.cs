@@ -10,6 +10,11 @@ public interface ISeraMapper<in T, out U>
     public U Map(T value, InType<U>? u = null);
 }
 
+public interface ISeraSpanMapper<T, out U>
+{
+    public U SpanMap(ReadOnlySpan<T> value, InType<U>? u = null);
+}
+
 public interface ISeraEffector<T, in I>
 {
     public void Effect(ref T target, I value);
@@ -86,7 +91,7 @@ public interface IUnionSeraColion<out T>
 public interface ISelectSeraColion<out T>
 {
     public ReadOnlyMemory<Any.Kind>? Priorities { get; }
-    
+
     public R SelectPrimitive<R, C>(ref C colctor, InType<T>? t = null)
         where C : ISelectSeraColctor<T, R>
         => colctor.CNone();

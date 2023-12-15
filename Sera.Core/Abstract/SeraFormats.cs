@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using Sera.Core.Formats;
 
 namespace Sera.Core.Formats
@@ -121,6 +122,7 @@ namespace Sera.Core
         public ToUpperOrLower ToUpperOrLower { get; set; } = ToUpperOrLower.None;
 
         public NumberTextFormat NumberTextFormat { get; set; } = NumberTextFormat.Any;
+        public NumberStyles NumberStyles { get; set; } = NumberStyles.None;
         public string? CustomNumberTextFormat { get; set; }
 
         public DateTimeFormatFlags DateTimeFormat { get; set; } = DateTimeFormatFlags.None;
@@ -136,12 +138,31 @@ namespace Sera.Core
                 BooleanAsNumber = attr.BooleanAsNumber,
                 ToUpperOrLower = attr.ToUpperOrLower,
                 NumberTextFormat = attr.NumberTextFormat,
+                NumberStyles = attr.NumberStyles,
                 CustomNumberTextFormat = attr.CustomNumberTextFormat,
                 DateTimeFormat = attr.DateTimeFormat,
                 GuidTextFormat = attr.GuidTextFormat,
                 GuidBinaryFormat = attr.GuidBinaryFormat,
                 CustomGuidTextFormat = attr.CustomGuidTextFormat,
             };
+
+        public NumberStyles GetNumberStyles()
+        {
+            var style = NumberStyles;
+            switch (NumberTextFormat)
+            {
+                case NumberTextFormat.Decimal:
+                    style |= NumberStyles.Number;
+                    break;
+                case NumberTextFormat.Hex:
+                    style |= NumberStyles.HexNumber;
+                    break;
+                case NumberTextFormat.Binary:
+                    style |= NumberStyles.BinaryNumber;
+                    break;
+            }
+            return style;
+        }
     }
 
 }

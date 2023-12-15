@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Text;
 using Sera.Core.SerDe;
 using Sera.Utils;
@@ -24,10 +26,98 @@ public interface ISeraColctor<in T, [AssocType] out R> : ISeraAbility<ISeraColio
     public R CPrimitive<M>(M mapper, Type<bool> t, SeraFormats? formats = null)
         where M : ISeraMapper<bool, T>;
 
+    public R CPrimitive<M>(M mapper, Type<sbyte> t, SeraFormats? formats = null)
+        where M : ISeraMapper<sbyte, T>;
+
+    public R CPrimitive<M>(M mapper, Type<byte> t, SeraFormats? formats = null)
+        where M : ISeraMapper<byte, T>;
+
+    public R CPrimitive<M>(M mapper, Type<short> t, SeraFormats? formats = null)
+        where M : ISeraMapper<short, T>;
+
+    public R CPrimitive<M>(M mapper, Type<ushort> t, SeraFormats? formats = null)
+        where M : ISeraMapper<ushort, T>;
+
+    public R CPrimitive<M>(M mapper, Type<int> t, SeraFormats? formats = null)
+        where M : ISeraMapper<int, T>;
+
+    public R CPrimitive<M>(M mapper, Type<uint> t, SeraFormats? formats = null)
+        where M : ISeraMapper<uint, T>;
+
+    public R CPrimitive<M>(M mapper, Type<long> t, SeraFormats? formats = null)
+        where M : ISeraMapper<long, T>;
+
+    public R CPrimitive<M>(M mapper, Type<ulong> t, SeraFormats? formats = null)
+        where M : ISeraMapper<ulong, T>;
+
+    public R CPrimitive<M>(M mapper, Type<Int128> t, SeraFormats? formats = null)
+        where M : ISeraMapper<Int128, T>;
+
+    public R CPrimitive<M>(M mapper, Type<UInt128> t, SeraFormats? formats = null)
+        where M : ISeraMapper<UInt128, T>;
+
+    public R CPrimitive<M>(M mapper, Type<nint> t, SeraFormats? formats = null)
+        where M : ISeraMapper<nint, T>;
+
+    public R CPrimitive<M>(M mapper, Type<nuint> t, SeraFormats? formats = null)
+        where M : ISeraMapper<nuint, T>;
+
+    public R CPrimitive<M>(M mapper, Type<Half> t, SeraFormats? formats = null)
+        where M : ISeraMapper<Half, T>;
+
     public R CPrimitive<M>(M mapper, Type<float> t, SeraFormats? formats = null)
         where M : ISeraMapper<float, T>;
 
-    // todo other Primitive
+    public R CPrimitive<M>(M mapper, Type<double> t, SeraFormats? formats = null)
+        where M : ISeraMapper<double, T>;
+
+    public R CPrimitive<M>(M mapper, Type<decimal> t, SeraFormats? formats = null)
+        where M : ISeraMapper<decimal, T>;
+
+    public R CPrimitive<M>(M mapper, Type<NFloat> t, SeraFormats? formats = null)
+        where M : ISeraMapper<NFloat, T>;
+
+    public R CPrimitive<M>(M mapper, Type<BigInteger> t, SeraFormats? formats = null)
+        where M : ISeraMapper<BigInteger, T>;
+
+    public R CPrimitive<M>(M mapper, Type<Complex> t, SeraFormats? formats = null)
+        where M : ISeraMapper<Complex, T>;
+
+    public R CPrimitive<M>(M mapper, Type<TimeSpan> t, SeraFormats? formats = null)
+        where M : ISeraMapper<TimeSpan, T>;
+
+    public R CPrimitive<M>(M mapper, Type<DateOnly> t, SeraFormats? formats = null)
+        where M : ISeraMapper<DateOnly, T>;
+
+    public R CPrimitive<M>(M mapper, Type<TimeOnly> t, SeraFormats? formats = null)
+        where M : ISeraMapper<TimeOnly, T>;
+
+    public R CPrimitive<M>(M mapper, Type<DateTime> t, SeraFormats? formats = null)
+        where M : ISeraMapper<DateTime, T>;
+
+    public R CPrimitive<M>(M mapper, Type<DateTimeOffset> t, SeraFormats? formats = null)
+        where M : ISeraMapper<DateTimeOffset, T>;
+
+    public R CPrimitive<M>(M mapper, Type<Guid> t, SeraFormats? formats = null)
+        where M : ISeraMapper<Guid, T>;
+
+    public R CPrimitive<M>(M mapper, Type<Range> t, SeraFormats? formats = null)
+        where M : ISeraMapper<Range, T>;
+
+    public R CPrimitive<M>(M mapper, Type<Index> t, SeraFormats? formats = null)
+        where M : ISeraMapper<Index, T>;
+
+    public R CPrimitive<M>(M mapper, Type<char> t, SeraFormats? formats = null)
+        where M : ISeraMapper<char, T>;
+
+    public R CPrimitive<M>(M mapper, Type<Rune> t, SeraFormats? formats = null)
+        where M : ISeraMapper<Rune, T>;
+
+    public R CPrimitive<M>(M mapper, Type<Uri> t, SeraFormats? formats = null)
+        where M : ISeraMapper<Uri, T>;
+
+    public R CPrimitive<M>(M mapper, Type<Version> t, SeraFormats? formats = null)
+        where M : ISeraMapper<Version, T>;
 
     #endregion
 
@@ -45,18 +135,8 @@ public interface ISeraColctor<in T, [AssocType] out R> : ISeraAbility<ISeraColio
     public R CString<M>(M mapper, Type<ReadOnlyMemory<char>> t)
         where M : ISeraMapper<ReadOnlyMemory<char>, T>;
 
-    #endregion
-
-    #region String Encoded
-
-    public R CString<M>(M mapper, Type<byte[]> t, Encoding encoding)
-        where M : ISeraMapper<byte[], T>;
-
-    public R CString<M>(M mapper, Type<Memory<byte>> t, Encoding encoding)
-        where M : ISeraMapper<Memory<byte>, T>;
-
-    public R CString<M>(M mapper, Type<ReadOnlyMemory<byte>> t, Encoding encoding)
-        where M : ISeraMapper<ReadOnlyMemory<byte>, T>;
+    public R CStringSpan<M>(M mapper)
+        where M : ISeraSpanMapper<char, T>;
 
     #endregion
 
@@ -79,6 +159,9 @@ public interface ISeraColctor<in T, [AssocType] out R> : ISeraAbility<ISeraColio
 
     public R CArray<C, M, I>(C colion, M mapper, Type<ReadOnlySequence<I>> t, Type<I> i)
         where C : ISeraColion<I> where M : ISeraMapper<ReadOnlySequence<I>, T>;
+
+    public R CArraySpan<C, M, I>(C colion, M mapper, Type<I> i)
+        where C : ISeraColion<I> where M : ISeraSpanMapper<I, T>;
 
     #endregion
 
@@ -202,6 +285,6 @@ public interface ISelectSeraColctor<in T, [AssocType] out R>
 {
     public R CSome<C, M, U>(C colion, M mapper, Type<U> u)
         where C : ISeraColion<U> where M : ISeraMapper<U, T>;
-    
+
     public R CNone();
 }

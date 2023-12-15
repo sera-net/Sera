@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Sera.Core;
 using Sera.Core.Formats;
 
@@ -162,6 +163,10 @@ public sealed class SeraFormatsAttribute : Attribute
     public ToUpperOrLower ToUpperOrLower { get; set; } = ToUpperOrLower.None;
 
     public NumberTextFormat NumberTextFormat { get; set; } = NumberTextFormat.Any;
+    /// <summary>
+    /// <see cref="NumberStyles"/> when parse number
+    /// </summary>
+    public NumberStyles NumberStyles { get; set; } = NumberStyles.None;
     public string? CustomNumberTextFormat { get; set; }
 
     public DateTimeFormatFlags DateTimeFormat { get; set; } = DateTimeFormatFlags.None;

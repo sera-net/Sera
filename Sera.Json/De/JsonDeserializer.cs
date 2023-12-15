@@ -1,12 +1,17 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
 using BetterCollections;
 using BetterCollections.Memories;
 using Sera.Core;
+using Sera.Core.Impls.De;
+using Sera.Json.Utils;
 using Sera.Utils;
 
 namespace Sera.Json.De;
@@ -57,8 +62,10 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             if (CSelect<C, M, U>(colion, mapper, token, ref mark, ref r, ref ex, pos,
                     AJsonDeserializer.SelectPriorities))
                 return r;
-            if (ex is { Count: > 0 }) throw new AggregateException(ex);
-            throw new NotImplementedException("todo"); // todo throw error
+            var err_msg = $"Select failed at {token.Pos}";
+            if (ex is not { Count: > 0 }) throw new JsonParseException(err_msg, token.Pos);
+            var inner = new AggregateException(ex);
+            throw new JsonParseException(err_msg, token.Pos, inner);
         }
         finally
         {
@@ -172,20 +179,245 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         where M : ISeraMapper<bool, T>
     {
         var token = reader.CurrentToken;
-        if (token.Kind is JsonTokenKind.True)
+        Unsafe.SkipInit(out T r);
+        if (token.Kind is JsonTokenKind.True) r = mapper.Map(true);
+        else if (token.Kind is JsonTokenKind.False) r = mapper.Map(false);
+        else if (token.Kind is JsonTokenKind.Number) goto try_number;
+        else if (token.Kind is JsonTokenKind.String)
         {
-            return mapper.Map(true);
+            if (bool.TryParse(token.AsSpan(), out var b)) r = mapper.Map(b);
+            else goto try_number;
         }
-        else if (token.Kind is JsonTokenKind.False)
-        {
-            return mapper.Map(false);
-        }
-        else throw new NotImplementedException(); // todo
+        else goto err;
+        ret:
+        reader.MoveNext();
+        return r;
+        err:
+        throw new JsonParseException($"Expected Bool but found {token.Kind} at {token.Pos}", token.Pos);
+        try_number:
+        if (decimal.TryParse(token.AsSpan(), NumberStyles.Any, null, out var num))
+            r = mapper.Map(num != 0);
+        else goto err;
+        goto ret;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<sbyte> t, SeraFormats? formats = null) where M : ISeraMapper<sbyte, T>
+        => CPrimitiveNumber<sbyte, M>(mapper, formats);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<byte> t, SeraFormats? formats = null) where M : ISeraMapper<byte, T>
+        => CPrimitiveNumber<byte, M>(mapper, formats);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<short> t, SeraFormats? formats = null) where M : ISeraMapper<short, T>
+        => CPrimitiveNumber<short, M>(mapper, formats);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<ushort> t, SeraFormats? formats = null) where M : ISeraMapper<ushort, T>
+        => CPrimitiveNumber<ushort, M>(mapper, formats);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<int> t, SeraFormats? formats = null) where M : ISeraMapper<int, T>
+        => CPrimitiveNumber<int, M>(mapper, formats);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<uint> t, SeraFormats? formats = null) where M : ISeraMapper<uint, T>
+        => CPrimitiveNumber<uint, M>(mapper, formats);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<long> t, SeraFormats? formats = null) where M : ISeraMapper<long, T>
+        => CPrimitiveNumber<long, M>(mapper, formats);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<ulong> t, SeraFormats? formats = null) where M : ISeraMapper<ulong, T>
+        => CPrimitiveNumber<ulong, M>(mapper, formats);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<Int128> t, SeraFormats? formats = null) where M : ISeraMapper<Int128, T>
+        => CPrimitiveNumber<Int128, M>(mapper, formats);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<UInt128> t, SeraFormats? formats = null) where M : ISeraMapper<UInt128, T>
+        => CPrimitiveNumber<UInt128, M>(mapper, formats);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<IntPtr> t, SeraFormats? formats = null) where M : ISeraMapper<IntPtr, T>
+        => CPrimitiveNumber<IntPtr, M>(mapper, formats);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<UIntPtr> t, SeraFormats? formats = null) where M : ISeraMapper<UIntPtr, T>
+        => CPrimitiveNumber<UIntPtr, M>(mapper, formats);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<Half> t, SeraFormats? formats = null) where M : ISeraMapper<Half, T>
+        => CPrimitiveNumber<Half, M>(mapper, formats);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T CPrimitive<M>(M mapper, Type<float> t, SeraFormats? formats = null) where M : ISeraMapper<float, T>
+        => CPrimitiveNumber<float, M>(mapper, formats);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<double> t, SeraFormats? formats = null) where M : ISeraMapper<double, T>
+        => CPrimitiveNumber<double, M>(mapper, formats);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<decimal> t, SeraFormats? formats = null) where M : ISeraMapper<decimal, T>
+        => CPrimitiveNumber<decimal, M>(mapper, formats);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<NFloat> t, SeraFormats? formats = null) where M : ISeraMapper<NFloat, T>
+        => CPrimitiveNumber<NFloat, M>(mapper, formats);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<BigInteger> t, SeraFormats? formats = null)
+        where M : ISeraMapper<BigInteger, T>
+        => CPrimitiveNumber<BigInteger, M>(mapper, formats);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<Complex> t, SeraFormats? formats = null) where M : ISeraMapper<Complex, T>
+        => CPrimitiveNumber<Complex, M>(mapper, formats);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<TimeSpan> t, SeraFormats? formats = null) where M : ISeraMapper<TimeSpan, T>
+        => CPrimitiveDateTime<TimeSpan, M, DateOrTimeFromNumberMapper>(mapper, nameof(TimeSpan), new());
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<DateOnly> t, SeraFormats? formats = null) where M : ISeraMapper<DateOnly, T>
+        => CPrimitiveDateTime<DateOnly, M, DateOrTimeFromNumberMapper>(mapper, nameof(DateOnly), new());
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<TimeOnly> t, SeraFormats? formats = null) where M : ISeraMapper<TimeOnly, T>
+        => CPrimitiveDateTime<TimeOnly, M, DateOrTimeFromNumberMapper>(mapper, nameof(TimeOnly), new());
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<DateTime> t, SeraFormats? formats = null) where M : ISeraMapper<DateTime, T>
+        => CPrimitiveDateTime<DateTime, M, DateOrTimeFromNumberWithOffsetMapper>(
+            mapper, nameof(DateTime), new(Options.TimeZone.BaseUtcOffset));
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<DateTimeOffset> t, SeraFormats? formats = null)
+        where M : ISeraMapper<DateTimeOffset, T>
+        => CPrimitiveDateTime<DateTimeOffset, M, DateOrTimeFromNumberWithOffsetMapper>(
+            mapper, nameof(DateTimeOffset), new(Options.TimeZone.BaseUtcOffset));
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<Guid> t, SeraFormats? formats = null) where M : ISeraMapper<Guid, T>
     {
-        throw new NotImplementedException();
+        var token = reader.ReadStringToken();
+        Guid v;
+        try
+        {
+            v = Guid.Parse(token.AsSpan());
+        }
+        catch (Exception e)
+        {
+            throw new JsonParseException($"Illegal Guid format at {token.Pos}", token.Pos, e);
+        }
+        return mapper.Map(v);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<Range> t, SeraFormats? formats = null) where M : ISeraMapper<Range, T>
+    {
+        var token = reader.ReadStringToken();
+        var span = token.AsSpan();
+        if (!span.TryParseRange(out var range))
+            throw new JsonParseException($"Illegal Range format at {token.Pos}", token.Pos);
+        return mapper.Map(range);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<Index> t, SeraFormats? formats = null) where M : ISeraMapper<Index, T>
+    {
+        var token = reader.ReadStringToken();
+        var span = token.AsSpan();
+        if (!span.TryParseIndex(out var index))
+            throw new JsonParseException($"Illegal Index format at {token.Pos}", token.Pos);
+        return mapper.Map(index);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<char> t, SeraFormats? formats = null) where M : ISeraMapper<char, T>
+    {
+        var token = reader.ReadStringToken();
+        var span = token.AsSpan();
+        if (span.Length != 1)
+            throw new JsonParseException($"char must be a string of only one character at {token.Pos}", token.Pos);
+        return mapper.Map(span[0]);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<Rune> t, SeraFormats? formats = null) where M : ISeraMapper<Rune, T>
+    {
+        var token = reader.ReadStringToken();
+        var span = token.AsSpan();
+        var r = Rune.DecodeFromUtf16(span, out var rune, out var len);
+        if (r != OperationStatus.Done)
+            throw new JsonParseException($"Decode Rune failed ({r}) at {token.Pos}", token.Pos);
+        if (span.Length != len)
+            throw new JsonParseException($"String too long for Rune at {token.Pos}", token.Pos);
+        return mapper.Map(rune);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<Uri> t, SeraFormats? formats = null) where M : ISeraMapper<Uri, T>
+    {
+        var token = reader.ReadStringToken();
+        var str = token.AsString();
+        Uri v;
+        try
+        {
+            v = new Uri(str);
+        }
+        catch (Exception e)
+        {
+            throw new JsonParseException($"Illegal Uri format at {token.Pos}", token.Pos, e);
+        }
+        return mapper.Map(v);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CPrimitive<M>(M mapper, Type<Version> t, SeraFormats? formats = null) where M : ISeraMapper<Version, T>
+    {
+        var token = reader.ReadStringToken();
+        var span = token.AsSpan();
+        Version v;
+        try
+        {
+            v = Version.Parse(span);
+        }
+        catch (Exception e)
+        {
+            throw new JsonParseException($"Illegal Version format at {token.Pos}", token.Pos, e);
+        }
+        return mapper.Map(v);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private T CPrimitiveNumber<N, M>(M mapper, SeraFormats? formats = null)
+        where M : ISeraMapper<N, T> where N : INumberBase<N>
+    {
+        var token = reader.CurrentToken;
+        Unsafe.SkipInit(out N r);
+        if (token.Kind is JsonTokenKind.Number or JsonTokenKind.String)
+        {
+            var style = formats?.GetNumberStyles() ?? NumberStyles.None;
+            r = token.ParseNumber<N>(style);
+        }
+        else reader.ThrowExpected(JsonTokenKind.Number);
+        reader.MoveNext();
+        return mapper.Map(r);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private T CPrimitiveDateTime<N, M, C>(M mapper, string TypeName, C FromTicks)
+        where M : ISeraMapper<N, T> where N : ISpanParsable<N> where C : ISeraMapper<long, N>
+    {
+        var token = reader.CurrentToken;
+        var r = token.ParseDateOrTime<N, C>(TypeName, FromTicks);
+        reader.MoveNext();
+        return mapper.Map(r);
     }
 
     #endregion
@@ -194,57 +426,38 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T CString<M>(M mapper, Type<string> t) where M : ISeraMapper<string, T>
-        => mapper.Map(CString().ToString());
+    {
+        var token = reader.ReadStringToken();
+        return mapper.Map(token.AsString());
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T CString<M>(M mapper, Type<char[]> t) where M : ISeraMapper<char[], T>
-        => mapper.Map(CString().ToArray());
+        => mapper.Map(CStringArray());
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T CString<M>(M mapper, Type<Memory<char>> t) where M : ISeraMapper<Memory<char>, T>
-        => mapper.Map(CString().ToArray());
+        => mapper.Map(CStringArray());
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T CString<M>(M mapper, Type<ReadOnlyMemory<char>> t) where M : ISeraMapper<ReadOnlyMemory<char>, T>
-        => mapper.Map(CString());
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public T CString<M>(M mapper, Type<byte[]> t, Encoding encoding) where M : ISeraMapper<byte[], T>
-        => mapper.Map(CString(encoding));
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public T CString<M>(M mapper, Type<Memory<byte>> t, Encoding encoding) where M : ISeraMapper<Memory<byte>, T>
-        => mapper.Map(CString(encoding));
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public T CString<M>(M mapper, Type<ReadOnlyMemory<byte>> t, Encoding encoding)
-        where M : ISeraMapper<ReadOnlyMemory<byte>, T>
-        => mapper.Map(CString(encoding));
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private ReadOnlyMemory<char> CString()
     {
-        var token = reader.CurrentToken;
-        if (token.Kind is not JsonTokenKind.String) throw new NotImplementedException(); // todo throw;
-        return token.AsMemory();
+        var token = reader.ReadStringToken();
+        return mapper.Map(token.AsMemory());
     }
 
-    private byte[] CString(Encoding encoding)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private char[] CStringArray()
     {
-        var str = CString();
-        if (Equals(encoding, Encoding.Unicode))
-            return MemoryMarshal.AsBytes(str.Span).ToArray();
-        var len = encoding.GetMaxByteCount(str.Length);
-        var arr = ArrayPool<byte>.Shared.Rent(len);
-        try
-        {
-            var n = encoding.GetBytes(str.Span, arr.AsSpan());
-            return arr.AsMemory(0, n).ToArray();
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(arr);
-        }
+        var token = reader.ReadStringToken();
+        return token.AsSpan().ToArray();
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CStringSpan<M>(M mapper) where M : ISeraSpanMapper<char, T>
+    {
+        var token = reader.ReadStringToken();
+        return mapper.SpanMap(token.AsSpan());
     }
 
     #endregion
@@ -271,6 +484,13 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         where C : ISeraColion<I> where M : ISeraMapper<ReadOnlySequence<I>, T>
         => mapper.Map(CArraySequence<C, I>(colion));
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CArraySpan<C, M, I>(C colion, M mapper, Type<I> i) where C : ISeraColion<I> where M : ISeraSpanMapper<I, T>
+    {
+        var arr = CArray<C, I>(colion);
+        return mapper.SpanMap(arr.AsSpan);
+    }
+
     private Vec<I> CArray<C, I>(C colion) where C : ISeraColion<I>
     {
         reader.ReadArrayStart();
@@ -281,7 +501,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             var token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ArrayEnd) break;
             if (first) first = false;
-            else if (token.Kind is not JsonTokenKind.Comma) throw new NotImplementedException(); // todo error
+            else if (token.Kind is not JsonTokenKind.Comma) reader.ThrowExpected(JsonTokenKind.Comma);
             var c = new JsonDeserializer<I>(impl);
             var i = colion.Collect<I, JsonDeserializer<I>>(ref c);
             vec.Add(i);
@@ -309,7 +529,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             var token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ArrayEnd) break;
             if (first) first = false;
-            else if (token.Kind is not JsonTokenKind.Comma) throw new NotImplementedException(); // todo error
+            else if (token.Kind is not JsonTokenKind.Comma) reader.ThrowExpected(JsonTokenKind.Comma);
             var c = new JsonDeserializer<I>(impl);
             var i = colion.Collect<I, JsonDeserializer<I>>(ref c);
             vec.Add(i);
@@ -371,7 +591,11 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
     public T COption<C>(C colion) where C : IOptionSeraColion<T>
     {
         var token = reader.CurrentToken;
-        if (token.Kind is JsonTokenKind.Null) return colion.CtorNone();
+        if (token.Kind is JsonTokenKind.Null)
+        {
+            reader.MoveNext();
+            return colion.CtorNone();
+        }
         var colctor = new SomeSeraColctor(impl);
         return colion.CollectSome<T, SomeSeraColctor>(ref colctor);
     }
@@ -474,7 +698,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             var token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ArrayEnd) break;
             if (first) first = false;
-            else if (token.Kind is not JsonTokenKind.Comma) throw new NotImplementedException(); // todo error
+            else if (token.Kind is not JsonTokenKind.Comma) reader.ThrowExpected(JsonTokenKind.Comma);
             colion.CollectItem<Unit, SeqSeraColctor<B, I>>(ref colctor);
         }
         reader.ReadArrayEnd();
@@ -520,7 +744,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             var token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ArrayEnd) break;
             if (first) first = false;
-            else if (token.Kind is not JsonTokenKind.Comma) throw new NotImplementedException(); // todo error
+            else if (token.Kind is not JsonTokenKind.Comma) reader.ThrowExpected(JsonTokenKind.Comma);
             colion.CollectItem<Unit, ArrayMapSeraColctor<B, IK, IV>>(ref colctor);
         }
         reader.ReadArrayEnd();
@@ -541,7 +765,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ObjectEnd) break;
             if (first) first = false;
-            else if (token.Kind is not JsonTokenKind.Comma) throw new NotImplementedException(); // todo error
+            else if (token.Kind is not JsonTokenKind.Comma) reader.ThrowExpected(JsonTokenKind.Comma);
             colion.CollectItem<Unit, ObjectMapSeraColctor<B, IK, IV>>(ref colctor);
         }
         reader.ReadObjectEnd();
@@ -608,7 +832,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             else reader.ReadComma();
             var token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ObjectEnd) break;
-            if (token.Kind is not JsonTokenKind.String) throw new NotImplementedException(); // todo error
+            if (token.Kind is not JsonTokenKind.String) reader.ThrowExpected(JsonTokenKind.String);
             var field_name = token.AsString();
             reader.ReadColon();
             if (!fields.TryGet(field_name, out var info))
@@ -647,7 +871,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             else reader.ReadComma();
             var token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ObjectEnd) break;
-            if (token.Kind is not JsonTokenKind.String) throw new NotImplementedException(); // todo error
+            if (token.Kind is not JsonTokenKind.String) reader.ThrowExpected(JsonTokenKind.String);
             var field_name = token.AsString();
             reader.ReadColon();
             var key = long.TryParse(field_name, out var key_) ? (long?)key_ : null;

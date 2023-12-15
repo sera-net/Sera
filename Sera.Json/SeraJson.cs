@@ -18,9 +18,16 @@ namespace Sera.Json
 
     public static class SeraJson
     {
-        public static SerBuilder<SerializerBuilder> Serializer =>
-            new(new(SeraJsonOptions.Default, CompactJsonFormatter.Default));
-        public static DeBuilder<DeserializerBuilder> Deserializer => new(new(SeraJsonOptions.Default));
+        public static SerBuilder<SerializerBuilder> Serializer
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => new(new(SeraJsonOptions.Default, CompactJsonFormatter.Default));
+        }
+        public static DeBuilder<DeserializerBuilder> Deserializer
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => new(new(SeraJsonOptions.Default));
+        }
     }
 
     public static class SerializerBuilderEx
@@ -50,23 +57,28 @@ namespace Sera.Json.Builders
     public readonly record struct SerializerBuilder(SeraJsonOptions Options, AJsonFormatter Formatter) :
         ISerBuilder, IStreamOutput, IStringBuilderOutput, IAsyncStreamOutput
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public SerializerBuilder WithOptions(SeraJsonOptions options) =>
             this with { Options = options };
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public SerializerBuilder WithFormatter(AJsonFormatter formatter) =>
             this with { Formatter = formatter };
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public R BuildStreamOutput<R, A>(A accept, OutputBuildParam param, Stream stream)
             where A : AcceptASeraVisitor<Unit, R>
             => accept.Accept(new JsonSerializer(new StreamJsonWriter(Options, Formatter, stream))
                 { RuntimeProviderOverride = param.RuntimeProvider });
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public R BuildStringBuilderOutput<R, A>(A accept, OutputBuildParam param,
             StringBuilder stringBuilder)
             where A : AcceptASeraVisitor<Unit, R>
             => accept.Accept(new JsonSerializer(new StringBuilderJsonWriter(Options, Formatter, stringBuilder))
                 { RuntimeProviderOverride = param.RuntimeProvider });
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public R BuildAsyncStreamOutput<R, A>(A accept, OutputBuildParam param, Stream stream)
             where A : AcceptASeraVisitor<ValueTask, R>
             => accept.Accept(new AsyncJsonSerializer(new AsyncStreamJsonWriter(Options, Formatter, stream))
@@ -76,9 +88,11 @@ namespace Sera.Json.Builders
     public readonly record struct DeserializerBuilder(SeraJsonOptions Options) :
         IDeBuilder, IStringInput
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public DeserializerBuilder WithOptions(SeraJsonOptions options) =>
             this with { Options = options };
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public R BuildStringInput<T, R, A>(A accept, InputBuildParam param, CompoundString str)
             where A : AcceptASeraColctor<T, T, R>
             => accept.Accept(new JsonDeserializer(new StringJsonReader(Options, str))

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
 using Sera.Utils;
@@ -82,6 +83,14 @@ public abstract class AJsonReader(SeraJsonOptions options)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected void MovePosToNextLine(int len) => pos.MutAddLine(len);
 
+    [DoesNotReturn]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public virtual void ThrowExpected(JsonTokenKind kind)
+    {
+        var token = CurrentToken;
+        throw new JsonParseException($"Expected {kind} but found {token.Kind} at {token.Pos}", token.Pos);
+    }
+    
     /// <summary>Read and move next</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public virtual JsonToken ReadOf(JsonTokenKind kind)
@@ -98,9 +107,34 @@ public abstract class AJsonReader(SeraJsonOptions options)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public virtual void ReadNull() => ReadOf(JsonTokenKind.Null);
 
+    /// <summary>Read <c>null</c> and move next</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public virtual bool ReadBool()
+    {
+        if (!Has) throw new JsonParseException($"Expected Bool but found eof", pos);
+        var token = CurrentToken;
+        var r = token.Kind switch
+        {
+            JsonTokenKind.True => true,
+            JsonTokenKind.False => false,
+            _ => throw new JsonParseException($"Expected Bool but found {token.Kind} at {token.Pos}", token.Pos)
+        };
+        MoveNext();
+        return r;
+    }
+
+    /// <summary>Read <c>number</c> and move next</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public virtual JsonToken ReadNumber() => ReadOf(JsonTokenKind.Number);
+
     /// <summary>Read <c>string</c> and move next</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public virtual string ReadString() => ReadOf(JsonTokenKind.String).Text.AsString();
+    
+    /// <summary>Read <c>string</c> and move next</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public virtual JsonToken ReadStringToken() => ReadOf(JsonTokenKind.String);
+
 
     /// <summary>Read <c>,</c> and move next</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
