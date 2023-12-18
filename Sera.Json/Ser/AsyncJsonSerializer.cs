@@ -13,8 +13,8 @@ using Sera.Utils;
 
 namespace Sera.Json.Ser;
 
-public class AsyncJsonSerializer
-    (SeraJsonOptions options, AJsonFormatter formatter, AAsyncJsonWriter writer) : ASeraVisitor<ValueTask>
+public class AsyncJsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, AAsyncJsonWriter writer)
+    : ASeraVisitor<ValueTask>
 {
     public AsyncJsonSerializer(AAsyncJsonWriter writer) : this(writer.Options, writer.Formatter, writer) { }
 
@@ -49,18 +49,10 @@ public class AsyncJsonSerializer
 
     #region Number
 
-    private async ValueTask WriteNumber<T>(int size, T v, SeraFormats? formats, bool use_string)
+    private async ValueTask WriteNumber<T>(int size, T v, SeraFormats? formats, bool integer, bool use_string)
         where T : ISpanFormattable
     {
-        var format = formats?.CustomNumberTextFormat ?? (formats?.NumberTextFormat is { } ntf
-            ? (ntf switch
-            {
-                NumberTextFormat.Decimal or NumberTextFormat.Any => "D",
-                NumberTextFormat.Hex => "X",
-                NumberTextFormat.Binary => "B",
-                _ => throw new ArgumentOutOfRangeException()
-            })
-            : null);
+        var format = formats.GetNumberFormat(integer);
         if (format == null)
         {
             using var chars = RAIIArrayPool<char>.Get(size);
@@ -85,7 +77,7 @@ public class AsyncJsonSerializer
     {
         if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateAsNumber) ?? false)
         {
-            return WriteNumber(32, v.Ticks, formats, formatter.LargeNumberUseString);
+            return WriteNumber(32, v.Ticks, formats, true, formatter.LargeNumberUseString);
         }
         using var chars = RAIIArrayPool<char>.Get(32);
         if (v.TryFormat(chars.Span, out var len, "G"))
@@ -113,7 +105,7 @@ public class AsyncJsonSerializer
         }
         if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateAsNumber) ?? false)
         {
-            return WriteNumber(32, v.DayNumber, formats, false);
+            return WriteNumber(32, v.DayNumber, formats, true, false);
         }
         using var chars = RAIIArrayPool<char>.Get(16);
         if (v.TryFormat(chars.Span, out var len, "O"))
@@ -130,7 +122,7 @@ public class AsyncJsonSerializer
     {
         if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateAsNumber) ?? false)
         {
-            return WriteNumber(32, v.Ticks, formats, formatter.LargeNumberUseString);
+            return WriteNumber(32, v.Ticks, formats, true, formatter.LargeNumberUseString);
         }
         using var chars = RAIIArrayPool<char>.Get(32);
         if (v.TryFormat(chars.Span, out var len, "O"))
@@ -153,7 +145,7 @@ public class AsyncJsonSerializer
         }
         if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateAsNumber) ?? false)
         {
-            return WriteNumber(32, v.Ticks, formats, formatter.LargeNumberUseString);
+            return WriteNumber(32, v.Ticks, formats, true, formatter.LargeNumberUseString);
         }
         using var chars = RAIIArrayPool<char>.Get(64);
         if (v.TryFormat(chars.Span, out var len, "O"))
@@ -170,7 +162,7 @@ public class AsyncJsonSerializer
     {
         if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateAsNumber) ?? false)
         {
-            return WriteNumber(32, v.Ticks, formats, formatter.LargeNumberUseString);
+            return WriteNumber(32, v.Ticks, formats, true, formatter.LargeNumberUseString);
         }
         if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateTimeOffsetUseTimeZone) ?? false)
         {
@@ -193,17 +185,7 @@ public class AsyncJsonSerializer
 
     private ValueTask WriteGuid(Guid v, SeraFormats? formats)
     {
-        var format = formats?.CustomGuidTextFormat ?? (formats?.GuidTextFormat is { } gtf
-            ? gtf switch
-            {
-                GuidTextFormat.GuidTextShort or GuidTextFormat.Any => "N",
-                GuidTextFormat.GuidTextGuid => "D",
-                GuidTextFormat.GuidTextBraces => "B",
-                GuidTextFormat.GuidTextParentheses => "P",
-                GuidTextFormat.GuidTextHex => "X",
-                _ => throw new ArgumentOutOfRangeException()
-            }
-            : null) ?? "D";
+        var format = formats.GetGuidFormat();
         if (format != "X")
         {
             using var chars = RAIIArrayPool<char>.Get(64);
@@ -242,61 +224,75 @@ public class AsyncJsonSerializer
     }
 
     public override ValueTask VPrimitive(sbyte value, SeraFormats? formats = null)
-        => WriteNumber(4, value, formats, false);
+        => WriteNumber(4, value, formats, true, false);
 
     public override ValueTask VPrimitive(byte value, SeraFormats? formats = null)
-        => WriteNumber(4, value, formats, false);
+        => WriteNumber(4, value, formats, true, false);
 
     public override ValueTask VPrimitive(short value, SeraFormats? formats = null)
-        => WriteNumber(8, value, formats, false);
+        => WriteNumber(8, value, formats, true, false);
 
     public override ValueTask VPrimitive(ushort value, SeraFormats? formats = null)
-        => WriteNumber(8, value, formats, false);
+        => WriteNumber(8, value, formats, true, false);
 
     public override ValueTask VPrimitive(int value, SeraFormats? formats = null)
-        => WriteNumber(16, value, formats, false);
+        => WriteNumber(16, value, formats, true, false);
 
     public override ValueTask VPrimitive(uint value, SeraFormats? formats = null)
-        => WriteNumber(16, value, formats, false);
+        => WriteNumber(16, value, formats, true, false);
 
     public override ValueTask VPrimitive(long value, SeraFormats? formats = null)
-        => WriteNumber(32, value, formats, formatter.LargeNumberUseString);
+        => WriteNumber(32, value, formats, true, formatter.LargeNumberUseString);
 
     public override ValueTask VPrimitive(ulong value, SeraFormats? formats = null)
-        => WriteNumber(32, value, formats, formatter.LargeNumberUseString);
+        => WriteNumber(32, value, formats, true, formatter.LargeNumberUseString);
 
     public override ValueTask VPrimitive(Int128 value, SeraFormats? formats = null)
-        => WriteNumber(64, value, formats, formatter.LargeNumberUseString);
+        => WriteNumber(64, value, formats, true, formatter.LargeNumberUseString);
 
     public override ValueTask VPrimitive(UInt128 value, SeraFormats? formats = null)
-        => WriteNumber(64, value, formats, formatter.LargeNumberUseString);
+        => WriteNumber(64, value, formats, true, formatter.LargeNumberUseString);
 
     public override ValueTask VPrimitive(IntPtr value, SeraFormats? formats = null)
-        => WriteNumber(32, value, formats, formatter.LargeNumberUseString);
+        => WriteNumber(32, value, formats, true, formatter.LargeNumberUseString);
 
     public override ValueTask VPrimitive(UIntPtr value, SeraFormats? formats = null)
-        => WriteNumber(32, value, formats, formatter.LargeNumberUseString);
+        => WriteNumber(32, value, formats, true, formatter.LargeNumberUseString);
 
     public override ValueTask VPrimitive(Half value, SeraFormats? formats = null)
-        => WriteNumber(32, value, formats, false);
+        => WriteNumber(32, value, formats, false, false);
 
     public override ValueTask VPrimitive(float value, SeraFormats? formats = null)
-        => WriteNumber(32, value, formats, false);
+        => WriteNumber(32, value, formats, false, false);
 
     public override ValueTask VPrimitive(double value, SeraFormats? formats = null)
-        => WriteNumber(32, value, formats, false);
+        => WriteNumber(32, value, formats, false, false);
 
     public override ValueTask VPrimitive(decimal value, SeraFormats? formats = null)
-        => WriteNumber(32, value, formats, false);
+        => WriteNumber(32, value, formats, false, false);
 
     public override ValueTask VPrimitive(NFloat value, SeraFormats? formats = null)
-        => WriteNumber(32, value, formats, false);
+        => WriteNumber(32, value, formats, false, false);
 
     public override ValueTask VPrimitive(BigInteger value, SeraFormats? formats = null)
         => writer.WriteString(value.ToString(), false);
 
-    public override ValueTask VPrimitive(Complex value, SeraFormats? formats = null)
-        => writer.WriteString(value.ToString(), false);
+    public override async ValueTask VPrimitive(Complex value, SeraFormats? formats = null)
+    {
+        if (formats?.ComplexAsString ?? false)
+        {
+            var style = formats.GetNumberFormat(false);
+            await writer.WriteString(value.ToString(style), false);
+        }
+        else
+        {
+            await writer.Write("[");
+            await VPrimitive(value.Real, formats);
+            await writer.Write(",");
+            await VPrimitive(value.Imaginary, formats);
+            await writer.Write("]");
+        }
+    }
 
     public override ValueTask VPrimitive(TimeSpan value, SeraFormats? formats = null)
         => WriteDate(value, formats);
