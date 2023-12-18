@@ -32,7 +32,7 @@ public readonly struct AnyImpl(SeraFormats? formats = null) : ISeraVision<Any>
                 new AnyEntryImpl(this).Accept<R, V>(visitor, Entry),
 
             { Tag: Any.Kind.Tuple, Tuple: var Tuple } =>
-                new TupleArrayImpl<Any, AnyImpl>(this, value.Tuple.Length).Accept<R, V>(visitor, Tuple),
+                new TupleIListImpl<List<Any>, Any, AnyImpl>(this, value.Tuple.Count).Accept<R, V>(visitor, Tuple),
 
             { Tag: Any.Kind.Seq, Seq: var Seq } =>
                 new SeqICollectionImpl<List<Any>, Any, AnyImpl>(this).Accept<R, V>(visitor, Seq),
@@ -58,8 +58,7 @@ public readonly struct AnyEntryImpl(AnyImpl impl) : ISeraVision<AnyEntry>
         => visitor.VEntry(impl, impl, value.Key, value.Value);
 }
 
-public readonly struct AnyStructImpl
-    (AnyImpl impl, AnyStruct value) : IStructSeraVision<AnyStruct>
+public readonly struct AnyStructImpl(AnyImpl impl, AnyStruct value) : IStructSeraVision<AnyStruct>
 {
     public string? Name => value.Name;
     public int Count => value.Count;

@@ -19,7 +19,7 @@ public readonly struct MatrixImpl(SeraFormats? formats = null) :
 
     public readonly struct Matrix3x2Impl(SeraFormats? formats = null) : ITupleSeraColion<Matrix3x2>
     {
-        public int Size
+        public int? Size
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => 3 * 2;
@@ -36,7 +36,7 @@ public readonly struct MatrixImpl(SeraFormats? formats = null) :
 
     public readonly struct Matrix4x4Impl(SeraFormats? formats = null) : ITupleSeraColion<Matrix4x4>
     {
-        public int Size
+        public int? Size
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => 4 * 4;

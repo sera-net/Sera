@@ -23,7 +23,7 @@ public readonly struct VectorImpl(SeraFormats? formats = null)
 
     public readonly struct Vector2Impl(SeraFormats? formats = null) : ITupleSeraColion<Vector2>
     {
-        public int Size
+        public int? Size
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => 2;
@@ -40,7 +40,7 @@ public readonly struct VectorImpl(SeraFormats? formats = null)
 
     public readonly struct Vector3Impl(SeraFormats? formats = null) : ITupleSeraColion<Vector3>
     {
-        public int Size
+        public int? Size
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => 3;
@@ -57,7 +57,7 @@ public readonly struct VectorImpl(SeraFormats? formats = null)
 
     public readonly struct Vector4Impl(SeraFormats? formats = null) : ITupleSeraColion<Vector4>
     {
-        public int Size
+        public int? Size
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => 4;
@@ -123,7 +123,7 @@ public readonly struct VectorImpl<T, D>(D dep) : ISeraColion<Vector<T>>,
 
     public readonly struct VectorVarImpl(D dep) : ITupleSeraColion<Vector<T>>
     {
-        public int Size
+        public int? Size
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => Vector<T>.Count;
@@ -140,7 +140,7 @@ public readonly struct VectorImpl<T, D>(D dep) : ISeraColion<Vector<T>>,
 
     public readonly struct Vector64Impl(D dep) : ITupleSeraColion<Vector64<T>>
     {
-        public int Size
+        public int? Size
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => Vector64<T>.Count;
@@ -157,7 +157,7 @@ public readonly struct VectorImpl<T, D>(D dep) : ISeraColion<Vector<T>>,
 
     public readonly struct Vector128Impl(D dep) : ITupleSeraColion<Vector128<T>>
     {
-        public int Size
+        public int? Size
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => Vector128<T>.Count;
@@ -174,7 +174,7 @@ public readonly struct VectorImpl<T, D>(D dep) : ISeraColion<Vector<T>>,
 
     public readonly struct Vector256Impl(D dep) : ITupleSeraColion<Vector256<T>>
     {
-        public int Size
+        public int? Size
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => Vector256<T>.Count;
@@ -191,7 +191,7 @@ public readonly struct VectorImpl<T, D>(D dep) : ISeraColion<Vector<T>>,
 
     public readonly struct Vector512Impl(D dep) : ITupleSeraColion<Vector512<T>>
     {
-        public int Size
+        public int? Size
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => Vector512<T>.Count;

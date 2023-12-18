@@ -12,7 +12,7 @@ public readonly struct PlaneImpl(SeraFormats? formats = null)
     public R Collect<R, C>(ref C colctor, InType<Plane>? t = null) where C : ISeraColctor<Plane, R>
         => colctor.CTuple(this, new IdentityMapper<Plane>(), new Type<Plane>());
 
-    public int Size
+    public int? Size
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => 4;

@@ -1,8 +1,9 @@
 ﻿using System;
+using Sera.Core;
 
 namespace Sera.Json.De;
 
-public class JsonParseException : Exception
+public class JsonParseException : DeserializeException
 {
     public SourcePos pos;
 

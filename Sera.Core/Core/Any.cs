@@ -17,7 +17,7 @@ public readonly partial struct Any
         void Unit();
         Box<Any?> Option();
         AnyEntry Entry();
-        Any[] Tuple();
+        List<Any> Tuple();
         List<Any> Seq();
         Dictionary<Any, Any> Map();
         AnyStruct Struct();

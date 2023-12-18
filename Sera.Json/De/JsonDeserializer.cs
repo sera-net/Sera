@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
@@ -139,7 +140,8 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
                 if (token.Kind is not JsonTokenKind.ArrayStart) return false;
                 return colion.SelectEntry<bool, JsonDeserializer<U>.SelectSeraColctor>(ref c);
             case SeraKinds.Tuple:
-                return false; // todo tuple
+                if (token.Kind is not JsonTokenKind.ArrayStart) return false;
+                return colion.SelectTuple<bool, JsonDeserializer<U>.SelectSeraColctor>(ref c, null);
             case SeraKinds.Seq:
                 if (token.Kind is not JsonTokenKind.ArrayStart) return false;
                 return colion.SelectSeq<bool, JsonDeserializer<U>.SelectSeraColctor>(ref c, null);
@@ -282,7 +284,11 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         Unsafe.SkipInit(out Complex r);
         if (token.Kind is JsonTokenKind.String)
         {
-            if (token.AsSpan().TryParseComplex(formats.GetNumberStyles(), out r)) goto ok;
+            if (token.AsSpan().TryParseComplex(formats.GetNumberStyles(), out r))
+            {
+                reader.MoveNext();
+                goto ok;
+            }
             throw new JsonParseException($"Illegal Complex format at {token.Pos}", token.Pos);
         }
         reader.ReadArrayStart();
@@ -372,6 +378,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         var span = token.AsSpan();
         if (!span.TryParseIndex(out var index))
             throw new JsonParseException($"Illegal Index format at {token.Pos}", token.Pos);
+        reader.MoveNext();
         return mapper.Map(index);
     }
 
@@ -490,12 +497,56 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         var token = reader.ReadStringToken();
         return mapper.Map(token.AsMemory());
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T CStringSpan<M>(M mapper) where M : ISeraSpanMapper<char, T>
     {
         var token = reader.ReadStringToken();
         return mapper.SpanMap(token.AsSpan());
+    }
+
+    #endregion
+
+    #region Bytes
+
+    public T CBytes<M>(M mapper, Type<byte[]> t) where M : ISeraMapper<byte[], T>
+        => mapper.Map(CBytes().ToArray());
+
+    public T CBytes<M>(M mapper, Type<Memory<byte>> t) where M : ISeraMapper<Memory<byte>, T>
+        => mapper.Map(CBytes());
+
+    public T CBytes<M>(M mapper, Type<ReadOnlyMemory<byte>> t) where M : ISeraMapper<ReadOnlyMemory<byte>, T>
+        => mapper.Map(CBytes());
+
+    public T CBytesSpan<M>(M mapper) where M : ISeraSpanMapper<byte, T>
+        => mapper.SpanMap(CBytes().Span);
+
+    private Memory<byte> CBytes()
+    {
+        var token = reader.CurrentToken;
+        if (token.Kind is JsonTokenKind.String)
+        {
+            var span = token.AsSpan();
+            var size = Base64.GetMaxDecodedFromUtf8Length(span.Length);
+            var arr = new byte[size];
+            if (!Convert.TryFromBase64Chars(span, arr, out var len))
+                throw new JsonParseException($"Decoding base64 failed at {token.Pos}", token.Pos);
+            reader.MoveNext();
+            return arr.AsMemory(0, len);
+        }
+        var vec = new Vec<byte>();
+        reader.ReadArrayStart();
+        var first = true;
+        var c = new JsonDeserializer<short>(impl);
+        for (; reader.Has; reader.MoveNext())
+        {
+            if (first) first = false;
+            else reader.ReadComma();
+            var v = (byte)c.CPrimitiveNumber<short, IdentityMapper<short>>(new());
+            vec.Add(v);
+        }
+        reader.ReadArrayEnd();
+        return vec.AsMemory;
     }
 
     #endregion
@@ -516,11 +567,6 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
     public T CArray<C, M, I>(C colion, M mapper, Type<ReadOnlyMemory<I>> t, Type<I> i)
         where C : ISeraColion<I> where M : ISeraMapper<ReadOnlyMemory<I>, T>
         => mapper.Map(CArray<C, I>(colion).AsMemory);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public T CArray<C, M, I>(C colion, M mapper, Type<ReadOnlySequence<I>> t, Type<I> i)
-        where C : ISeraColion<I> where M : ISeraMapper<ReadOnlySequence<I>, T>
-        => mapper.Map(CArraySequence<C, I>(colion));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T CArraySpan<C, M, I>(C colion, M mapper, Type<I> i) where C : ISeraColion<I> where M : ISeraSpanMapper<I, T>
@@ -547,68 +593,6 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         reader.ReadArrayEnd();
         return vec;
     }
-
-    #region ArraySequence
-
-    private const int seq_size_limit = 1073741824;
-
-    private int VecBytes<I>(Vec<I> vec) => Unsafe.SizeOf<T>() * vec.Count;
-
-    private ReadOnlySequence<I> CArraySequence<C, I>(C colion) where C : ISeraColion<I>
-    {
-        reader.ReadArrayStart();
-        SequenceSegment<I>? first_segment = null;
-        SequenceSegment<I>? last_segment = null;
-        long index = 0;
-        var vec = new Vec<I>();
-        var first = true;
-        for (; reader.Has; reader.MoveNext())
-        {
-            var token = reader.CurrentToken;
-            if (token.Kind is JsonTokenKind.ArrayEnd) break;
-            if (first) first = false;
-            else if (token.Kind is not JsonTokenKind.Comma) reader.ThrowExpected(JsonTokenKind.Comma);
-            var c = new JsonDeserializer<I>(impl);
-            var i = colion.Collect<I, JsonDeserializer<I>>(ref c);
-            vec.Add(i);
-            if (VecBytes(vec) >= seq_size_limit)
-            {
-                var new_segment = new SequenceSegment<I>();
-                new_segment.SetMemory(vec.AsMemory);
-                new_segment.SetRunningIndex(index);
-                if (first_segment == null)
-                {
-                    last_segment = first_segment = new_segment;
-                }
-                else
-                {
-                    last_segment!.SetNext(new_segment);
-                    last_segment = new_segment;
-                }
-                index += vec.Count;
-                vec = new();
-            }
-        }
-        reader.ReadArrayEnd();
-        if (first_segment != null)
-        {
-            var new_segment = new SequenceSegment<I>();
-            new_segment.SetMemory(vec.AsMemory);
-            new_segment.SetRunningIndex(index);
-            last_segment!.SetNext(new_segment);
-            return new(first_segment, 0, new_segment, vec.Count - 1);
-        }
-        return new(vec.AsMemory);
-    }
-
-    private sealed class SequenceSegment<I> : ReadOnlySequenceSegment<I>
-    {
-        public void SetMemory(ReadOnlyMemory<I> m) => Memory = m;
-        public void SetNext(ReadOnlySequenceSegment<I>? n) => Next = n;
-        public void SetRunningIndex(long i) => RunningIndex = i;
-    }
-
-    #endregion
 
     #endregion
 
@@ -691,14 +675,31 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         var size = colion.Size;
         var colctor = new TupleSeraColctor<B>(colion.Builder(), impl);
         var first = true;
-        for (var i = 0; i < size; i++)
+        var i = 0;
+        if (size.HasValue)
         {
-            if (first) first = false;
-            else reader.ReadComma();
-            var err = colion.CollectItem<bool, TupleSeraColctor<B>>(ref colctor, i);
-            if (err) throw new DeserializeException($"Unable to read item {i} of tuple {typeof(T)}");
+            for (; i < size; i++)
+            {
+                if (first) first = false;
+                else reader.ReadComma();
+                var err = colion.CollectItem<bool, TupleSeraColctor<B>>(ref colctor, i);
+                if (err) throw new DeserializeException($"Unable to read item {i} of tuple {typeof(T)}");
+            }
+        }
+        else
+        {
+            for (; reader.Has; reader.MoveNext(), i++)
+            {
+                var token = reader.CurrentToken;
+                if (token.Kind is JsonTokenKind.ArrayEnd) break;
+                if (first) first = false;
+                else reader.ReadComma();
+                var err = colion.CollectItem<bool, TupleSeraColctor<B>>(ref colctor, i);
+                if (err) throw new DeserializeException($"Unable to read item {i} of tuple {typeof(T)}");
+            }
         }
         reader.ReadArrayEnd();
+        if (!colion.FinishCollect(i)) throw new DeserializeException("Failed to collect tuple");
         return mapper.Map(colctor.builder);
     }
 
@@ -725,13 +726,14 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
     #region Seq
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public T CSeq<C, B, M, I>(C colion, M mapper, Type<B> b, Type<I> i)
+    public T CSeq<C, B, M, I>(C colion, M mapper, Type<B> b, Type<I> _i)
         where C : ISeqSeraColion<B, I> where M : ISeraMapper<B, T>
     {
         reader.ReadArrayStart();
         var colctor = new SeqSeraColctor<B, I>(colion.Builder(null), impl);
         var first = true;
-        for (; reader.Has; reader.MoveNext())
+        var i = 0;
+        for (; reader.Has; reader.MoveNext(), i++)
         {
             var token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ArrayEnd) break;
@@ -740,6 +742,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             colion.CollectItem<Unit, SeqSeraColctor<B, I>>(ref colctor);
         }
         reader.ReadArrayEnd();
+        if (!colion.FinishCollect(i)) throw new DeserializeException("Failed to collect seq");
         return mapper.Map(colctor.builder);
     }
 
@@ -769,7 +772,6 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             ? CObjectMap<C, B, M, IK, IV>(colion, mapper)
             : CArrayMap<C, B, M, IK, IV>(colion, mapper);
 
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private T CArrayMap<C, B, M, IK, IV>(C colion, M mapper)
         where C : IMapSeraColion<B, IK, IV> where M : ISeraMapper<B, T>
@@ -777,7 +779,8 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         reader.ReadArrayStart();
         var colctor = new ArrayMapSeraColctor<B, IK, IV>(colion.Builder(null), impl);
         var first = true;
-        for (; reader.Has; reader.MoveNext())
+        var i = 0;
+        for (; reader.Has; reader.MoveNext(), i++)
         {
             var token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ArrayEnd) break;
@@ -786,6 +789,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             colion.CollectItem<Unit, ArrayMapSeraColctor<B, IK, IV>>(ref colctor);
         }
         reader.ReadArrayEnd();
+        if (!colion.FinishCollect(i)) throw new DeserializeException("Failed to collect map");
         return mapper.Map(colctor.builder);
     }
 
@@ -798,7 +802,8 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         reader.ReadObjectStart();
         var colctor = new ObjectMapSeraColctor<B, IK, IV>(colion.Builder(null), impl);
         var first = true;
-        for (; reader.Has; reader.MoveNext())
+        var i = 0;
+        for (; reader.Has; reader.MoveNext(), i++)
         {
             token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ObjectEnd) break;
@@ -807,6 +812,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             colion.CollectItem<Unit, ObjectMapSeraColctor<B, IK, IV>>(ref colctor);
         }
         reader.ReadObjectEnd();
+        if (!colion.FinishCollect(i)) throw new DeserializeException("Failed to collect map");
         return mapper.Map(colctor.builder);
     }
 
@@ -864,12 +870,13 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
     {
         var c = new StructSeraColctor<B>(colion.Builder(null), impl);
         var first = true;
-        for (;;)
+        var i = 0;
+        for (; reader.Has; reader.MoveNext(), i++)
         {
-            if (first) first = false;
-            else reader.ReadComma();
             var token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ObjectEnd) break;
+            if (first) first = false;
+            else reader.ReadComma();
             if (token.Kind is not JsonTokenKind.String) reader.ThrowExpected(JsonTokenKind.String);
             var field_name = token.AsString();
             reader.ReadColon();
@@ -895,6 +902,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             }
         }
         reader.ReadObjectEnd();
+        if (!colion.FinishCollect(i)) throw new DeserializeException("Failed to collect tuple");
         return mapper.Map(c.builder);
     }
 
@@ -903,17 +911,18 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
     {
         var c = new StructSeraColctor<B>(colion.Builder(null), impl);
         var first = true;
-        for (var index = 0;; index++)
+        var i = 0;
+        for (; reader.Has; reader.MoveNext(), i++)
         {
-            if (first) first = false;
-            else reader.ReadComma();
             var token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ObjectEnd) break;
+            if (first) first = false;
+            else reader.ReadComma();
             if (token.Kind is not JsonTokenKind.String) reader.ThrowExpected(JsonTokenKind.String);
             var field_name = token.AsString();
             reader.ReadColon();
             var key = long.TryParse(field_name, out var key_) ? (long?)key_ : null;
-            var r = colion.CollectField<StructRes, StructSeraColctor<B>>(ref c, index, field_name, key);
+            var r = colion.CollectField<StructRes, StructSeraColctor<B>>(ref c, i, field_name, key);
             switch (r)
             {
                 case StructRes.None:
@@ -927,6 +936,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             }
         }
         reader.ReadObjectEnd();
+        if (!colion.FinishCollect(i)) throw new DeserializeException("Failed to collect tuple");
         return mapper.Map(c.builder);
     }
 

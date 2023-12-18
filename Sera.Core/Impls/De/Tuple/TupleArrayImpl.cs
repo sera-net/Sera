@@ -12,7 +12,7 @@ public readonly struct TupleArrayImpl<T, D>(D dep, int size)
     public R Collect<R, C>(ref C colctor, InType<T[]>? t = null) where C : ISeraColctor<T[], R>
         => colctor.CTuple(this, new IdentityMapper<T[]>(), new Type<T[]>());
 
-    public int Size
+    public int? Size
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => size;

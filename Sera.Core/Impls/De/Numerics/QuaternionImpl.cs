@@ -12,7 +12,7 @@ public readonly struct QuaternionImpl(SeraFormats? formats = null)
     public R Collect<R, C>(ref C colctor, InType<Quaternion>? t = null) where C : ISeraColctor<Quaternion, R>
         => colctor.CTuple(this, new IdentityMapper<Quaternion>(), new Type<Quaternion>());
 
-    public int Size
+    public int? Size
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => 4;

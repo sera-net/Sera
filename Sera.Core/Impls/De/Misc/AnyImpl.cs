@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
+using BetterCollections;
 using Sera.Utils;
 
 namespace Sera.Core.Impls.De;
@@ -52,10 +53,10 @@ public readonly struct AnyImpl(SeraFormats? formats = null) : ISeraColion<Any>, 
             new EntryMapper(), new Type<KeyValuePair<Any, Any>>());
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R SelectTuple<R, C>(ref C colctor, int size, InType<Any>? t = null)
+    public R SelectTuple<R, C>(ref C colctor, int? size, InType<Any>? t = null)
         where C : ISelectSeraColctor<Any, R>
-        => colctor.CSome(new TupleArrayImpl<Any, AnyImpl>(this, size),
-            new TupleMapper(), new Type<Any[]>());
+        => colctor.CSome(new TupleListImpl<Any, AnyImpl>(this, size),
+            new TupleMapper(), new Type<List<Any>>());
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R SelectSeq<R, C>(ref C colctor, int? size, InType<Any>? t = null)
@@ -115,10 +116,10 @@ public readonly struct AnyImpl(SeraFormats? formats = null) : ISeraColion<Any>, 
             Any.MakeEntry(new AnyEntry(value.Key, value.Value));
     }
 
-    public readonly struct TupleMapper : ISeraMapper<Any[], Any>
+    public readonly struct TupleMapper : ISeraMapper<List<Any>, Any>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Any Map(Any[] value, InType<Any>? u = null) => Any.MakeTuple(value);
+        public Any Map(List<Any> value, InType<Any>? u = null) => Any.MakeTuple(value);
     }
 
     public readonly struct SeqMapper : ISeraMapper<List<Any>, Any>

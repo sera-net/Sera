@@ -142,7 +142,17 @@ public interface ISeraColctor<in T, [AssocType] out R> : ISeraAbility<ISeraColio
 
     #region Bytes
 
-    // todo
+    public R CBytes<M>(M mapper, Type<byte[]> t)
+        where M : ISeraMapper<byte[], T>;
+
+    public R CBytes<M>(M mapper, Type<Memory<byte>> t)
+        where M : ISeraMapper<Memory<byte>, T>;
+
+    public R CBytes<M>(M mapper, Type<ReadOnlyMemory<byte>> t)
+        where M : ISeraMapper<ReadOnlyMemory<byte>, T>;
+
+    public R CBytesSpan<M>(M mapper)
+        where M : ISeraSpanMapper<byte, T>;
 
     #endregion
 
@@ -156,10 +166,7 @@ public interface ISeraColctor<in T, [AssocType] out R> : ISeraAbility<ISeraColio
 
     public R CArray<C, M, I>(C colion, M mapper, Type<ReadOnlyMemory<I>> t, Type<I> i)
         where C : ISeraColion<I> where M : ISeraMapper<ReadOnlyMemory<I>, T>;
-
-    public R CArray<C, M, I>(C colion, M mapper, Type<ReadOnlySequence<I>> t, Type<I> i)
-        where C : ISeraColion<I> where M : ISeraMapper<ReadOnlySequence<I>, T>;
-
+    
     public R CArraySpan<C, M, I>(C colion, M mapper, Type<I> i)
         where C : ISeraColion<I> where M : ISeraSpanMapper<I, T>;
 

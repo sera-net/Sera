@@ -40,16 +40,24 @@ public interface IEntrySeraColion<B>
 
     public R CollectValue<R, C>(ref C colctor, Type<B> b = default)
         where C : IEntrySeraColctor<B, R>;
+
+    /// <summary>You can check whether the collection is successful within this function. If it is unsuccessful, you can choose to return false or throw an exception containing detailed information</summary>
+    /// <returns>Is success</returns>
+    public bool FinishCollect() => true;
 }
 
 public interface ITupleSeraColion<B>
 {
-    public int Size { get; }
+    public int? Size { get; }
 
     public B Builder(Type<B> b = default);
 
     public R CollectItem<R, C>(ref C colctor, int index, Type<B> b = default)
         where C : ITupleSeraColctor<B, R>;
+
+    /// <summary>You can check whether the collection is successful within this function. If it is unsuccessful, you can choose to return false or throw an exception containing detailed information</summary>
+    /// <returns>Is success</returns>
+    public bool FinishCollect(int size) => true;
 }
 
 public interface ISeqSeraColion<B, I>
@@ -58,6 +66,9 @@ public interface ISeqSeraColion<B, I>
 
     public R CollectItem<R, C>(ref C colctor, Type<B> b = default)
         where C : ISeqSeraColctor<B, I, R>;
+
+    /// <inheritdoc cref="ITupleSeraColion{B}.FinishCollect(int)"/>
+    public bool FinishCollect(int size) => true;
 }
 
 public interface IMapSeraColion<B, IK, IV>
@@ -66,6 +77,9 @@ public interface IMapSeraColion<B, IK, IV>
 
     public R CollectItem<R, C>(ref C colctor, Type<B> b = default)
         where C : IMapSeraColctor<B, IK, IV, R>;
+    
+    /// <inheritdoc cref="ITupleSeraColion{B}.FinishCollect(int)"/>
+    public bool FinishCollect(int size) => true;
 }
 
 public interface IStructSeraColion<B>
@@ -76,6 +90,9 @@ public interface IStructSeraColion<B>
 
     public R CollectField<R, C>(ref C colctor, int field, string? name, long? key, Type<B> b = default)
         where C : IStructSeraColctor<B, R>;
+    
+    /// <inheritdoc cref="ITupleSeraColion{B}.FinishCollect(int)"/>
+    public bool FinishCollect(int size) => true;
 }
 
 public interface IUnionSeraColion<out T>
@@ -120,7 +137,7 @@ public interface ISelectSeraColion<out T>
         where C : ISelectSeraColctor<T, R>
         => colctor.CNone();
 
-    public R SelectTuple<R, C>(ref C colctor, int size, InType<T>? t = null)
+    public R SelectTuple<R, C>(ref C colctor, int? size, InType<T>? t = null)
         where C : ISelectSeraColctor<T, R>
         => colctor.CNone();
 

@@ -21,7 +21,7 @@ public readonly struct TupleImpl<T1, D1>(D1 d1) :
     public R Collect<R, C>(ref C colctor, InType<Tuple<T1>>? t) where C : ISeraColctor<Tuple<T1>, R>
         => colctor.CTuple(this, new ValueTupleToTupleMapper<T1>(), new Type<ValueTuple<T1>>());
 
-    public int Size
+    public int? Size
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => 1;
@@ -75,7 +75,7 @@ public readonly struct TupleImpl<T1, T2, D1, D2>(D1 d1, D2 d2) :
     public R Collect<R, C>(ref C colctor, InType<Tuple<T1, T2>>? t) where C : ISeraColctor<Tuple<T1, T2>, R>
         => colctor.CTuple(this, new ValueTupleToTupleMapper<T1, T2>(), new Type<ValueTuple<T1, T2>>());
 
-    public int Size
+    public int? Size
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => 2;
