@@ -88,7 +88,7 @@ public readonly partial struct CompoundString
     public CompoundString Slice(int start, int length) => Tag switch
     {
         Tags.Memory => MakeMemory(Memory.Slice(start, length)),
-        Tags.String => MakeMemory(String.AsMemory(start)),
+        Tags.String => MakeMemory(String.AsMemory(start, length)),
         Tags.Span => MakeSpan(Span.Slice(start, length)),
         _ => throw new ArgumentOutOfRangeException()
     };

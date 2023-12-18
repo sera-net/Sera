@@ -168,6 +168,7 @@ public sealed class SeraFormatsAttribute : Attribute
     /// </summary>
     public NumberStyles NumberStyles { get; set; } = NumberStyles.None;
     public string? CustomNumberTextFormat { get; set; }
+    public bool ComplexAsString { get; set; } = false;
 
     public DateTimeFormatFlags DateTimeFormat { get; set; } = DateTimeFormatFlags.None;
 

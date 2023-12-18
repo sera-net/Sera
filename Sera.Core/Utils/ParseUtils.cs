@@ -1,11 +1,32 @@
 ﻿using System;
 using System.Globalization;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace Sera.Utils;
 
 public static class ParseUtils
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool TryParseComplex(this ReadOnlySpan<char> str, NumberStyles styles, out Complex complex)
+    {
+        if (str.Length < 5) goto failed;
+        if (str[0] != '<') goto failed;
+        if (str[^1] != '>') goto failed;
+        var mid = str.IndexOf(';');
+        if (mid < 0) goto failed;
+        var real_str = str[1..mid];
+        var imaginary_str = str[(mid + 1)..^1];
+        styles |= NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite;
+        if (!double.TryParse(real_str, styles, null, out var real)) goto failed;
+        if (!double.TryParse(imaginary_str, styles, null, out var imaginary)) goto failed;
+        complex = new(real, imaginary);
+        return true;
+        failed:
+        complex = default;
+        return false;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool TryParseIndex(this ReadOnlySpan<char> str, out Index index)
     {

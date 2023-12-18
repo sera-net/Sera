@@ -22,20 +22,30 @@ namespace Sera.Core.Formats
     {
         Any,
         /// <summary>
-        /// Format numbers in decimal, Use "N"
+        /// Format numbers in generic, Use "G"
+        /// <code>123.456</code>
+        /// </summary>
+        Generic,
+        /// <summary>
+        /// Format numbers in decimal, Use "D" for integers and "N" for floating points
         /// <code>1234</code>
         /// </summary>
         Decimal,
         /// <summary>
-        /// Format numbers in hexadecimal, Use "X"
+        /// Format numbers in hexadecimal, Use "X", Integers only
         /// <code>FF</code>
         /// </summary>
         Hex,
         /// <summary>
-        /// Format numbers in binary, Use "B"
+        /// Format numbers in binary, Use "B", Integers only
         /// <code>101010</code>
         /// </summary>
         Binary,
+        /// <summary>
+        /// Format numbers in exponent, Use "E", Floating points only
+        /// <code>1.052033E+003</code> 
+        /// </summary>
+        Exponent,
     }
 
     [Flags]
@@ -124,6 +134,8 @@ namespace Sera.Core
         public NumberTextFormat NumberTextFormat { get; set; } = NumberTextFormat.Any;
         public NumberStyles NumberStyles { get; set; } = NumberStyles.None;
         public string? CustomNumberTextFormat { get; set; }
+        
+        public bool ComplexAsString { get; set; }
 
         public DateTimeFormatFlags DateTimeFormat { get; set; } = DateTimeFormatFlags.None;
 
@@ -140,29 +152,14 @@ namespace Sera.Core
                 NumberTextFormat = attr.NumberTextFormat,
                 NumberStyles = attr.NumberStyles,
                 CustomNumberTextFormat = attr.CustomNumberTextFormat,
+                ComplexAsString = attr.ComplexAsString,
                 DateTimeFormat = attr.DateTimeFormat,
                 GuidTextFormat = attr.GuidTextFormat,
                 GuidBinaryFormat = attr.GuidBinaryFormat,
                 CustomGuidTextFormat = attr.CustomGuidTextFormat,
             };
 
-        public NumberStyles GetNumberStyles()
-        {
-            var style = NumberStyles;
-            switch (NumberTextFormat)
-            {
-                case NumberTextFormat.Decimal:
-                    style |= NumberStyles.Number;
-                    break;
-                case NumberTextFormat.Hex:
-                    style |= NumberStyles.HexNumber;
-                    break;
-                case NumberTextFormat.Binary:
-                    style |= NumberStyles.BinaryNumber;
-                    break;
-            }
-            return style;
-        }
+       
     }
 
 }

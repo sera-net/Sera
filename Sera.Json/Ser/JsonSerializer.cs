@@ -8,6 +8,8 @@ using Sera.Core;
 using Sera.Core.Formats;
 using Sera.Core.Impls.Ser;
 using Sera.Core.Providers.Ser;
+using Sera.Json.Utils;
+using Sera.Utils;
 
 namespace Sera.Json.Ser;
 
@@ -50,17 +52,10 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
 
     #region Number
 
-    private Unit WriteNumber<T>(int size, T v, SeraFormats? formats, bool use_string) where T : ISpanFormattable
+    private Unit WriteNumber<T>(int size, T v, SeraFormats? formats, bool integer, bool use_string)
+        where T : ISpanFormattable
     {
-        var format = formats?.CustomNumberTextFormat ?? (formats?.NumberTextFormat is { } ntf
-            ? (ntf switch
-            {
-                NumberTextFormat.Decimal or NumberTextFormat.Any => "D",
-                NumberTextFormat.Hex => "X",
-                NumberTextFormat.Binary => "B",
-                _ => throw new ArgumentOutOfRangeException()
-            })
-            : null);
+        var format = formats.GetNumberFormat(integer);
         if (format == null)
         {
             Span<char> chars = stackalloc char[size];
@@ -86,7 +81,7 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
     {
         if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateAsNumber) ?? false)
         {
-            return WriteNumber(32, v.Ticks, formats, formatter.LargeNumberUseString);
+            return WriteNumber(32, v.Ticks, formats, true, formatter.LargeNumberUseString);
         }
         Span<char> chars = stackalloc char[32];
         if (v.TryFormat(chars, out var len, "G"))
@@ -115,7 +110,7 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
         }
         if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateAsNumber) ?? false)
         {
-            return WriteNumber(32, v.DayNumber, formats, false);
+            return WriteNumber(32, v.DayNumber, formats, true, false);
         }
         Span<char> chars = stackalloc char[16];
         if (v.TryFormat(chars, out var len, "O"))
@@ -133,7 +128,7 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
     {
         if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateAsNumber) ?? false)
         {
-            return WriteNumber(32, v.Ticks, formats, formatter.LargeNumberUseString);
+            return WriteNumber(32, v.Ticks, formats, true, formatter.LargeNumberUseString);
         }
         Span<char> chars = stackalloc char[32];
         if (v.TryFormat(chars, out var len, "O"))
@@ -157,7 +152,7 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
         }
         if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateAsNumber) ?? false)
         {
-            return WriteNumber(32, v.Ticks, formats, formatter.LargeNumberUseString);
+            return WriteNumber(32, v.Ticks, formats, true, formatter.LargeNumberUseString);
         }
         Span<char> chars = stackalloc char[64];
         if (v.TryFormat(chars, out var len, "O"))
@@ -175,7 +170,7 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
     {
         if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateAsNumber) ?? false)
         {
-            return WriteNumber(32, v.Ticks, formats, formatter.LargeNumberUseString);
+            return WriteNumber(32, v.Ticks, formats, true, formatter.LargeNumberUseString);
         }
         if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateTimeOffsetUseTimeZone) ?? false)
         {
@@ -199,17 +194,7 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
 
     private Unit WriteGuid(Guid v, SeraFormats? formats)
     {
-        var format = formats?.CustomGuidTextFormat ?? (formats?.GuidTextFormat is { } gtf
-            ? gtf switch
-            {
-                GuidTextFormat.GuidTextShort or GuidTextFormat.Any => "N",
-                GuidTextFormat.GuidTextGuid => "D",
-                GuidTextFormat.GuidTextBraces => "B",
-                GuidTextFormat.GuidTextParentheses => "P",
-                GuidTextFormat.GuidTextHex => "X",
-                _ => throw new ArgumentOutOfRangeException()
-            }
-            : null) ?? "D";
+        var format = formats.GetGuidFormat();
         if (format != "X")
         {
             Span<char> chars = stackalloc char[64];
@@ -252,55 +237,55 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
     }
 
     public override Unit VPrimitive(sbyte value, SeraFormats? formats = null)
-        => WriteNumber(4, value, formats, false);
+        => WriteNumber(4, value, formats, true, false);
 
     public override Unit VPrimitive(byte value, SeraFormats? formats = null)
-        => WriteNumber(4, value, formats, false);
+        => WriteNumber(4, value, formats, true, false);
 
     public override Unit VPrimitive(short value, SeraFormats? formats = null)
-        => WriteNumber(8, value, formats, false);
+        => WriteNumber(8, value, formats, true, false);
 
     public override Unit VPrimitive(ushort value, SeraFormats? formats = null)
-        => WriteNumber(8, value, formats, false);
+        => WriteNumber(8, value, formats, true, false);
 
     public override Unit VPrimitive(int value, SeraFormats? formats = null)
-        => WriteNumber(16, value, formats, false);
+        => WriteNumber(16, value, formats, true, false);
 
     public override Unit VPrimitive(uint value, SeraFormats? formats = null)
-        => WriteNumber(16, value, formats, false);
+        => WriteNumber(16, value, formats, true, false);
 
     public override Unit VPrimitive(long value, SeraFormats? formats = null)
-        => WriteNumber(32, value, formats, formatter.LargeNumberUseString);
+        => WriteNumber(32, value, formats, true, formatter.LargeNumberUseString);
 
     public override Unit VPrimitive(ulong value, SeraFormats? formats = null)
-        => WriteNumber(32, value, formats, formatter.LargeNumberUseString);
+        => WriteNumber(32, value, formats, true, formatter.LargeNumberUseString);
 
     public override Unit VPrimitive(Int128 value, SeraFormats? formats = null)
-        => WriteNumber(64, value, formats, formatter.LargeNumberUseString);
+        => WriteNumber(64, value, formats, true, formatter.LargeNumberUseString);
 
     public override Unit VPrimitive(UInt128 value, SeraFormats? formats = null)
-        => WriteNumber(64, value, formats, formatter.LargeNumberUseString);
+        => WriteNumber(64, value, formats, true, formatter.LargeNumberUseString);
 
     public override Unit VPrimitive(IntPtr value, SeraFormats? formats = null)
-        => WriteNumber(32, value, formats, formatter.LargeNumberUseString);
+        => WriteNumber(32, value, formats, true, formatter.LargeNumberUseString);
 
     public override Unit VPrimitive(UIntPtr value, SeraFormats? formats = null)
-        => WriteNumber(32, value, formats, formatter.LargeNumberUseString);
+        => WriteNumber(32, value, formats, true, formatter.LargeNumberUseString);
 
     public override Unit VPrimitive(Half value, SeraFormats? formats = null)
-        => WriteNumber(32, value, formats, false);
+        => WriteNumber(32, value, formats, false, false);
 
     public override Unit VPrimitive(float value, SeraFormats? formats = null)
-        => WriteNumber(32, value, formats, false);
+        => WriteNumber(32, value, formats, false, false);
 
     public override Unit VPrimitive(double value, SeraFormats? formats = null)
-        => WriteNumber(32, value, formats, false);
+        => WriteNumber(32, value, formats, false, false);
 
     public override Unit VPrimitive(decimal value, SeraFormats? formats = null)
-        => WriteNumber(32, value, formats, false);
+        => WriteNumber(32, value, formats, false, false);
 
     public override Unit VPrimitive(NFloat value, SeraFormats? formats = null)
-        => WriteNumber(32, value, formats, false);
+        => WriteNumber(32, value, formats, false, false);
 
     public override Unit VPrimitive(BigInteger value, SeraFormats? formats = null)
     {
@@ -310,7 +295,19 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
 
     public override Unit VPrimitive(Complex value, SeraFormats? formats = null)
     {
-        writer.WriteString(value.ToString(), false);
+        if (formats?.ComplexAsString ?? false)
+        {
+            var style = formats.GetNumberFormat(false);
+            writer.WriteString(value.ToString(style), false);
+        }
+        else
+        {
+            writer.Write("[");
+            VPrimitive(value.Real, formats);
+            writer.Write(",");
+            VPrimitive(value.Imaginary, formats);
+            writer.Write("]");
+        }
         return default;
     }
 

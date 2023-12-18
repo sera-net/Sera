@@ -149,11 +149,31 @@ public class TestStaticSerializer
         var str = reader.ReadToEnd();
         Console.WriteLine(str);
 
-        Assert.That(str, Is.EqualTo("\"<1; 2>\""));
+        Assert.That(str, Is.EqualTo("[1,2]"));
     }
 
     [Test]
     public void TestPrimitiveNumber6()
+    {
+        using var stream = new MemoryStream();
+
+        var val = new Complex(1, 2);
+
+        SeraJson.Serializer
+            .Serialize(val)
+            .Use(new PrimitiveImpl(SeraFormats.Default with { ComplexAsString = true }))
+            .Static.To.Stream(stream);
+
+        stream.Position = 0;
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        var str = reader.ReadToEnd();
+        Console.WriteLine(str);
+
+        Assert.That(str, Is.EqualTo("\"<1; 2>\""));
+    }
+
+    [Test]
+    public void TestPrimitiveNumber7()
     {
         using var stream = new MemoryStream();
 

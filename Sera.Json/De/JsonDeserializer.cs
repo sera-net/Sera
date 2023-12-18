@@ -10,6 +10,7 @@ using System.Text.Json;
 using BetterCollections;
 using BetterCollections.Memories;
 using Sera.Core;
+using Sera.Core.Formats;
 using Sera.Core.Impls.De;
 using Sera.Json.Utils;
 using Sera.Utils;
@@ -276,7 +277,24 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T CPrimitive<M>(M mapper, Type<Complex> t, SeraFormats? formats = null) where M : ISeraMapper<Complex, T>
-        => CPrimitiveNumber<Complex, M>(mapper, formats);
+    {
+        var token = reader.CurrentToken;
+        Unsafe.SkipInit(out Complex r);
+        if (token.Kind is JsonTokenKind.String)
+        {
+            if (token.AsSpan().TryParseComplex(formats.GetNumberStyles(), out r)) goto ok;
+            throw new JsonParseException($"Illegal Complex format at {token.Pos}", token.Pos);
+        }
+        reader.ReadArrayStart();
+        var c = new JsonDeserializer<double>(impl);
+        var real = c.CPrimitiveNumber<double, IdentityMapper<double>>(new(), formats);
+        reader.ReadComma();
+        var imaginary = c.CPrimitiveNumber<double, IdentityMapper<double>>(new(), formats);
+        reader.ReadArrayEnd();
+        r = new Complex(real, imaginary);
+        ok:
+        return mapper.Map(r);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T CPrimitive<M>(M mapper, Type<TimeSpan> t, SeraFormats? formats = null) where M : ISeraMapper<TimeSpan, T>
@@ -292,14 +310,29 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T CPrimitive<M>(M mapper, Type<DateTime> t, SeraFormats? formats = null) where M : ISeraMapper<DateTime, T>
-        => CPrimitiveDateTime<DateTime, M, DateOrTimeFromNumberWithOffsetMapper>(
-            mapper, nameof(DateTime), new(Options.TimeZone.BaseUtcOffset));
+    {
+        var token = reader.CurrentToken;
+        var r = token.ParseDateOrTime<DateTime, DateOrTimeFromNumberWithOffsetMapper>(nameof(DateTime),
+            new(Options.TimeZone.BaseUtcOffset));
+        r = TimeZoneInfo.ConvertTime(r, Options.TimeZone);
+        reader.MoveNext();
+        return mapper.Map(r);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T CPrimitive<M>(M mapper, Type<DateTimeOffset> t, SeraFormats? formats = null)
         where M : ISeraMapper<DateTimeOffset, T>
-        => CPrimitiveDateTime<DateTimeOffset, M, DateOrTimeFromNumberWithOffsetMapper>(
-            mapper, nameof(DateTimeOffset), new(Options.TimeZone.BaseUtcOffset));
+    {
+        var token = reader.CurrentToken;
+        var r = token.ParseDateOrTime<DateTimeOffset, DateOrTimeFromNumberWithOffsetMapper>(nameof(DateTimeOffset),
+            new(Options.TimeZone.BaseUtcOffset));
+        if (formats?.DateTimeFormat.HasFlag(DateTimeFormatFlags.DateTimeOffsetUseTimeZone) ?? false)
+        {
+            r = TimeZoneInfo.ConvertTime(r, Options.TimeZone);
+        }
+        reader.MoveNext();
+        return mapper.Map(r);
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T CPrimitive<M>(M mapper, Type<Guid> t, SeraFormats? formats = null) where M : ISeraMapper<Guid, T>
@@ -308,7 +341,8 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         Guid v;
         try
         {
-            v = Guid.Parse(token.AsSpan());
+            var span = token.AsSpan();
+            v = Guid.Parse(span);
         }
         catch (Exception e)
         {
@@ -330,7 +364,11 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T CPrimitive<M>(M mapper, Type<Index> t, SeraFormats? formats = null) where M : ISeraMapper<Index, T>
     {
-        var token = reader.ReadStringToken();
+        var token = reader.CurrentToken;
+        if (token.Kind is not (JsonTokenKind.Number or JsonTokenKind.String))
+        {
+            reader.ThrowExpected(JsonTokenKind.String);
+        }
         var span = token.AsSpan();
         if (!span.TryParseIndex(out var index))
             throw new JsonParseException($"Illegal Index format at {token.Pos}", token.Pos);
@@ -402,7 +440,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         Unsafe.SkipInit(out N r);
         if (token.Kind is JsonTokenKind.Number or JsonTokenKind.String)
         {
-            var style = formats?.GetNumberStyles() ?? NumberStyles.None;
+            var style = formats.GetNumberStyles();
             r = token.ParseNumber<N>(style);
         }
         else reader.ThrowExpected(JsonTokenKind.Number);
@@ -440,19 +478,19 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         => mapper.Map(CStringArray());
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public T CString<M>(M mapper, Type<ReadOnlyMemory<char>> t) where M : ISeraMapper<ReadOnlyMemory<char>, T>
-    {
-        var token = reader.ReadStringToken();
-        return mapper.Map(token.AsMemory());
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private char[] CStringArray()
     {
         var token = reader.ReadStringToken();
         return token.AsSpan().ToArray();
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CString<M>(M mapper, Type<ReadOnlyMemory<char>> t) where M : ISeraMapper<ReadOnlyMemory<char>, T>
+    {
+        var token = reader.ReadStringToken();
+        return mapper.Map(token.AsMemory());
+    }
+    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T CStringSpan<M>(M mapper) where M : ISeraSpanMapper<char, T>
     {
