@@ -378,7 +378,7 @@ public class TestStaticDeSerializer
 
         Assert.That(val, Is.EqualTo(123..456));
     }
-    
+
     [Test]
     public void TestPrimitiveRange2()
     {
@@ -393,7 +393,7 @@ public class TestStaticDeSerializer
 
         Assert.That(val, Is.EqualTo(^123..^456));
     }
-    
+
     [Test]
     public void TestPrimitiveChar1()
     {
@@ -408,7 +408,7 @@ public class TestStaticDeSerializer
 
         Assert.That(val, Is.EqualTo('a'));
     }
-    
+
     [Test]
     public void TestPrimitiveChar2()
     {
@@ -423,7 +423,7 @@ public class TestStaticDeSerializer
 
         Assert.That(val, Is.EqualTo('⩟'));
     }
-    
+
     [Test]
     public void TestPrimitiveChar3()
     {
@@ -438,7 +438,7 @@ public class TestStaticDeSerializer
 
         Assert.That(val, Is.EqualTo('⩟'));
     }
-    
+
     [Test]
     public void TestPrimitiveChar4()
     {
@@ -453,7 +453,7 @@ public class TestStaticDeSerializer
 
         Assert.That(val, Is.EqualTo('\n'));
     }
-    
+
     [Test]
     public void TestPrimitiveRune1()
     {
@@ -468,7 +468,7 @@ public class TestStaticDeSerializer
 
         Assert.That(val, Is.EqualTo(new Rune('a')));
     }
-    
+
     [Test]
     public void TestPrimitiveRune2()
     {
@@ -483,7 +483,7 @@ public class TestStaticDeSerializer
 
         Assert.That(val, Is.EqualTo(new Rune(0x1F602)));
     }
-    
+
     [Test]
     public void TestPrimitiveRune3()
     {
@@ -498,9 +498,9 @@ public class TestStaticDeSerializer
 
         Assert.That(val, Is.EqualTo(new Rune(0x1F602)));
     }
-    
+
     [Test]
-    public void TestPrimitiveString1()
+    public void TestString1()
     {
         var json = "\"asd\"";
 
@@ -513,9 +513,9 @@ public class TestStaticDeSerializer
 
         Assert.That(val, Is.EqualTo("asd"));
     }
-    
+
     [Test]
-    public void TestPrimitiveString2()
+    public void TestString2()
     {
         var json = "\"asd镍😂\\n\"";
 
@@ -528,9 +528,9 @@ public class TestStaticDeSerializer
 
         Assert.That(val, Is.EqualTo("asd镍😂\n"));
     }
-    
+
     [Test]
-    public void TestPrimitiveString3()
+    public void TestString3()
     {
         var json = "\"asd\\u954D\\uD83D\\uDE02\\n\"";
 
@@ -542,5 +542,143 @@ public class TestStaticDeSerializer
         Console.WriteLine(val);
 
         Assert.That(val, Is.EqualTo("asd镍😂\n"));
+    }
+
+    [Test]
+    public void TestBytes1()
+    {
+        var json = "\"AQIDBAU=\"";
+
+        var val = SeraJson.Deserializer
+            .Deserialize<byte[]>()
+            .Use(new BytesImpl())
+            .Static.From.String(json);
+
+        var bytes = string.Join(",", val);
+        Console.WriteLine(bytes);
+
+        Assert.That(bytes, Is.EqualTo("1,2,3,4,5"));
+    }
+
+    [Test]
+    public void TestBytes2()
+    {
+        var json = "[1,2,3,4,5]";
+
+        var val = SeraJson.Deserializer
+            .Deserialize<byte[]>()
+            .Use(new BytesImpl())
+            .Static.From.String(json);
+
+        var bytes = string.Join(",", val);
+        Console.WriteLine(bytes);
+
+        Assert.That(bytes, Is.EqualTo("1,2,3,4,5"));
+    }
+
+    [Test]
+    public void TestArray1()
+    {
+        var json = "[1,2,3]";
+
+        var val = SeraJson.Deserializer
+            .Deserialize<int[]>()
+            .Use(new ArrayImpl<int, PrimitiveImpl>(new()))
+            .Static.From.String(json);
+
+        var str = string.Join(",", val);
+        Console.WriteLine(str);
+
+        Assert.That(str, Is.EqualTo("1,2,3"));
+    }
+
+    [Test]
+    public void TestUnit1()
+    {
+        var json = "null";
+
+        var val = SeraJson.Deserializer
+            .Deserialize<Unit>()
+            .Use(new UnitImpl<Unit>())
+            .Static.From.String(json);
+
+        Console.WriteLine(val);
+
+        Assert.That(val, Is.EqualTo(new Unit()));
+    }
+
+    [Test]
+    public void TestOption1()
+    {
+        var json = "null";
+
+        var val = SeraJson.Deserializer
+            .Deserialize<int?>()
+            .Use(new NullableImpl<int, PrimitiveImpl>(new()))
+            .Static.From.String(json);
+
+        Console.WriteLine(val);
+
+        Assert.That(val, Is.EqualTo((int?)null));
+    }
+
+    [Test]
+    public void TestOption2()
+    {
+        var json = "123";
+
+        var val = SeraJson.Deserializer
+            .Deserialize<int?>()
+            .Use(new NullableImpl<int, PrimitiveImpl>(new()))
+            .Static.From.String(json);
+
+        Console.WriteLine(val);
+
+        Assert.That(val, Is.EqualTo((int?)123));
+    }
+
+    [Test]
+    public void TestEntry1()
+    {
+        var json = "[1,2]";
+
+        var val = SeraJson.Deserializer
+            .Deserialize<KeyValuePair<int, int>>()
+            .Use(new EntryImpl<int, int, PrimitiveImpl, PrimitiveImpl>(new(), new()))
+            .Static.From.String(json);
+
+        Console.WriteLine(val);
+
+        Assert.That(val, Is.EqualTo(new KeyValuePair<int, int>(1, 2)));
+    }
+
+    [Test]
+    public void TestTuple1()
+    {
+        var json = "[1,2]";
+
+        var val = SeraJson.Deserializer
+            .Deserialize<(int, int)>()
+            .Use(new TupleImpl<int, int, PrimitiveImpl, PrimitiveImpl>(new(), new()))
+            .Static.From.String(json);
+
+        Console.WriteLine(val);
+
+        Assert.That(val, Is.EqualTo((1, 2)));
+    }
+
+    [Test]
+    public void TestTuple2()
+    {
+        var json = "[1,2]";
+
+        var val = SeraJson.Deserializer
+            .Deserialize<List<int>>()
+            .Use(new TupleListImpl<int, PrimitiveImpl>(new(), null))
+            .Static.From.String(json);
+
+        Console.WriteLine(val);
+
+        Assert.That(string.Join(",", val), Is.EqualTo("1,2"));
     }
 }

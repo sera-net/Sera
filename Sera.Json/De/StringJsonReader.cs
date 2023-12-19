@@ -48,6 +48,16 @@ public sealed class StringJsonReader : AJsonReader
 
     #endregion
 
+    #region Cursor
+
+    public override ulong Cursor
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Has ? (ulong)last.Offset : ulong.MaxValue;
+    }
+
+    #endregion
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public StringJsonReader(SeraJsonOptions options, CompoundString source) : base(options)
     {

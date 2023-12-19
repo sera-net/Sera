@@ -22,3 +22,10 @@ public class JsonParseException : DeserializeException
         this.pos = pos;
     }
 }
+
+public class JsonParserStateException : DeserializeException
+{
+    public JsonParserStateException() { }
+    public JsonParserStateException(string message) : base(message) { }
+    public JsonParserStateException(string message, Exception inner) : base(message, inner) { }
+}

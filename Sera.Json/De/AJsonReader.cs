@@ -46,6 +46,24 @@ public abstract class AJsonReader(SeraJsonOptions options)
 
     #endregion
 
+    #region Cursor
+
+    public abstract ulong Cursor
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public virtual void AssertMove(ulong cursor)
+    {
+        if (Cursor <= cursor)
+            throw new JsonParserStateException(
+                "The cursor is abnormal. It is expected to move but does not actually move. Deserialization may be implemented incorrectly.");
+    }
+
+    #endregion
+
     public bool Has
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -90,7 +108,7 @@ public abstract class AJsonReader(SeraJsonOptions options)
         var token = CurrentToken;
         throw new JsonParseException($"Expected {kind} but found {token.Kind} at {token.Pos}", token.Pos);
     }
-    
+
     /// <summary>Read and move next</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public virtual JsonToken ReadOf(JsonTokenKind kind)
@@ -130,7 +148,7 @@ public abstract class AJsonReader(SeraJsonOptions options)
     /// <summary>Read <c>string</c> and move next</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public virtual string ReadString() => ReadOf(JsonTokenKind.String).Text.AsString();
-    
+
     /// <summary>Read <c>string</c> and move next</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public virtual JsonToken ReadStringToken() => ReadOf(JsonTokenKind.String);
