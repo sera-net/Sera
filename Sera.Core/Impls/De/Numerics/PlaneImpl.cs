@@ -17,6 +17,12 @@ public readonly struct PlaneImpl(SeraFormats? formats = null)
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => 4;
     }
+    
+    public int? TotalSize
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Size;
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Plane Builder(Type<Plane> b = default) => default;

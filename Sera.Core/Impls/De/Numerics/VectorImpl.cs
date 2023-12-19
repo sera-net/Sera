@@ -1,7 +1,6 @@
 ﻿using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
-using Sera.Core.Impls.De;
 using Sera.Utils;
 
 namespace Sera.Core.Impls.De.Numerics;
@@ -28,6 +27,12 @@ public readonly struct VectorImpl(SeraFormats? formats = null)
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => 2;
         }
+        
+        public int? TotalSize
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Size;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector2 Builder(Type<Vector2> b = default) => default;
@@ -45,6 +50,12 @@ public readonly struct VectorImpl(SeraFormats? formats = null)
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => 3;
         }
+        
+        public int? TotalSize
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Size;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector3 Builder(Type<Vector3> b = default) => default;
@@ -61,6 +72,12 @@ public readonly struct VectorImpl(SeraFormats? formats = null)
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => 4;
+        }
+        
+        public int? TotalSize
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Size;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -128,6 +145,12 @@ public readonly struct VectorImpl<T, D>(D dep) : ISeraColion<Vector<T>>,
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => Vector<T>.Count;
         }
+        
+        public int? TotalSize
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Size;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector<T> Builder(Type<Vector<T>> b = default) => default;
@@ -145,6 +168,12 @@ public readonly struct VectorImpl<T, D>(D dep) : ISeraColion<Vector<T>>,
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => Vector64<T>.Count;
         }
+        
+        public int? TotalSize
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Size;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector64<T> Builder(Type<Vector64<T>> b = default) => default;
@@ -161,6 +190,12 @@ public readonly struct VectorImpl<T, D>(D dep) : ISeraColion<Vector<T>>,
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => Vector128<T>.Count;
+        }
+        
+        public int? TotalSize
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Size;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -180,6 +215,12 @@ public readonly struct VectorImpl<T, D>(D dep) : ISeraColion<Vector<T>>,
             get => Vector256<T>.Count;
         }
 
+        public int? TotalSize
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Size;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Vector256<T> Builder(Type<Vector256<T>> b = default) => default;
 
@@ -195,6 +236,12 @@ public readonly struct VectorImpl<T, D>(D dep) : ISeraColion<Vector<T>>,
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => Vector512<T>.Count;
+        }
+        
+        public int? TotalSize
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Size;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

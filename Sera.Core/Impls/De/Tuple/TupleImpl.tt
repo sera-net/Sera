@@ -80,6 +80,12 @@ public readonly struct TupleImpl : ISeraColion<ValueTuple>, ITupleSeraColion<Val
         get => 0;
     }
 
+    public int? TotalSize
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => 0;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ValueTuple Builder(Type<ValueTuple> b = default) => default;
 
@@ -128,6 +134,12 @@ public readonly struct TupleImpl<<#= gts #>, <#= gds #>>
         => colctor.CTupleRest(this, new ValueTupleToTupleMapper<<#= gts #>>(), new Type<ValueTuple<<#= gts #>>>());
 
     public int? Size
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => <#= i #>;
+    }
+
+    public int? TotalSize
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => <#= i #>;
@@ -217,6 +229,12 @@ public readonly struct TupleRestValueImpl<
     public int? Size
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => 8;
+    }
+
+    public int? TotalSize
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => size;
     }
 
@@ -263,6 +281,12 @@ public readonly struct TupleRestClassImpl<
         => colctor.CTupleRest(this, new ValueTuple8ToTupleMapper<<#= gts #>, TR>(), new Type<(<#= gts #>, TR)>());
 
     public int? Size
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => 8;
+    }
+
+    public int? TotalSize
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => size;

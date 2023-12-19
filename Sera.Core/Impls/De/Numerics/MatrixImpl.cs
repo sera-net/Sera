@@ -25,6 +25,12 @@ public readonly struct MatrixImpl(SeraFormats? formats = null) :
             get => 3 * 2;
         }
 
+        public int? TotalSize
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Size;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Matrix3x2 Builder(Type<Matrix3x2> b = default) => default;
 
@@ -40,6 +46,12 @@ public readonly struct MatrixImpl(SeraFormats? formats = null) :
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => 4 * 4;
+        }
+
+        public int? TotalSize
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => Size;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -16,6 +16,12 @@ public readonly struct TupleArrayImpl<T, D>(D dep, int size)
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => size;
     }
+    
+    public int? TotalSize
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => size;
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T[] Builder(Type<T[]> b = default) => new T[size];

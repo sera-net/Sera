@@ -18,6 +18,12 @@ public readonly struct QuaternionImpl(SeraFormats? formats = null)
         get => 4;
     }
 
+    public int? TotalSize
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Size;
+    }
+    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Quaternion Builder(Type<Quaternion> b = default) => default;
 

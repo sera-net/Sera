@@ -23,6 +23,12 @@ public readonly struct TupleImpl : ISeraColion<ValueTuple>, ITupleSeraColion<Val
         get => 0;
     }
 
+    public int? TotalSize
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => 0;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ValueTuple Builder(Type<ValueTuple> b = default) => default;
 
@@ -62,6 +68,12 @@ public readonly struct TupleImpl<T1, D1>
         => colctor.CTupleRest(this, new ValueTupleToTupleMapper<T1>(), new Type<ValueTuple<T1>>());
 
     public int? Size
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => 1;
+    }
+
+    public int? TotalSize
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => 1;
@@ -129,6 +141,12 @@ public readonly struct TupleImpl<T1, T2, D1, D2>
         => colctor.CTupleRest(this, new ValueTupleToTupleMapper<T1, T2>(), new Type<ValueTuple<T1, T2>>());
 
     public int? Size
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => 2;
+    }
+
+    public int? TotalSize
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => 2;
@@ -204,6 +222,12 @@ public readonly struct TupleImpl<T1, T2, T3, D1, D2, D3>
         => colctor.CTupleRest(this, new ValueTupleToTupleMapper<T1, T2, T3>(), new Type<ValueTuple<T1, T2, T3>>());
 
     public int? Size
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => 3;
+    }
+
+    public int? TotalSize
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => 3;
@@ -287,6 +311,12 @@ public readonly struct TupleImpl<T1, T2, T3, T4, D1, D2, D3, D4>
         => colctor.CTupleRest(this, new ValueTupleToTupleMapper<T1, T2, T3, T4>(), new Type<ValueTuple<T1, T2, T3, T4>>());
 
     public int? Size
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => 4;
+    }
+
+    public int? TotalSize
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => 4;
@@ -378,6 +408,12 @@ public readonly struct TupleImpl<T1, T2, T3, T4, T5, D1, D2, D3, D4, D5>
         => colctor.CTupleRest(this, new ValueTupleToTupleMapper<T1, T2, T3, T4, T5>(), new Type<ValueTuple<T1, T2, T3, T4, T5>>());
 
     public int? Size
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => 5;
+    }
+
+    public int? TotalSize
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => 5;
@@ -477,6 +513,12 @@ public readonly struct TupleImpl<T1, T2, T3, T4, T5, T6, D1, D2, D3, D4, D5, D6>
         => colctor.CTupleRest(this, new ValueTupleToTupleMapper<T1, T2, T3, T4, T5, T6>(), new Type<ValueTuple<T1, T2, T3, T4, T5, T6>>());
 
     public int? Size
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => 6;
+    }
+
+    public int? TotalSize
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => 6;
@@ -589,6 +631,12 @@ public readonly struct TupleImpl<T1, T2, T3, T4, T5, T6, T7, D1, D2, D3, D4, D5,
         get => 7;
     }
 
+    public int? TotalSize
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => 7;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ValueTuple<T1, T2, T3, T4, T5, T6, T7> Builder(Type<ValueTuple<T1, T2, T3, T4, T5, T6, T7>> b) => default;
 
@@ -695,6 +743,12 @@ public readonly struct TupleRestValueImpl<
     public int? Size
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => 8;
+    }
+
+    public int? TotalSize
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => size;
     }
 
@@ -745,6 +799,12 @@ public readonly struct TupleRestClassImpl<
         => colctor.CTupleRest(this, new ValueTuple8ToTupleMapper<T1, T2, T3, T4, T5, T6, T7, TR>(), new Type<(T1, T2, T3, T4, T5, T6, T7, TR)>());
 
     public int? Size
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => 8;
+    }
+
+    public int? TotalSize
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => size;

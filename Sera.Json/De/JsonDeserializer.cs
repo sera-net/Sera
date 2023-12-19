@@ -749,12 +749,14 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         {
             var size = colion.Size;
             var colctor = new TupleSeraColctor<B>(colion.Builder(), impl);
+            var first = true;
             var i = 0;
             if (size.HasValue)
             {
                 for (; i < size; i++)
                 {
-                    reader.ReadComma();
+                    if (first) first = false;
+                    else reader.ReadComma();
                     var cursor = reader.Cursor;
                     var err = colion.CollectItem<bool, TupleSeraColctor<B>>(ref colctor, i);
                     if (err) throw new DeserializeException($"Unable to read item {i} of tuple {typeof(T)}");
@@ -767,7 +769,8 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
                 {
                     var token = reader.CurrentToken;
                     if (token.Kind is JsonTokenKind.ArrayEnd) break;
-                    reader.ReadComma();
+                    if (first) first = false;
+                    else reader.ReadComma();
                     var cursor = reader.Cursor;
                     var err = colion.CollectItem<bool, TupleSeraColctor<B>>(ref colctor, i);
                     if (err) throw new DeserializeException($"Unable to read item {i} of tuple {typeof(T)}");

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Text;
-using Sera.TaggedUnion;
 using Sera.Utils;
 
 namespace Sera.Core;
@@ -49,6 +48,7 @@ public interface IEntrySeraColion<B>
 public interface ITupleSeraColion<B>
 {
     public int? Size { get; }
+    public int? TotalSize { get; }
 
     public B Builder(Type<B> b = default);
 

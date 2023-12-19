@@ -547,6 +547,7 @@ public class TestStaticDeSerializer
     [Test]
     public void TestBytes1()
     {
+        // ReSharper disable once StringLiteralTypo
         var json = "\"AQIDBAU=\"";
 
         var val = SeraJson.Deserializer
@@ -619,7 +620,7 @@ public class TestStaticDeSerializer
 
         Console.WriteLine(val);
 
-        Assert.That(val, Is.EqualTo((int?)null));
+        Assert.That(val, Is.EqualTo(null));
     }
 
     [Test]
@@ -680,5 +681,47 @@ public class TestStaticDeSerializer
         Console.WriteLine(val);
 
         Assert.That(string.Join(",", val), Is.EqualTo("1,2"));
+    }
+
+    [Test]
+    public void TestTuple3()
+    {
+        var json = "[1,2,3,4,5,6,7,8]";
+
+        var impl =
+            new TupleRestValueImpl<int, int, int, int, int, int, int, ValueTuple<int>,
+                    PrimitiveImpl, PrimitiveImpl, PrimitiveImpl, PrimitiveImpl,
+                    PrimitiveImpl, PrimitiveImpl, PrimitiveImpl, TupleImpl<int, PrimitiveImpl>>
+                (new(), new(), new(), new(), new(), new(), new(), new(new()), 8);
+
+        var val = SeraJson.Deserializer
+            .Deserialize<(int, int, int, int, int, int, int, int)>()
+            .Use(impl)
+            .Static.From.String(json);
+
+        Console.WriteLine(val);
+
+        Assert.That(val, Is.EqualTo((1, 2, 3, 4, 5, 6, 7, 8)));
+    }
+
+    [Test]
+    public void TestTuple4()
+    {
+        var json = "[1,2,3,4,5,6,7,8,9]";
+
+        var impl =
+            new TupleRestValueImpl<int, int, int, int, int, int, int, (int, int),
+                    PrimitiveImpl, PrimitiveImpl, PrimitiveImpl, PrimitiveImpl,
+                    PrimitiveImpl, PrimitiveImpl, PrimitiveImpl, TupleImpl<int, int, PrimitiveImpl, PrimitiveImpl>>
+                (new(), new(), new(), new(), new(), new(), new(), new(new(), new()), 9);
+
+        var val = SeraJson.Deserializer
+            .Deserialize<(int, int, int, int, int, int, int, int, int)>()
+            .Use(impl)
+            .Static.From.String(json);
+
+        Console.WriteLine(val);
+
+        Assert.That(val, Is.EqualTo((1, 2, 3, 4, 5, 6, 7, 8, 9)));
     }
 }
