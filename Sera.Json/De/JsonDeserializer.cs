@@ -739,7 +739,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         }
     }
 
-    private struct TupleRestSeraColctor(JsonDeserializer impl) : ITupleRestSeraColctor<T, T>
+    private readonly struct TupleRestSeraColctor(JsonDeserializer impl) : ITupleRestSeraColctor<T, T>
     {
         private AJsonReader reader => impl.reader;
 
@@ -794,13 +794,15 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         var colctor = new SeqSeraColctor<B, I>(colion.Builder(null), impl);
         var first = true;
         var i = 0;
-        for (; reader.Has; reader.MoveNext(), i++)
+        for (; reader.Has; i++)
         {
             var token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ArrayEnd) break;
             if (first) first = false;
-            else if (token.Kind is not JsonTokenKind.Comma) reader.ThrowExpected(JsonTokenKind.Comma);
+            else reader.ReadComma();
+            var cursor = reader.Cursor;
             colion.CollectItem<Unit, SeqSeraColctor<B, I>>(ref colctor);
+            reader.AssertMove(cursor);
         }
         reader.ReadArrayEnd();
         if (!colion.FinishCollect(i)) throw new DeserializeException("Failed to collect seq");
@@ -830,24 +832,28 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
     public T CMap<C, B, M, IK, IV>(C colion, M mapper, Type<B> b, Type<IK> k, Type<IV> v)
         where C : IMapSeraColion<B, IK, IV> where M : ISeraMapper<B, T>
         => typeof(IK) == typeof(string)
-            ? CObjectMap<C, B, M, IK, IV>(colion, mapper)
+            ? CObjectMapStringKey<C, B, M, IK, IV>(colion, mapper)
             : CArrayMap<C, B, M, IK, IV>(colion, mapper);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private T CArrayMap<C, B, M, IK, IV>(C colion, M mapper)
         where C : IMapSeraColion<B, IK, IV> where M : ISeraMapper<B, T>
     {
+        var token = reader.CurrentToken;
+        if (token.Kind is JsonTokenKind.ObjectStart) return CObjectMapSubJsonKey<C, B, M, IK, IV>(colion, mapper);
         reader.ReadArrayStart();
         var colctor = new ArrayMapSeraColctor<B, IK, IV>(colion.Builder(null), impl);
         var first = true;
         var i = 0;
-        for (; reader.Has; reader.MoveNext(), i++)
+        for (; reader.Has; i++)
         {
-            var token = reader.CurrentToken;
+            token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ArrayEnd) break;
             if (first) first = false;
-            else if (token.Kind is not JsonTokenKind.Comma) reader.ThrowExpected(JsonTokenKind.Comma);
+            else reader.ReadComma();
+            var cursor = reader.Cursor;
             colion.CollectItem<Unit, ArrayMapSeraColctor<B, IK, IV>>(ref colctor);
+            reader.AssertMove(cursor);
         }
         reader.ReadArrayEnd();
         if (!colion.FinishCollect(i)) throw new DeserializeException("Failed to collect map");
@@ -855,22 +861,46 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private T CObjectMap<C, B, M, IK, IV>(C colion, M mapper)
+    private T CObjectMapStringKey<C, B, M, IK, IV>(C colion, M mapper)
         where C : IMapSeraColion<B, IK, IV> where M : ISeraMapper<B, T>
     {
         var token = reader.CurrentToken;
         if (token.Kind is JsonTokenKind.ArrayStart) return CArrayMap<C, B, M, IK, IV>(colion, mapper);
         reader.ReadObjectStart();
-        var colctor = new ObjectMapSeraColctor<B, IK, IV>(colion.Builder(null), impl);
+        var colctor = new ObjectMapStringKeySeraColctor<B, IK, IV>(colion.Builder(null), impl);
         var first = true;
         var i = 0;
-        for (; reader.Has; reader.MoveNext(), i++)
+        for (; reader.Has; i++)
         {
             token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ObjectEnd) break;
             if (first) first = false;
-            else if (token.Kind is not JsonTokenKind.Comma) reader.ThrowExpected(JsonTokenKind.Comma);
-            colion.CollectItem<Unit, ObjectMapSeraColctor<B, IK, IV>>(ref colctor);
+            else reader.ReadComma();
+            var cursor = reader.Cursor;
+            colion.CollectItem<Unit, ObjectMapStringKeySeraColctor<B, IK, IV>>(ref colctor);
+            reader.AssertMove(cursor);
+        }
+        reader.ReadObjectEnd();
+        if (!colion.FinishCollect(i)) throw new DeserializeException("Failed to collect map");
+        return mapper.Map(colctor.builder);
+    }
+
+    private T CObjectMapSubJsonKey<C, B, M, IK, IV>(C colion, M mapper)
+        where C : IMapSeraColion<B, IK, IV> where M : ISeraMapper<B, T>
+    {
+        reader.ReadObjectStart();
+        var colctor = new ObjectMapSubJsonKeySeraColctor<B, IK, IV>(colion.Builder(null), impl);
+        var first = true;
+        var i = 0;
+        for (; reader.Has; i++)
+        {
+            var token = reader.CurrentToken;
+            if (token.Kind is JsonTokenKind.ObjectEnd) break;
+            if (first) first = false;
+            else reader.ReadComma();
+            var cursor = reader.Cursor;
+            colion.CollectItem<Unit, ObjectMapSubJsonKeySeraColctor<B, IK, IV>>(ref colctor);
+            reader.AssertMove(cursor);
         }
         reader.ReadObjectEnd();
         if (!colion.FinishCollect(i)) throw new DeserializeException("Failed to collect map");
@@ -897,7 +927,8 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         }
     }
 
-    private struct ObjectMapSeraColctor<B, IK, IV>(B builder, JsonDeserializer impl) : IMapSeraColctor<B, IK, IV, Unit>
+    private struct ObjectMapStringKeySeraColctor<B, IK, IV>(B builder, JsonDeserializer impl)
+        : IMapSeraColctor<B, IK, IV, Unit>
     {
         public B builder = builder;
 
@@ -910,6 +941,37 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             var cv = new JsonDeserializer<IV>(impl);
             var vv = valueColion.Collect<IV, JsonDeserializer<IV>>(ref cv);
             effector.Effect(ref builder, new((IK)(object)vk, vv));
+            return default;
+        }
+    }
+
+    private struct ObjectMapSubJsonKeySeraColctor<B, IK, IV>(B builder, JsonDeserializer impl)
+        : IMapSeraColctor<B, IK, IV, Unit>
+    {
+        public B builder = builder;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Unit CItem<CK, CV, E>(CK keyColion, CV valueColion, E effector)
+            where CK : ISeraColion<IK> where CV : ISeraColion<IV> where E : ISeraEffector<B, KeyValuePair<IK, IV>>
+        {
+            var key_token = impl.reader.ReadStringToken();
+            IK vk;
+            try
+            {
+                vk = SeraJson.Deserializer
+                    .Deserialize<IK>()
+                    .Use(keyColion)
+                    .Static.From.String(key_token.AsSpan());
+            }
+            catch (Exception e)
+            {
+                var pos = key_token.Pos;
+                throw new JsonParseException($"Parsing object sub json key failed at {pos}", pos, e);
+            }
+            impl.reader.ReadColon();
+            var cv = new JsonDeserializer<IV>(impl);
+            var vv = valueColion.Collect<IV, JsonDeserializer<IV>>(ref cv);
+            effector.Effect(ref builder, new(vk, vv));
             return default;
         }
     }

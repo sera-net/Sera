@@ -724,4 +724,101 @@ public class TestStaticDeSerializer
 
         Assert.That(val, Is.EqualTo((1, 2, 3, 4, 5, 6, 7, 8, 9)));
     }
+
+    [Test]
+    public void TestSeq1()
+    {
+        var json = "[1,2,3,4,5]";
+
+        var val = SeraJson.Deserializer
+            .Deserialize<List<int>>()
+            .Use(new SeqListImpl<int, PrimitiveImpl>(new()))
+            .Static.From.String(json);
+
+        var str = string.Join(",", val);
+        Console.WriteLine(str);
+
+        Assert.That(str, Is.EqualTo("1,2,3,4,5"));
+    }
+
+    [Test]
+    public void TestMap1()
+    {
+        var json = "{\"a\":1,\"b\":2}";
+
+        var val = SeraJson.Deserializer
+            .Deserialize<Dictionary<string, int>>()
+            .Use(new MapDictionaryImpl<string, int, StringImpl, PrimitiveImpl>(new(), new()))
+            .Static.From.String(json);
+
+        var str = string.Join(",", val);
+        Console.WriteLine(str);
+
+        Assert.That(str, Is.EqualTo("[a, 1],[b, 2]"));
+    }
+
+    [Test]
+    public void TestMap2()
+    {
+        var json = "[[\"a\",1],[\"b\",2]]";
+
+        var val = SeraJson.Deserializer
+            .Deserialize<Dictionary<string, int>>()
+            .Use(new MapDictionaryImpl<string, int, StringImpl, PrimitiveImpl>(new(), new()))
+            .Static.From.String(json);
+
+        var str = string.Join(",", val);
+        Console.WriteLine(str);
+
+        Assert.That(str, Is.EqualTo("[a, 1],[b, 2]"));
+    }
+
+    [Test]
+    public void TestMap3()
+    {
+        var json = "[[1,2],[3,4]]";
+
+        var val = SeraJson.Deserializer
+            .Deserialize<Dictionary<int, int>>()
+            .Use(new MapDictionaryImpl<int, int, PrimitiveImpl, PrimitiveImpl>(new(), new()))
+            .Static.From.String(json);
+
+        var str = string.Join(",", val);
+        Console.WriteLine(str);
+
+        Assert.That(str, Is.EqualTo("[1, 2],[3, 4]"));
+    }
+
+    [Test]
+    public void TestMap4()
+    {
+        var json = "{\"1\":2,\"3\":4}";
+
+        var val = SeraJson.Deserializer
+            .Deserialize<Dictionary<int, int>>()
+            .Use(new MapDictionaryImpl<int, int, PrimitiveImpl, PrimitiveImpl>(new(), new()))
+            .Static.From.String(json);
+
+        var str = string.Join(",", val);
+        Console.WriteLine(str);
+
+        Assert.That(str, Is.EqualTo("[1, 2],[3, 4]"));
+    }
+
+    [Test]
+    public void TestMap5()
+    {
+        var json = "{\"[1,2]\":3,\"[4,5]\":6}";
+
+        var val = SeraJson.Deserializer
+            .Deserialize<Dictionary<(int, int), int>>()
+            .Use(new MapDictionaryImpl<(int, int), int, TupleImpl<int, int, PrimitiveImpl, PrimitiveImpl>,
+                PrimitiveImpl>(new(new(), new()), new()))
+            .Static.From.String(json);
+
+        var str = string.Join(",", val);
+        Console.WriteLine(str);
+
+        Assert.That(str, Is.EqualTo("[(1, 2), 3],[(4, 5), 6]"));
+    }
 }
