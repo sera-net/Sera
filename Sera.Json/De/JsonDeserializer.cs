@@ -727,6 +727,56 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool CNone() => true;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool CRest<C, E, I>(C colion, int index, E effector, Type<I> i) where C : ITupleRestSeraColion<I>
+            where E : ISeraEffector<B, I>
+        {
+            var c = new JsonDeserializer<I>.TupleRestSeraColctor(impl);
+            var r = colion.CollectRest<I, JsonDeserializer<I>.TupleRestSeraColctor>(ref c);
+            effector.Effect(ref builder, r);
+            return false;
+        }
+    }
+
+    private struct TupleRestSeraColctor(JsonDeserializer impl) : ITupleRestSeraColctor<T, T>
+    {
+        private AJsonReader reader => impl.reader;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T CTupleRest<C, B, M>(C colion, M mapper, Type<B> b)
+            where C : ITupleSeraColion<B> where M : ISeraMapper<B, T>
+        {
+            var size = colion.Size;
+            var colctor = new TupleSeraColctor<B>(colion.Builder(), impl);
+            var i = 0;
+            if (size.HasValue)
+            {
+                for (; i < size; i++)
+                {
+                    reader.ReadComma();
+                    var cursor = reader.Cursor;
+                    var err = colion.CollectItem<bool, TupleSeraColctor<B>>(ref colctor, i);
+                    if (err) throw new DeserializeException($"Unable to read item {i} of tuple {typeof(T)}");
+                    reader.AssertMove(cursor);
+                }
+            }
+            else
+            {
+                for (; reader.Has; i++)
+                {
+                    var token = reader.CurrentToken;
+                    if (token.Kind is JsonTokenKind.ArrayEnd) break;
+                    reader.ReadComma();
+                    var cursor = reader.Cursor;
+                    var err = colion.CollectItem<bool, TupleSeraColctor<B>>(ref colctor, i);
+                    if (err) throw new DeserializeException($"Unable to read item {i} of tuple {typeof(T)}");
+                    reader.AssertMove(cursor);
+                }
+            }
+            if (!colion.FinishCollect(i)) throw new DeserializeException("Failed to collect tuple");
+            return mapper.Map(colctor.builder);
+        }
     }
 
     #endregion

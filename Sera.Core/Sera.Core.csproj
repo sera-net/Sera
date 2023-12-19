@@ -1,33 +1,48 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-	    <Version>0.0.1</Version>
-	    <Nullable>enable</Nullable>
-		<LangVersion>12.0</LangVersion>
-	    <TargetFramework>net8.0</TargetFramework>
-	    <PackageReadmeFile>README.md</PackageReadmeFile>
-	    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
-		<Description>Format-agnostic (de)serialization abstraction layer</Description>
-		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-		<NoWarn>CS9113</NoWarn>
+        <Version>0.0.1</Version>
+        <Nullable>enable</Nullable>
+        <LangVersion>12.0</LangVersion>
+        <TargetFramework>net8.0</TargetFramework>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+        <Description>Format-agnostic (de)serialization abstraction layer</Description>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <NoWarn>CS9113</NoWarn>
     </PropertyGroup>
 
-	<ItemGroup>
-		<None Include="..\README.md">
-			<Pack>True</Pack>
-			<PackagePath>\</PackagePath>
-		</None>
-		<None Include="..\LICENSE.md">
-			<Pack>True</Pack>
-			<PackagePath>\</PackagePath>
-		</None>
-	</ItemGroup>
+    <ItemGroup>
+        <None Include="..\README.md">
+            <Pack>True</Pack>
+            <PackagePath>\</PackagePath>
+        </None>
+        <None Include="..\LICENSE.md">
+            <Pack>True</Pack>
+            <PackagePath>\</PackagePath>
+        </None>
 
-	<ItemGroup>
-	  <PackageReference Include="BetterCollections" Version="0.1.0" />
-	  <PackageReference Include="Sera.Union" Version="0.5.0" />
-	</ItemGroup>
+    </ItemGroup>
 
+    <ItemGroup>
+        <PackageReference Include="BetterCollections" Version="0.1.0"/>
+        <PackageReference Include="Sera.Union" Version="0.5.0"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Update="Impls\De\Tuple\TupleImpl.tt">
+            <Generator>TextTemplatingFileGenerator</Generator>
+            <LastGenOutput>TupleImpl.cs</LastGenOutput>
+        </None>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Update="Impls\De\Tuple\TupleImpl.cs">
+            <AutoGen>True</AutoGen>
+            <DesignTime>True</DesignTime>
+            <DependentUpon>TupleImpl.tt</DependentUpon>
+        </Compile>
+    </ItemGroup>
 
 
 </Project>

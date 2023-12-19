@@ -60,6 +60,11 @@ public interface ITupleSeraColion<B>
     public bool FinishCollect(int size) => true;
 }
 
+public interface ITupleRestSeraColion<out T>
+{
+    public R CollectRest<R, C>(ref C colctor, InType<T>? t = null) where C : ITupleRestSeraColctor<T, R>;
+}
+
 public interface ISeqSeraColion<B, I>
 {
     public B Builder(int? cap, Type<B> b = default);

@@ -166,7 +166,7 @@ public interface ISeraColctor<in T, [AssocType] out R> : ISeraAbility<ISeraColio
 
     public R CArray<C, M, I>(C colion, M mapper, Type<ReadOnlyMemory<I>> t, Type<I> i)
         where C : ISeraColion<I> where M : ISeraMapper<ReadOnlyMemory<I>, T>;
-    
+
     public R CArraySpan<C, M, I>(C colion, M mapper, Type<I> i)
         where C : ISeraColion<I> where M : ISeraSpanMapper<I, T>;
 
@@ -246,6 +246,16 @@ public interface ITupleSeraColctor<B, [AssocType] out R>
         where C : ISeraColion<I> where E : ISeraEffector<B, I>;
 
     public R CNone();
+
+    public R CRest<C, E, I>(C colion, int index, E effector, Type<I> i)
+        where C : ITupleRestSeraColion<I>
+        where E : ISeraEffector<B, I>;
+}
+
+public interface ITupleRestSeraColctor<in T, [AssocType] out R>
+{
+    public R CTupleRest<C, B, M>(C colion, M mapper, Type<B> b)
+        where C : ITupleSeraColion<B> where M : ISeraMapper<B, T>;
 }
 
 public interface ISeqSeraColctor<B, I, [AssocType] out R>
