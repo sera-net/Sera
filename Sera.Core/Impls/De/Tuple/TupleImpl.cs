@@ -767,7 +767,7 @@ public readonly struct TupleRestValueImpl<
             4 => colctor.CItem(d5, new ValueTupleEffector<T1, T2, T3, T4, T5, T6, T7, TR>.Item5(), new Type<T5>()),
             5 => colctor.CItem(d6, new ValueTupleEffector<T1, T2, T3, T4, T5, T6, T7, TR>.Item6(), new Type<T6>()),
             6 => colctor.CItem(d7, new ValueTupleEffector<T1, T2, T3, T4, T5, T6, T7, TR>.Item7(), new Type<T7>()),
-            >= 7 => colctor.CRest(dr, index - 7, new ValueTupleEffector<T1, T2, T3, T4, T5, T6, T7, TR>.Rest(), new Type<TR>()),
+            7 => colctor.CRest(dr, new ValueTupleEffector<T1, T2, T3, T4, T5, T6, T7, TR>.Rest(), new Type<TR>()),
             _ => colctor.CNone(),
         };
 }
@@ -825,7 +825,7 @@ public readonly struct TupleRestClassImpl<
             4 => colctor.CItem(d5, new ValueTuple8Effector<T1, T2, T3, T4, T5, T6, T7, TR>.Item5(), new Type<T5>()),
             5 => colctor.CItem(d6, new ValueTuple8Effector<T1, T2, T3, T4, T5, T6, T7, TR>.Item6(), new Type<T6>()),
             6 => colctor.CItem(d7, new ValueTuple8Effector<T1, T2, T3, T4, T5, T6, T7, TR>.Item7(), new Type<T7>()),
-            >= 7 => colctor.CRest(dr, index - 7, new ValueTuple8Effector<T1, T2, T3, T4, T5, T6, T7, TR>.Item8(), new Type<TR>()),
+            7 => colctor.CRest(dr, new ValueTuple8Effector<T1, T2, T3, T4, T5, T6, T7, TR>.Item8(), new Type<TR>()),
             _ => colctor.CNone(),
         };
 }

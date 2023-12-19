@@ -247,7 +247,7 @@ public interface ITupleSeraColctor<B, [AssocType] out R>
 
     public R CNone();
 
-    public R CRest<C, E, I>(C colion, int index, E effector, Type<I> i)
+    public R CRest<C, E, I>(C colion, E effector, Type<I> i)
         where C : ITupleRestSeraColion<I>
         where E : ISeraEffector<B, I>;
 }

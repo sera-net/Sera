@@ -729,7 +729,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         public bool CNone() => true;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool CRest<C, E, I>(C colion, int index, E effector, Type<I> i) where C : ITupleRestSeraColion<I>
+        public bool CRest<C, E, I>(C colion, E effector, Type<I> i) where C : ITupleRestSeraColion<I>
             where E : ISeraEffector<B, I>
         {
             var c = new JsonDeserializer<I>.TupleRestSeraColctor(impl);
