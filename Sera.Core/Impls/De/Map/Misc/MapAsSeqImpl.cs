@@ -1,10 +1,17 @@
 ﻿using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Sera.Core.Abstract;
 using Sera.Utils;
 
 namespace Sera.Core.Impls.De;
 
-public readonly struct MapAsSeqImpl<T, IK, IV, DK, DV, B, M, D, E>(DK dk, DV dv, M mapper, D d, E effector) :
+public readonly struct MapAsSeqImpl<T, IK, IV, DK, DV, B, M, D, E>(
+    DK dk,
+    DV dv,
+    M mapper,
+    D d,
+    E effector,
+    IKeyAbility? keyAbility = null) :
     ISeraColion<T>, IMapSeraColion<B, IK, IV>
     where DK : ISeraColion<IK>
     where DV : ISeraColion<IV>
@@ -14,7 +21,7 @@ public readonly struct MapAsSeqImpl<T, IK, IV, DK, DV, B, M, D, E>(DK dk, DV dv,
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R Collect<R, C>(ref C colctor, InType<T>? t = null) where C : ISeraColctor<T, R>
-        => colctor.CMap(this, mapper, new Type<B>(), new Type<IK>(), new Type<IV>());
+        => colctor.CMap(this, mapper, new Type<B>(), new Type<IK>(), new Type<IV>(), keyAbility);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public B Builder(int? cap, Type<B> b = default) => d.Builder(cap);

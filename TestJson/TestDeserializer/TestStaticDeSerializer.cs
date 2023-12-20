@@ -5,6 +5,7 @@ using Sera.Core;
 using Sera.Core.Formats;
 using Sera.Core.Impls.De;
 using Sera.Json;
+using Sera.Utils;
 
 namespace TestJson.TestDeserializer;
 
@@ -820,5 +821,108 @@ public class TestStaticDeSerializer
         Console.WriteLine(str);
 
         Assert.That(str, Is.EqualTo("[(1, 2), 3],[(4, 5), 6]"));
+    }
+
+    #region TestStruct1
+
+    [Test]
+    public void TestStruct1()
+    {
+        var json = "{\"A\":123,\"B\":\"asd\"}";
+
+        var val = SeraJson.Deserializer
+            .Deserialize<ClassTestStruct1>()
+            .Use(new ClassTestStruct1Impl())
+            .Static.From.String(json);
+
+        Console.WriteLine(val);
+
+        Assert.That(val, Is.EqualTo(new ClassTestStruct1 { A = 123, B = "asd" }));
+    }
+
+    private record ClassTestStruct1
+    {
+        public int A { get; set; }
+        public string? B { get; set; }
+    }
+
+    private readonly struct ClassTestStruct1Impl : ISeraColion<ClassTestStruct1>, IStructSeraColion<ClassTestStruct1>
+    {
+        public R Collect<R, C>(ref C colctor, InType<ClassTestStruct1>? t = null)
+            where C : ISeraColctor<ClassTestStruct1, R>
+            => colctor.CStruct(this, new IdentityMapper<ClassTestStruct1>(), new Type<ClassTestStruct1>());
+
+        public SeraFieldInfos? Fields => _fields;
+
+        private static readonly SeraFieldInfos? _fields = new SeraFieldInfos([
+            new(nameof(ClassTestStruct1.A), 0),
+            new(nameof(ClassTestStruct1.B), 1),
+        ]);
+
+        public ClassTestStruct1 Builder(string? name, Type<ClassTestStruct1> b = default)
+            => new();
+
+        public R CollectField<R, C>(ref C colctor, int field, string? name, long? key,
+            Type<ClassTestStruct1> b = default) where C : IStructSeraColctor<ClassTestStruct1, R>
+            => field switch
+            {
+                0 => colctor.CField(new PrimitiveImpl(), new FieldEffectorA(), new Type<int>()),
+                1 => colctor.CField(new StringImpl(), new FieldEffectorB(), new Type<string>()),
+                _ => colctor.CNone(),
+            };
+
+        private readonly struct FieldEffectorA : ISeraEffector<ClassTestStruct1, int>
+        {
+            public void Effect(ref ClassTestStruct1 target, int value)
+                => target.A = value;
+        }
+
+        private readonly struct FieldEffectorB : ISeraEffector<ClassTestStruct1, string>
+        {
+            public void Effect(ref ClassTestStruct1 target, string value)
+                => target.B = value;
+        }
+    }
+
+    #endregion
+
+    [Test]
+    public void TestStruct2()
+    {
+        var json = "{\"A\":123,\"B\":\"asd\"}";
+
+        var val = SeraJson.Deserializer
+            .Deserialize<AnyStruct>()
+            .Use(new AnyStructImpl())
+            .Static.From.String(json);
+
+        var str = SeraJson.Serializer
+            .Serialize(val)
+            .Use(new Sera.Core.Impls.Ser.AnyStructImpl(new(), val))
+            .Static.To.String();
+
+        Console.WriteLine(str);
+
+        Assert.That(str, Is.EqualTo(json));
+    }
+    
+    [Test]
+    public void TestAny1()
+    {
+        var json = "{\"A\":123,\"B\":\"asd\"}";
+
+        var val = SeraJson.Deserializer
+            .Deserialize<Any>()
+            .Use(new AnyImpl())
+            .Static.From.String(json);
+
+        var str = SeraJson.Serializer
+            .Serialize(val)
+            .Use(new Sera.Core.Impls.Ser.AnyImpl())
+            .Static.To.String();
+
+        Console.WriteLine(str);
+
+        Assert.That(str, Is.EqualTo("[[\"A\",123],[\"B\",\"asd\"]]"));
     }
 }

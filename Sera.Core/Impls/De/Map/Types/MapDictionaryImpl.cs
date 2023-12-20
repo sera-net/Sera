@@ -1,11 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Sera.Core.Abstract;
 using Sera.Core.Impls.De;
 using Sera.Utils;
 
 namespace Sera.Core.Impls.De;
 
-public readonly struct MapDictionaryImpl<IK, IV, DK, DV>(DK dk, DV dv, bool useAdd = false) :
+public readonly struct MapDictionaryImpl<IK, IV, DK, DV>(DK dk, DV dv, bool useAdd = false, IKeyAbility? keyAbility = null) :
     ISeraColion<Dictionary<IK, IV>>,
     IMapSeraColion<Dictionary<IK, IV>, IK, IV>
     where DK : ISeraColion<IK>
@@ -16,7 +17,7 @@ public readonly struct MapDictionaryImpl<IK, IV, DK, DV>(DK dk, DV dv, bool useA
     public R Collect<R, C>(ref C colctor, InType<Dictionary<IK, IV>>? t = null)
         where C : ISeraColctor<Dictionary<IK, IV>, R>
         => colctor.CMap(this, new IdentityMapper<Dictionary<IK, IV>>(),
-            new Type<Dictionary<IK, IV>>(), new Type<IK>(), new Type<IV>());
+            new Type<Dictionary<IK, IV>>(), new Type<IK>(), new Type<IV>(), keyAbility);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Dictionary<IK, IV> Builder(int? cap, Type<Dictionary<IK, IV>> b = default)

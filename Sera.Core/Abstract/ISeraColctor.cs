@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
+using Sera.Core.Abstract;
 using Sera.Core.SerDe;
 using Sera.Utils;
 using SeraBase = Sera.Core.SeraBase<Sera.Core.ISeraColion<object?>>;
@@ -17,6 +18,10 @@ public interface ISeraColctor<in T, [AssocType] out R> : ISeraAbility<ISeraColio
 
     public R CSelect<C, M, U>(C colion, M mapper, Type<U> u)
         where C : ISelectSeraColion<U>
+        where M : ISeraMapper<U, T>;
+
+    public R CSelectPrimitive<C, M, U>(C colion, M mapper, Type<U> u)
+        where C : ISelectPrimitiveSeraColion<U>
         where M : ISeraMapper<U, T>;
 
     #endregion
@@ -208,9 +213,9 @@ public interface ISeraColctor<in T, [AssocType] out R> : ISeraAbility<ISeraColio
 
     #region Map
 
-    public R CMap<C, B, M, IK, IV>(C colion, M mapper, Type<B> b, Type<IK> k, Type<IV> v)
+    public R CMap<C, B, M, IK, IV>(C colion, M mapper, Type<B> b, Type<IK> k, Type<IV> v, IKeyAbility? keyAbility = null)
         where C : IMapSeraColion<B, IK, IV> where M : ISeraMapper<B, T>;
-
+    
     #endregion
 
     #region Struct

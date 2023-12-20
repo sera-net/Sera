@@ -10,6 +10,7 @@
         <Description>Format-agnostic (de)serialization abstraction layer</Description>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <NoWarn>CS9113</NoWarn>
+        <IsAotCompatible>true</IsAotCompatible>
     </PropertyGroup>
 
     <ItemGroup>

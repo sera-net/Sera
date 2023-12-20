@@ -18,16 +18,22 @@ public class AJsonDeserializer(SeraJsonOptions options) : SeraBase<ISeraColion<o
     #region SelectPriorities
 
     private static readonly Any.Kind[] SelectPrioritiesArray =
-    {
+    [
         Any.Kind.Unit,
-        Any.Kind.Bytes,
-        Any.Kind.Primitive,
         Any.Kind.String,
+        Any.Kind.Primitive,
         Any.Kind.Seq,
         Any.Kind.Map,
-    };
+    ];
+
+    private static readonly SeraPrimitiveTypes[] SelectPrimitivePrioritiesArray =
+    [
+        SeraPrimitiveTypes.Boolean,
+        SeraPrimitiveTypes.Double,
+    ];
 
     public static ReadOnlyMemory<Any.Kind> SelectPriorities => SelectPrioritiesArray;
+    public static ReadOnlyMemory<SeraPrimitiveTypes> SelectPrimitivePriorities => SelectPrimitivePrioritiesArray;
 
     #endregion
 }

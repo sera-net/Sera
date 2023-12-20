@@ -58,13 +58,18 @@ public readonly struct AnyEntryImpl(AnyImpl impl) : ISeraVision<AnyEntry>
         => visitor.VEntry(impl, impl, value.Key, value.Value);
 }
 
-public readonly struct AnyStructImpl(AnyImpl impl, AnyStruct value) : IStructSeraVision<AnyStruct>
+public readonly struct AnyStructImpl(AnyImpl impl, AnyStruct value)
+    : ISeraVision<AnyStruct>, IStructSeraVision<AnyStruct>
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public R Accept<R, V>(V visitor, AnyStruct _value) where V : ASeraVisitor<R>
+        => visitor.VStruct(this, value);
+
     public string? Name => value.Name;
     public int Count => value.Count;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R AcceptField<R, V>(V visitor, ref AnyStruct value, int field) where V : AStructSeraVisitor<R>
+    public R AcceptField<R, V>(V visitor, ref AnyStruct _value, int field) where V : AStructSeraVisitor<R>
         => value.TryGet(field, out var info, out var item)
             ? visitor.VField(impl, item, info.Name, info.Key)
             : visitor.VNone();

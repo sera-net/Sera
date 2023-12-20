@@ -82,7 +82,7 @@ public interface IMapSeraColion<B, IK, IV>
 
     public R CollectItem<R, C>(ref C colctor, Type<B> b = default)
         where C : IMapSeraColctor<B, IK, IV, R>;
-    
+
     /// <inheritdoc cref="ITupleSeraColion{B}.FinishCollect(int)"/>
     public bool FinishCollect(int size) => true;
 }
@@ -95,7 +95,7 @@ public interface IStructSeraColion<B>
 
     public R CollectField<R, C>(ref C colctor, int field, string? name, long? key, Type<B> b = default)
         where C : IStructSeraColctor<B, R>;
-    
+
     /// <inheritdoc cref="ITupleSeraColion{B}.FinishCollect(int)"/>
     public bool FinishCollect(int size) => true;
 }
@@ -112,6 +112,9 @@ public interface IUnionSeraColion<out T>
 
 public interface ISelectSeraColion<out T>
 {
+    /// <summary>
+    /// Hint for acceptable kinds and specify the order, null means accept all and the order doesn't matter
+    /// </summary>
     public ReadOnlyMemory<Any.Kind>? Priorities { get; }
 
     public R SelectPrimitive<R, C>(ref C colctor, InType<T>? t = null)
@@ -161,4 +164,15 @@ public interface ISelectSeraColion<out T>
     public R SelectUnion<R, C>(ref C colctor, string? name, InType<T>? t = null)
         where C : ISelectSeraColctor<T, R>
         => colctor.CNone();
+}
+
+public interface ISelectPrimitiveSeraColion<out T>
+{
+    /// <summary>
+    /// Hint for acceptable kinds and specify the order, null means accept all and the order doesn't matter
+    /// </summary>
+    public ReadOnlyMemory<SeraPrimitiveTypes>? Priorities { get; }
+
+    public R SelectPrimitiveDetail<R, C>(ref C colctor, SeraPrimitiveTypes type, InType<T>? t = null)
+        where C : ISelectSeraColctor<T, R>;
 }

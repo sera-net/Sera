@@ -16,6 +16,7 @@ public sealed class StringJsonReader : AJsonReader
     #region Seek
 
     private Dictionary<long, SourcePos>? SavePoints;
+    private long saves = 0;
 
     public override bool CanSeek
     {
@@ -27,7 +28,7 @@ public sealed class StringJsonReader : AJsonReader
     public override long Save()
     {
         SavePoints ??= new();
-        var pos = (long)last.Offset;
+        var pos = saves++;
         SavePoints[pos] = this.pos;
         return pos;
     }
@@ -36,7 +37,7 @@ public sealed class StringJsonReader : AJsonReader
     public override void Load(long pos)
     {
         var save = SavePoints![pos];
-        last = ExternalSpan.From(source.AsSpan())[(int)pos..];
+        last = ExternalSpan.From(source.AsSpan())[save.Index..];
         this.pos = save;
     }
 

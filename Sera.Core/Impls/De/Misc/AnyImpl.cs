@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
-using BetterCollections;
+using Sera.Core.Abstract;
 using Sera.Utils;
 
 namespace Sera.Core.Impls.De;
@@ -13,12 +13,16 @@ public readonly struct AnyImpl(SeraFormats? formats = null) : ISeraColion<Any>, 
     public R Collect<R, C>(ref C colctor, InType<Any>? t = null) where C : ISeraColctor<Any, R>
         => colctor.CSelect(this, new IdentityMapper<Any>(), new Type<Any>());
 
-    public ReadOnlyMemory<Any.Kind>? Priorities => null;
-    
+    public ReadOnlyMemory<Any.Kind>? Priorities
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => null;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R SelectPrimitive<R, C>(ref C colctor, InType<Any>? t = null)
         where C : ISelectSeraColctor<Any, R>
-        => throw new NotImplementedException();
+        => colctor.CSome(new SeraPrimitiveImpl(), new PrimitiveMapper(), new Type<SeraPrimitive>());
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R SelectString<R, C>(ref C colctor, Encoding encoding, InType<Any>? t = null)
@@ -28,8 +32,7 @@ public readonly struct AnyImpl(SeraFormats? formats = null) : ISeraColion<Any>, 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R SelectBytes<R, C>(ref C colctor, InType<Any>? t = null)
         where C : ISelectSeraColctor<Any, R>
-        => throw new NotImplementedException();
-    // colctor.CSome(new BytesImpl(), new BytesMapper(), new Type<byte[]>()),
+        => colctor.CSome(new BytesImpl(), new BytesMapper(), new Type<byte[]>());
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R SelectArray<R, C>(ref C colctor, InType<Any>? t = null)
@@ -66,7 +69,8 @@ public readonly struct AnyImpl(SeraFormats? formats = null) : ISeraColion<Any>, 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R SelectMap<R, C>(ref C colctor, int? size, InType<Any>? t = null)
         where C : ISelectSeraColctor<Any, R>
-        => colctor.CSome(new MapDictionaryImpl<Any, Any, AnyImpl, AnyImpl>(this, this),
+        => colctor.CSome(
+            new MapDictionaryImpl<Any, Any, AnyImpl, AnyImpl>(this, this, keyAbility: StringKeyAbility.Instance),
             new MapMapper(), new Type<Dictionary<Any, Any>>());
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -78,7 +82,14 @@ public readonly struct AnyImpl(SeraFormats? formats = null) : ISeraColion<Any>, 
     public R SelectUnion<R, C>(ref C colctor, string? name, InType<Any>? t = null)
         where C : ISelectSeraColctor<Any, R>
         => throw new NotImplementedException();
-    
+
+    public readonly struct PrimitiveMapper : ISeraMapper<SeraPrimitive, Any>
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Any Map(SeraPrimitive value, InType<Any>? u = null)
+            => Any.MakePrimitive(new(value));
+    }
+
     public readonly struct OptionMapper : ISeraMapper<Any?, Any>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

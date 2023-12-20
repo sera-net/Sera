@@ -46,4 +46,41 @@ public readonly partial struct SeraPrimitive
         Uri Uri();
         Version Version();
     }
+
+    public object ToObject() => Tag switch
+    {
+        SeraPrimitiveTypes.Boolean => Boolean,
+        SeraPrimitiveTypes.SByte => SByte,
+        SeraPrimitiveTypes.Byte => Byte,
+        SeraPrimitiveTypes.Int16 => Int16,
+        SeraPrimitiveTypes.UInt16 => UInt16,
+        SeraPrimitiveTypes.Int32 => Int32,
+        SeraPrimitiveTypes.UInt32 => UInt32,
+        SeraPrimitiveTypes.Int64 => Int64,
+        SeraPrimitiveTypes.UInt64 => UInt64,
+        SeraPrimitiveTypes.Int128 => Int128,
+        SeraPrimitiveTypes.UInt128 => UInt128,
+        SeraPrimitiveTypes.IntPtr => IntPtr,
+        SeraPrimitiveTypes.UIntPtr => UIntPtr,
+        SeraPrimitiveTypes.Half => Half,
+        SeraPrimitiveTypes.Single => Single,
+        SeraPrimitiveTypes.Double => Double,
+        SeraPrimitiveTypes.Decimal => Decimal,
+        SeraPrimitiveTypes.NFloat => NFloat,
+        SeraPrimitiveTypes.BigInteger => BigInteger,
+        SeraPrimitiveTypes.Complex => Complex,
+        SeraPrimitiveTypes.TimeSpan => TimeSpan,
+        SeraPrimitiveTypes.DateOnly => DateOnly,
+        SeraPrimitiveTypes.TimeOnly => TimeOnly,
+        SeraPrimitiveTypes.DateTime => DateTime,
+        SeraPrimitiveTypes.DateTimeOffset => DateTimeOffset,
+        SeraPrimitiveTypes.Guid => Guid,
+        SeraPrimitiveTypes.Range => Range,
+        SeraPrimitiveTypes.Index => Index,
+        SeraPrimitiveTypes.Char => Char,
+        SeraPrimitiveTypes.Rune => Rune,
+        SeraPrimitiveTypes.Uri => Uri,
+        SeraPrimitiveTypes.Version => Version,
+        _ => throw new ArgumentOutOfRangeException()
+    };
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Text;
 
 namespace Sera.Core;
 
@@ -16,8 +17,8 @@ public record AnyStruct(string? Name, Any[] values, SeraFieldInfos infos) :
 
     int IReadOnlyCollection<KeyValuePair<int, Any>>.Count => Count;
 
-    public bool ContainsKey(int key) => key > 0 && key < Count;
-
+    public bool ContainsKey(int key) => key >= 0 && key < Count;
+    
     public bool TryGet(int key, out SeraFieldInfo info, out Any value)
     {
         if (!ContainsKey(key))
@@ -108,6 +109,26 @@ public record AnyStruct(string? Name, Any[] values, SeraFieldInfos infos) :
     }
 
     IEnumerator IEnumerable.GetEnumerator() => Fields.GetEnumerator();
+
+    public override string ToString()
+    {
+        var sb = new StringBuilder();
+        sb.Append(Name ?? "<Anonymous>");
+        sb.Append(" { ");
+        var first = true;
+        for (var i = 0; i < values.Length; i++)
+        {
+            var value = values[i];
+            var info = infos.Infos[i];
+            if (first) first = false;
+            else sb.Append(", ");
+            sb.Append(info.Name);
+            sb.Append(" = ");
+            sb.Append(value);
+        }
+        sb.Append(" }");
+        return sb.ToString();
+    }
 
     public class Builder(string? Name)
     {

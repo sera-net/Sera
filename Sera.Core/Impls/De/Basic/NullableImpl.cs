@@ -1,5 +1,4 @@
 ﻿using System.Runtime.CompilerServices;
-using Sera.Core.Impls.De;
 using Sera.Utils;
 
 namespace Sera.Core.Impls.De;
@@ -38,4 +37,19 @@ public readonly struct NullableClassImpl<T, D>(D dep) : ISeraColion<T?>, IOption
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R CollectSome<R, C>(ref C colctor, InType<T?>? t = null) where C : ISomeSeraColctor<T?, R>
         => colctor.CSome(dep, new IdentityMapper<T>(), new Type<T>());
+}
+
+public readonly struct NullableNullableClassImpl<T, D>(D dep) : ISeraColion<T?>, IOptionSeraColion<T?>
+    where T : class where D : ISeraColion<T?>
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public R Collect<R, C>(ref C colctor, InType<T?>? t = null) where C : ISeraColctor<T?, R>
+        => colctor.COption(this);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T? CtorNone() => null;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public R CollectSome<R, C>(ref C colctor, InType<T?>? t = null) where C : ISomeSeraColctor<T?, R>
+        => colctor.CSome(dep, new IdentityMapper<T?>(), new Type<T?>());
 }

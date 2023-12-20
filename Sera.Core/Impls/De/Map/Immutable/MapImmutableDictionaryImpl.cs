@@ -1,11 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
+using Sera.Core.Abstract;
 using Sera.Utils;
 
 namespace Sera.Core.Impls.De;
 
-public readonly struct MapImmutableDictionaryImpl<IK, IV, DK, DV>(DK dk, DV dv)
+public readonly struct MapImmutableDictionaryImpl<IK, IV, DK, DV>(DK dk, DV dv, IKeyAbility? keyAbility = null)
     : ISeraColion<ImmutableDictionary<IK, IV>>, IMapSeraColion<ImmutableDictionary<IK, IV>.Builder, IK, IV>
     where DK : ISeraColion<IK>
     where DV : ISeraColion<IV>
@@ -15,7 +16,7 @@ public readonly struct MapImmutableDictionaryImpl<IK, IV, DK, DV>(DK dk, DV dv)
     public R Collect<R, C>(ref C colctor, InType<ImmutableDictionary<IK, IV>>? t = null)
         where C : ISeraColctor<ImmutableDictionary<IK, IV>, R>
         => colctor.CMap(this, new ImmutableDictionaryBuilderToImmutableDictionaryMapper<IK, IV>(),
-            new Type<ImmutableDictionary<IK, IV>.Builder>(), new Type<IK>(), new Type<IV>());
+            new Type<ImmutableDictionary<IK, IV>.Builder>(), new Type<IK>(), new Type<IV>(), keyAbility);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ImmutableDictionary<IK, IV>.Builder Builder(int? cap, Type<ImmutableDictionary<IK, IV>.Builder> b = default)

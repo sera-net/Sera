@@ -7,10 +7,10 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.Json;
 using BetterCollections;
 using BetterCollections.Memories;
 using Sera.Core;
+using Sera.Core.Abstract;
 using Sera.Core.Formats;
 using Sera.Core.Impls.De;
 using Sera.Json.Utils;
@@ -48,6 +48,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
 
     #region Select
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T CSelect<C, M, U>(C colion, M mapper, Type<U> u) where C : ISelectSeraColion<U> where M : ISeraMapper<U, T>
     {
         var token = reader.CurrentToken;
@@ -65,7 +66,8 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
                     AJsonDeserializer.SelectPriorities))
                 return r;
             var err_msg = $"Select failed at {token.Pos}";
-            if (ex is not { Count: > 0 }) throw new JsonParseException(err_msg, token.Pos);
+            if (ex is null or { Count: 0 }) throw new JsonParseException(err_msg, token.Pos);
+            if (ex is { Count: 1 } and [var ex0]) throw new JsonParseException(err_msg, token.Pos, ex0);
             var inner = new AggregateException(ex);
             throw new JsonParseException(err_msg, token.Pos, inner);
         }
@@ -75,6 +77,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool CSelect<C, M, U>(in C colion, in M mapper, in JsonToken token,
         ref SeraKinds mark, ref T r, ref List<Exception>? ex, long? pos, ReadOnlyMemory<Any.Kind> kinds)
         where C : ISelectSeraColion<U> where M : ISeraMapper<U, T>
@@ -93,6 +96,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
                         r = mapper.Map(c.Value);
                         return true;
                     }
+                    else reader.Load(pos.Value);
                 }
                 catch (Exception e)
                 {
@@ -114,6 +118,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         return false;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private bool CSelect<C, U>(in C colion, in JsonToken token, SeraKinds kind,
         ref JsonDeserializer<U>.SelectSeraColctor c)
         where C : ISelectSeraColion<U>
@@ -158,10 +163,135 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CSelectPrimitive<C, M, U>(C colion, M mapper, Type<U> u) where C : ISelectPrimitiveSeraColion<U>
+        where M : ISeraMapper<U, T>
+    {
+        var token = reader.CurrentToken;
+        Unsafe.SkipInit(out T r);
+        var mark = SeraPrimitiveKinds.None;
+        List<Exception>? ex = null;
+        var pos = reader.CanSeek ? (long?)reader.Save() : null;
+        try
+        {
+            if (colion.Priorities.HasValue)
+                if (CSelectPrimitive<C, M, U>(colion, mapper, token, ref mark, ref r, ref ex, pos,
+                        colion.Priorities.Value))
+                    return r;
+            if (CSelectPrimitive<C, M, U>(colion, mapper, token, ref mark, ref r, ref ex, pos,
+                    AJsonDeserializer.SelectPrimitivePriorities))
+                return r;
+            var err_msg = $"Select Primitive failed at {token.Pos}";
+            if (ex is null or { Count: 0 }) throw new JsonParseException(err_msg, token.Pos);
+            if (ex is { Count: 1 } and [var ex0]) throw new JsonParseException(err_msg, token.Pos, ex0);
+            var inner = new AggregateException(ex);
+            throw new JsonParseException(err_msg, token.Pos, inner);
+        }
+        finally
+        {
+            if (pos.HasValue) reader.UnSave(pos.Value);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private bool CSelectPrimitive<C, M, U>(in C colion, in M mapper, in JsonToken token,
+        ref SeraPrimitiveKinds mark, ref T r, ref List<Exception>? ex, long? pos,
+        ReadOnlyMemory<SeraPrimitiveTypes> types)
+        where C : ISelectPrimitiveSeraColion<U> where M : ISeraMapper<U, T>
+    {
+        var c = new JsonDeserializer<U>.SelectSeraColctor(impl);
+        foreach (var type in types)
+        {
+            var kind = type.ToKinds();
+            if (mark.Has(kind)) continue;
+            if (pos.HasValue)
+            {
+                try
+                {
+                    if (CSelectPrimitive(in colion, in token, type, ref c))
+                    {
+                        r = mapper.Map(c.Value);
+                        return true;
+                    }
+                    else reader.Load(pos.Value);
+                }
+                catch (Exception e)
+                {
+                    ex ??= new();
+                    ex.Add(e);
+                    reader.Load(pos.Value);
+                }
+            }
+            else
+            {
+                if (CSelectPrimitive(in colion, in token, type, ref c))
+                {
+                    r = mapper.Map(c.Value);
+                    return true;
+                }
+            }
+            mark.Set(kind);
+        }
+        return false;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private bool CSelectPrimitive<C, U>(in C colion, in JsonToken token, SeraPrimitiveTypes type,
+        ref JsonDeserializer<U>.SelectSeraColctor c)
+        where C : ISelectPrimitiveSeraColion<U>
+    {
+        switch (type)
+        {
+            case SeraPrimitiveTypes.Boolean:
+                if (token.Kind is not (JsonTokenKind.True or JsonTokenKind.False)) return false;
+                break;
+            case SeraPrimitiveTypes.SByte:
+            case SeraPrimitiveTypes.Byte:
+            case SeraPrimitiveTypes.Int16:
+            case SeraPrimitiveTypes.UInt16:
+            case SeraPrimitiveTypes.Int32:
+            case SeraPrimitiveTypes.UInt32:
+            case SeraPrimitiveTypes.Int64:
+            case SeraPrimitiveTypes.UInt64:
+            case SeraPrimitiveTypes.Int128:
+            case SeraPrimitiveTypes.UInt128:
+            case SeraPrimitiveTypes.IntPtr:
+            case SeraPrimitiveTypes.UIntPtr:
+            case SeraPrimitiveTypes.Half:
+            case SeraPrimitiveTypes.Single:
+            case SeraPrimitiveTypes.Double:
+            case SeraPrimitiveTypes.Decimal:
+            case SeraPrimitiveTypes.NFloat:
+            case SeraPrimitiveTypes.BigInteger:
+            case SeraPrimitiveTypes.TimeSpan:
+            case SeraPrimitiveTypes.DateOnly:
+            case SeraPrimitiveTypes.TimeOnly:
+            case SeraPrimitiveTypes.DateTime:
+            case SeraPrimitiveTypes.DateTimeOffset:
+            case SeraPrimitiveTypes.Index:
+                if (token.Kind is not (JsonTokenKind.Number or JsonTokenKind.String)) return false;
+                break;
+            case SeraPrimitiveTypes.Complex:
+                if (token.Kind is not (JsonTokenKind.String or JsonTokenKind.ArrayStart))
+                    return false;
+                break;
+            case SeraPrimitiveTypes.Guid:
+            case SeraPrimitiveTypes.Range:
+            case SeraPrimitiveTypes.Char:
+            case SeraPrimitiveTypes.Rune:
+            case SeraPrimitiveTypes.Uri:
+            case SeraPrimitiveTypes.Version:
+                if (token.Kind is not JsonTokenKind.String) return false;
+                break;
+        }
+        return colion.SelectPrimitiveDetail<bool, JsonDeserializer<U>.SelectSeraColctor>(ref c, type);
+    }
+
     private struct SelectSeraColctor(JsonDeserializer impl) : ISelectSeraColctor<T, bool>
     {
         public T Value = default!;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool CSome<C, M, U>(C colion, M mapper, Type<U> u) where C : ISeraColion<U> where M : ISeraMapper<U, T>
         {
             var c = new JsonDeserializer<U>(impl);
@@ -170,6 +300,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             return true;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool CNone() => false;
     }
 
@@ -509,18 +640,23 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
 
     #region Bytes
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T CBytes<M>(M mapper, Type<byte[]> t) where M : ISeraMapper<byte[], T>
         => mapper.Map(CBytes().ToArray());
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T CBytes<M>(M mapper, Type<Memory<byte>> t) where M : ISeraMapper<Memory<byte>, T>
         => mapper.Map(CBytes());
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T CBytes<M>(M mapper, Type<ReadOnlyMemory<byte>> t) where M : ISeraMapper<ReadOnlyMemory<byte>, T>
         => mapper.Map(CBytes());
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T CBytesSpan<M>(M mapper) where M : ISeraSpanMapper<byte, T>
         => mapper.SpanMap(CBytes().Span);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private Memory<byte> CBytes()
     {
         var token = reader.CurrentToken;
@@ -577,6 +713,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         return mapper.SpanMap(arr.AsSpan);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private Vec<I> CArray<C, I>(C colion) where C : ISeraColion<I>
     {
         reader.ReadArrayStart();
@@ -641,6 +778,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
 
     #region Entry
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T CEntry<C, B, M>(C colion, M mapper, Type<B> b) where C : IEntrySeraColion<B> where M : ISeraMapper<B, T>
     {
         reader.ReadArrayStart();
@@ -829,18 +967,22 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
     #region Map
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public T CMap<C, B, M, IK, IV>(C colion, M mapper, Type<B> b, Type<IK> k, Type<IV> v)
+    public T CMap<C, B, M, IK, IV>(C colion, M mapper, Type<B> b, Type<IK> k, Type<IV> v, IKeyAbility? keyAbility = null)
         where C : IMapSeraColion<B, IK, IV> where M : ISeraMapper<B, T>
         => typeof(IK) == typeof(string)
-            ? CObjectMapStringKey<C, B, M, IK, IV>(colion, mapper)
-            : CArrayMap<C, B, M, IK, IV>(colion, mapper);
+            ? CObjectMapStringKey<C, B, M, IK, IV>(colion, mapper, keyAbility)
+            : CArrayMap<C, B, M, IK, IV>(colion, mapper, keyAbility);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private T CArrayMap<C, B, M, IK, IV>(C colion, M mapper)
+    private T CArrayMap<C, B, M, IK, IV>(C colion, M mapper, IKeyAbility? keyAbility)
         where C : IMapSeraColion<B, IK, IV> where M : ISeraMapper<B, T>
     {
         var token = reader.CurrentToken;
-        if (token.Kind is JsonTokenKind.ObjectStart) return CObjectMapSubJsonKey<C, B, M, IK, IV>(colion, mapper);
+        if (token.Kind is JsonTokenKind.ObjectStart)
+        {
+            if (keyAbility is IKeyAbility<string>) return CObjectMapAsStringKey<C, B, M, IK, IV>(colion, mapper);
+            return CObjectMapSubJsonKey<C, B, M, IK, IV>(colion, mapper);
+        }
         reader.ReadArrayStart();
         var colctor = new ArrayMapSeraColctor<B, IK, IV>(colion.Builder(null), impl);
         var first = true;
@@ -861,11 +1003,12 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private T CObjectMapStringKey<C, B, M, IK, IV>(C colion, M mapper)
+    private T CObjectMapStringKey<C, B, M, IK, IV>(C colion, M mapper, IKeyAbility? keyAbility)
         where C : IMapSeraColion<B, IK, IV> where M : ISeraMapper<B, T>
     {
         var token = reader.CurrentToken;
-        if (token.Kind is JsonTokenKind.ArrayStart) return CArrayMap<C, B, M, IK, IV>(colion, mapper);
+        if (token.Kind is JsonTokenKind.ArrayStart) return CArrayMap<C, B, M, IK, IV>(colion, mapper, keyAbility);
+        if (keyAbility is IKeyAbility<string>) return CObjectMapAsStringKey<C, B, M, IK, IV>(colion, mapper);
         reader.ReadObjectStart();
         var colctor = new ObjectMapStringKeySeraColctor<B, IK, IV>(colion.Builder(null), impl);
         var first = true;
@@ -900,6 +1043,28 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             else reader.ReadComma();
             var cursor = reader.Cursor;
             colion.CollectItem<Unit, ObjectMapSubJsonKeySeraColctor<B, IK, IV>>(ref colctor);
+            reader.AssertMove(cursor);
+        }
+        reader.ReadObjectEnd();
+        if (!colion.FinishCollect(i)) throw new DeserializeException("Failed to collect map");
+        return mapper.Map(colctor.builder);
+    }
+
+    private T CObjectMapAsStringKey<C, B, M, IK, IV>(C colion, M mapper)
+        where C : IMapSeraColion<B, IK, IV> where M : ISeraMapper<B, T>
+    {
+        reader.ReadObjectStart();
+        var colctor = new ObjectMapAsStringKeySeraColctor<B, IK, IV>(colion.Builder(null), impl);
+        var first = true;
+        var i = 0;
+        for (; reader.Has; i++)
+        {
+            var token = reader.CurrentToken;
+            if (token.Kind is JsonTokenKind.ObjectEnd) break;
+            if (first) first = false;
+            else reader.ReadComma();
+            var cursor = reader.Cursor;
+            colion.CollectItem<Unit, ObjectMapAsStringKeySeraColctor<B, IK, IV>>(ref colctor);
             reader.AssertMove(cursor);
         }
         reader.ReadObjectEnd();
@@ -954,8 +1119,8 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         public Unit CItem<CK, CV, E>(CK keyColion, CV valueColion, E effector)
             where CK : ISeraColion<IK> where CV : ISeraColion<IV> where E : ISeraEffector<B, KeyValuePair<IK, IV>>
         {
-            var key_token = impl.reader.ReadStringToken();
             IK vk;
+            var key_token = impl.reader.ReadStringToken();
             try
             {
                 vk = SeraJson.Deserializer
@@ -968,6 +1133,26 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
                 var pos = key_token.Pos;
                 throw new JsonParseException($"Parsing object sub json key failed at {pos}", pos, e);
             }
+            read_value:
+            impl.reader.ReadColon();
+            var cv = new JsonDeserializer<IV>(impl);
+            var vv = valueColion.Collect<IV, JsonDeserializer<IV>>(ref cv);
+            effector.Effect(ref builder, new(vk, vv));
+            return default;
+        }
+    }
+
+    private struct ObjectMapAsStringKeySeraColctor<B, IK, IV>(B builder, JsonDeserializer impl)
+        : IMapSeraColctor<B, IK, IV, Unit>
+    {
+        public B builder = builder;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Unit CItem<CK, CV, E>(CK keyColion, CV valueColion, E effector)
+            where CK : ISeraColion<IK> where CV : ISeraColion<IV> where E : ISeraEffector<B, KeyValuePair<IK, IV>>
+        {
+            var ck = new JsonDeserializer<IK>(impl);
+            var vk = keyColion.Collect<IK, JsonDeserializer<IK>>(ref ck);
             impl.reader.ReadColon();
             var cv = new JsonDeserializer<IV>(impl);
             var vv = valueColion.Collect<IV, JsonDeserializer<IV>>(ref cv);
@@ -980,6 +1165,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
 
     #region Struct
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T CStruct<C, B, M>(C colion, M mapper, Type<B> b) where C : IStructSeraColion<B> where M : ISeraMapper<B, T>
     {
         reader.ReadObjectStart();
@@ -988,20 +1174,20 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         else return CDynamicStruct<C, B, M>(colion, mapper);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private T CStaticStruct<C, B, M>(C colion, M mapper, SeraFieldInfos fields)
         where C : IStructSeraColion<B> where M : ISeraMapper<B, T>
     {
         var c = new StructSeraColctor<B>(colion.Builder(null), impl);
         var first = true;
         var i = 0;
-        for (; reader.Has; reader.MoveNext(), i++)
+        for (; reader.Has; i++)
         {
             var token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ObjectEnd) break;
             if (first) first = false;
             else reader.ReadComma();
-            if (token.Kind is not JsonTokenKind.String) reader.ThrowExpected(JsonTokenKind.String);
-            var field_name = token.AsString();
+            var field_name = reader.ReadString();
             reader.ReadColon();
             if (!fields.TryGet(field_name, out var info))
             {
@@ -1009,6 +1195,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
                 continue;
             }
             var key = long.TryParse(field_name, out var key_) ? (long?)key_ : null;
+            var cursor = reader.Cursor;
             var r = colion.CollectField<StructRes, StructSeraColctor<B>>(ref c, info.index, field_name, key);
             switch (r)
             {
@@ -1019,6 +1206,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
                     reader.SkipValue();
                     break;
                 case StructRes.Field:
+                    reader.AssertMove(cursor);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -1029,20 +1217,20 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         return mapper.Map(c.builder);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private T CDynamicStruct<C, B, M>(C colion, M mapper)
         where C : IStructSeraColion<B> where M : ISeraMapper<B, T>
     {
         var c = new StructSeraColctor<B>(colion.Builder(null), impl);
         var first = true;
         var i = 0;
-        for (; reader.Has; reader.MoveNext(), i++)
+        for (; reader.Has; i++)
         {
             var token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ObjectEnd) break;
             if (first) first = false;
             else reader.ReadComma();
-            if (token.Kind is not JsonTokenKind.String) reader.ThrowExpected(JsonTokenKind.String);
-            var field_name = token.AsString();
+            var field_name = reader.ReadString();
             reader.ReadColon();
             var key = long.TryParse(field_name, out var key_) ? (long?)key_ : null;
             var r = colion.CollectField<StructRes, StructSeraColctor<B>>(ref c, i, field_name, key);
@@ -1074,6 +1262,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
     {
         public B builder = builder;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public StructRes CField<C, E, I>(C colion, E effector, Type<I> i)
             where C : ISeraColion<I> where E : ISeraEffector<B, I>
         {
@@ -1083,8 +1272,10 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             return StructRes.Field;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public StructRes CSkip() => StructRes.Skip;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public StructRes CNone() => StructRes.None;
     }
 
