@@ -11,7 +11,7 @@ public readonly struct MapIImmutableDictionaryImpl<T, IK, IV, DK, DV, N>(
     DK dk,
     DV dv,
     N ctor,
-    IKeyAbility? keyAbility = null) :
+    ASeraTypeAbility? keyAbility = null) :
     ISeraColion<T>, IMapSeraColion<T, IK, IV>
     where T : IImmutableDictionary<IK, IV>
     where DK : ISeraColion<IK>

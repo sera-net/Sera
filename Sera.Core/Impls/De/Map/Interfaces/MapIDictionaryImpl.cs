@@ -11,7 +11,7 @@ public readonly struct MapIDictionaryImpl<T, IK, IV, DK, DV, N>(
     DV dv,
     N ctor,
     bool useAdd = false,
-    IKeyAbility? keyAbility = null)
+    ASeraTypeAbility? keyAbility = null)
     : ISeraColion<T>, IMapSeraColion<T, IK, IV>
     where T : IDictionary<IK, IV>
     where DK : ISeraColion<IK>

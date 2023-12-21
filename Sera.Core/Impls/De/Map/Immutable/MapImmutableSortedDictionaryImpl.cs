@@ -6,7 +6,7 @@ using Sera.Utils;
 
 namespace Sera.Core.Impls.De;
 
-public readonly struct MapImmutableSortedDictionaryImpl<IK, IV, DK, DV>(DK dk, DV dv, IKeyAbility? keyAbility = null)
+public readonly struct MapImmutableSortedDictionaryImpl<IK, IV, DK, DV>(DK dk, DV dv, ASeraTypeAbility? keyAbility = null)
     : ISeraColion<ImmutableSortedDictionary<IK, IV>>, IMapSeraColion<ImmutableSortedDictionary<IK, IV>.Builder, IK, IV>
     where DK : ISeraColion<IK>
     where DV : ISeraColion<IV>

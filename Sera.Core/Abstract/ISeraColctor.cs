@@ -213,7 +213,7 @@ public interface ISeraColctor<in T, [AssocType] out R> : ISeraAbility<ISeraColio
 
     #region Map
 
-    public R CMap<C, B, M, IK, IV>(C colion, M mapper, Type<B> b, Type<IK> k, Type<IV> v, IKeyAbility? keyAbility = null)
+    public R CMap<C, B, M, IK, IV>(C colion, M mapper, Type<B> b, Type<IK> k, Type<IV> v, ASeraTypeAbility? keyAbility = null)
         where C : IMapSeraColion<B, IK, IV> where M : ISeraMapper<B, T>;
     
     #endregion

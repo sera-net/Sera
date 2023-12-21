@@ -6,7 +6,7 @@ using Sera.Utils;
 
 namespace Sera.Core.Impls.De;
 
-public readonly struct MapListImpl<IK, IV, DK, DV>(DK dk, DV dv, IKeyAbility? keyAbility = null) :
+public readonly struct MapListImpl<IK, IV, DK, DV>(DK dk, DV dv, ASeraTypeAbility? keyAbility = null) :
     ISeraColion<List<KeyValuePair<IK, IV>>>,
     IMapSeraColion<List<KeyValuePair<IK, IV>>, IK, IV>
     where DK : ISeraColion<IK>

@@ -11,7 +11,7 @@ public readonly struct MapImpl<T, IK, IV, DK, DV, B, M, N, E>(
     M mapper,
     N ctor,
     E effector,
-    IKeyAbility? keyAbility = null) :
+    ASeraTypeAbility? keyAbility = null) :
     ISeraColion<T>, IMapSeraColion<B, IK, IV>
     where DK : ISeraColion<IK>
     where DV : ISeraColion<IV>

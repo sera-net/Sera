@@ -70,7 +70,7 @@ public readonly struct AnyImpl(SeraFormats? formats = null) : ISeraColion<Any>, 
     public R SelectMap<R, C>(ref C colctor, int? size, InType<Any>? t = null)
         where C : ISelectSeraColctor<Any, R>
         => colctor.CSome(
-            new MapDictionaryImpl<Any, Any, AnyImpl, AnyImpl>(this, this, keyAbility: StringKeyAbility.Instance),
+            new MapDictionaryImpl<Any, Any, AnyImpl, AnyImpl>(this, this, keyAbility: StringSeraTypeAbility.Instance),
             new MapMapper(), new Type<Dictionary<Any, Any>>());
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
