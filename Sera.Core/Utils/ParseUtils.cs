@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Sera.Core;
 
 namespace Sera.Utils;
 
@@ -61,6 +62,69 @@ public static class ParseUtils
         return true;
         failed:
         range = default;
+        return false;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool TryParseVariantTag(this ReadOnlySpan<char> chars, VariantTagKind tagKind, SeraFormats? formats,
+        out VariantTag tag)
+    {
+        var style = formats.GetNumberStyles();
+        switch (tagKind)
+        {
+            case VariantTagKind.SByte:
+            {
+                if (sbyte.TryParse(chars, style, null, out var v)) goto failed;
+                tag = VariantTag.Create(v);
+                return true;
+            }
+            case VariantTagKind.Byte:
+            {
+                if (byte.TryParse(chars, style, null, out var v)) goto failed;
+                tag = VariantTag.Create(v);
+                return true;
+            }
+            case VariantTagKind.Int16:
+            {
+                if (short.TryParse(chars, style, null, out var v)) goto failed;
+                tag = VariantTag.Create(v);
+                return true;
+            }
+            case VariantTagKind.UInt16:
+            {
+                if (ushort.TryParse(chars, style, null, out var v)) goto failed;
+                tag = VariantTag.Create(v);
+                return true;
+            }
+            case VariantTagKind.Int32:
+            {
+                if (int.TryParse(chars, style, null, out var v)) goto failed;
+                tag = VariantTag.Create(v);
+                return true;
+            }
+            case VariantTagKind.UInt32:
+            {
+                if (uint.TryParse(chars, style, null, out var v)) goto failed;
+                tag = VariantTag.Create(v);
+                return true;
+            }
+            case VariantTagKind.Int64:
+            {
+                if (long.TryParse(chars, style, null, out var v)) goto failed;
+                tag = VariantTag.Create(v);
+                return true;
+            }
+            case VariantTagKind.UInt64:
+            {
+                if (ulong.TryParse(chars, style, null, out var v)) goto failed;
+                tag = VariantTag.Create(v);
+                return true;
+            }
+            default:
+                throw new ArgumentOutOfRangeException(nameof(tagKind), tagKind, null);
+        }
+        failed:
+        tag = default;
         return false;
     }
 }

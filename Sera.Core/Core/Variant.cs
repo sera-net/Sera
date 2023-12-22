@@ -374,7 +374,7 @@ public record UnionStyle(
 
 public record VariantStyle(
     VariantPriority Priority = VariantPriority.Any,
-    SeraFormats? Formats = null
+    [property: Obsolete("todo remove")] SeraFormats? Formats = null // todo remove Formats
 )
 {
     public static VariantStyle Default { get; } = new();
@@ -384,6 +384,6 @@ public record VariantStyle(
         : new()
         {
             Priority = attr.Priority,
-            Formats = SeraFormats.FromAttr(formats),
+            // Formats = SeraFormats.FromAttr(formats),
         };
 }

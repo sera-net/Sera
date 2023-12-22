@@ -100,14 +100,16 @@ public interface IStructSeraColion<B>
     public bool FinishCollect(int size) => true;
 }
 
-public interface IUnionSeraColion<out T>
+public interface IVariantsSeraColion<out T>
 {
     public SeraVariantInfos Variants { get; }
+    
+    public R CollectVariant<R, C>(ref C colctor, int variant)
+        where C : IVariantSeraColctor<T, R>;
 
-    public T CollectEmpty();
-
-    public R CollectVariant<R, C>(ref C colctor, int variant, InType<T>? t = null)
-        where C : IUnionSeraColctor<T, R>;
+    public R CollectUntagged<R, C>(ref C colctor)
+        where C : IUntaggedUnionSeraColctor<T, R>
+        => colctor.CNone();
 }
 
 public interface ISelectSeraColion<out T>

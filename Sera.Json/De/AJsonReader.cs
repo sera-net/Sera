@@ -108,6 +108,14 @@ public abstract class AJsonReader(SeraJsonOptions options)
         var token = CurrentToken;
         throw new JsonParseException($"Expected {kind} but found {token.Kind} at {token.Pos}", token.Pos);
     }
+    
+    [DoesNotReturn]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public virtual void ThrowExpected(JsonTokenKind a, JsonTokenKind b)
+    {
+        var token = CurrentToken;
+        throw new JsonParseException($"Expected {a} or {b} but found {token.Kind} at {token.Pos}", token.Pos);
+    }
 
     /// <summary>Read and move next</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Sera.Core;
 
-public readonly record struct SeraVariantInfos
+public record SeraVariantInfos
 {
     public Variant[] Variants { get; }
     public VariantTagKind TagKind { get; }

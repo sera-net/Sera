@@ -23,7 +23,7 @@ public class JsonDeserializer(SeraJsonOptions options, AJsonReader reader) : AJs
     public JsonDeserializer(AJsonReader reader) : this(reader.Options, reader) { }
 
     internal readonly AJsonReader reader = reader;
-    
+
     public JsonDeserializer<T> MakeColctor<T>() => new(this);
 }
 
@@ -498,7 +498,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         var token = reader.CurrentToken;
         if (token.Kind is not (JsonTokenKind.Number or JsonTokenKind.String))
         {
-            reader.ThrowExpected(JsonTokenKind.String);
+            reader.ThrowExpected(JsonTokenKind.Number, JsonTokenKind.String);
         }
         var span = token.AsSpan();
         if (!span.TryParseIndex(out var index))
@@ -575,7 +575,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             var style = formats.GetNumberStyles();
             r = token.ParseNumber<N>(style);
         }
-        else reader.ThrowExpected(JsonTokenKind.Number);
+        else reader.ThrowExpected(JsonTokenKind.Number, JsonTokenKind.String);
         reader.MoveNext();
         return mapper.Map(r);
     }
@@ -975,7 +975,8 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         var token = reader.CurrentToken;
         if (token.Kind is JsonTokenKind.ObjectStart)
         {
-            if (keyAbility?.IsAccept(SeraKinds.String) ?? false) return CObjectMapAsStringKey<C, B, M, IK, IV>(colion, mapper);
+            if (keyAbility?.IsAccept(SeraKinds.String) ?? false)
+                return CObjectMapAsStringKey<C, B, M, IK, IV>(colion, mapper);
             return CObjectMapSubJsonKey<C, B, M, IK, IV>(colion, mapper);
         }
         reader.ReadArrayStart();
@@ -1003,7 +1004,8 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
     {
         var token = reader.CurrentToken;
         if (token.Kind is JsonTokenKind.ArrayStart) return CArrayMap<C, B, M, IK, IV>(colion, mapper, keyAbility);
-        if (keyAbility?.IsAccept(SeraKinds.String) ?? false) return CObjectMapAsStringKey<C, B, M, IK, IV>(colion, mapper);
+        if (keyAbility?.IsAccept(SeraKinds.String) ?? false)
+            return CObjectMapAsStringKey<C, B, M, IK, IV>(colion, mapper);
         reader.ReadObjectStart();
         var colctor = new ObjectMapStringKeySeraColctor<B, IK, IV>(colion.Builder(null), impl);
         var first = true;
@@ -1279,36 +1281,221 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
 
     #region Union
 
-    public T CUnion<C, B, M>(C colion, M mapper, Type<B> b, UnionStyle? union_style = null)
-        where C : IUnionSeraColion<B> where M : ISeraMapper<B, T>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CUnionEmpty<N>(N ctor) where N : ISeraCtor<T>
     {
-        throw new NotImplementedException();
+        var token = reader.CurrentToken;
+        if (token.Kind is JsonTokenKind.Null) goto ok;
+        if (token.Kind is JsonTokenKind.ObjectStart)
+        {
+            reader.ReadObjectStart();
+            reader.ReadObjectEnd();
+            goto ok;
+        }
+        if (token.Kind is JsonTokenKind.ArrayStart)
+        {
+            reader.ReadArrayStart();
+            reader.ReadArrayEnd();
+            // ReSharper disable once RedundantJumpStatement
+            goto ok;
+        }
+        ok:
+        return ctor.Ctor();
     }
 
-    private struct UnionSeraColctor(JsonDeserializer impl) : IUnionSeraColctor<T, T>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CUnionVariants<C, B, M>(C colion, M mapper, Type<B> b, UnionStyle? union_style = null)
+        where C : IVariantsSeraColion<B> where M : ISeraMapper<B, T>
     {
-        public T CVariant<N>(N ctor, VariantStyle? variant_style = null) where N : ISeraCtor<T> => ctor.Ctor();
+        var variants = colion.Variants;
+        var token = reader.CurrentToken;
+        (Variant variant, int index) info;
+        if (token.Kind is JsonTokenKind.String or JsonTokenKind.Number)
+        {
+            var span = token.AsSpan();
+            if (span.TryParseVariantTag(variants.TagKind, union_style?.VariantFormats, out var tag))
+            {
+                if (variants.TryGet(tag, out info)) goto ok;
+            }
+            {
+                var str = token.AsString();
+                if (variants.TryGet(str, out info)) goto ok;
+            }
+        }
+        var format = union_style?.Format ?? UnionFormat.Any;
+        return format switch
+        {
+            UnionFormat.External => CUnionVariantsExternal<C, B, M>(variants, colion, mapper, union_style),
+            UnionFormat.Internal => throw new NotImplementedException(),
+            UnionFormat.Adjacent => throw new NotImplementedException(),
+            UnionFormat.Tuple => CUnionVariantsTuple<C, B, M>(variants, colion, mapper, union_style),
+            UnionFormat.Untagged => CUnionVariantsUntagged<C, B, M>(colion, mapper),
+            _ => CUnionVariantsAny<C, B, M>(variants, in token, colion, mapper, union_style),
+        };
+        ok:
+        reader.MoveNext();
+        var c = new JsonDeserializer<B>.JustVariantSeraColctor(impl);
+        var r = colion.CollectVariant<B, JsonDeserializer<B>.JustVariantSeraColctor>(ref c, info.index);
+        return mapper.Map(r);
+    }
 
-        public T CVariantValue<C, M, I>(C colion, M mapper, Type<I> i, VariantStyle? variant_style = null)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CUnionVariantsAny<C, B, M>(SeraVariantInfos variants, in JsonToken token,
+        C colion, M mapper, UnionStyle? union_style)
+        where C : IVariantsSeraColion<B> where M : ISeraMapper<B, T>
+    {
+        if (token.Kind is JsonTokenKind.ArrayStart)
+            return CUnionVariantsTuple<C, B, M>(variants, colion, mapper, union_style);
+        return CUnionVariantsExternal<C, B, M>(variants, colion, mapper, union_style);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CUnionVariantsExternal<C, B, M>(SeraVariantInfos variants, C colion, M mapper, UnionStyle? union_style)
+        where C : IVariantsSeraColion<B> where M : ISeraMapper<B, T>
+    {
+        reader.ReadObjectStart();
+        var key = reader.ReadStringToken();
+        var span = key.AsSpan();
+        (Variant variant, int index) info;
+        if (span.TryParseVariantTag(variants.TagKind, union_style?.VariantFormats, out var tag))
+        {
+            if (variants.TryGet(tag, out info)) goto ok;
+        }
+        {
+            var str = key.AsString();
+            if (variants.TryGet(str, out info)) goto ok;
+        }
+        throw new DeserializeException("Unknown Union Variant");
+        ok:
+        reader.ReadColon();
+        var c = new JsonDeserializer<B>.ValueVariantSeraColctor(impl);
+        var r = colion.CollectVariant<B, JsonDeserializer<B>.ValueVariantSeraColctor>(ref c, info.index);
+        reader.ReadObjectEnd();
+        return mapper.Map(r);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CUnionVariantsTuple<C, B, M>(SeraVariantInfos variants, C colion, M mapper, UnionStyle? union_style)
+        where C : IVariantsSeraColion<B> where M : ISeraMapper<B, T>
+    {
+        reader.ReadArrayStart();
+        var key = reader.CurrentToken;
+        if (key.Kind is not (JsonTokenKind.Number or JsonTokenKind.String))
+            reader.ThrowExpected(JsonTokenKind.Number, JsonTokenKind.String);
+        var span = key.AsSpan();
+        (Variant variant, int index) info;
+        if (span.TryParseVariantTag(variants.TagKind, union_style?.VariantFormats, out var tag))
+        {
+            if (variants.TryGet(tag, out info)) goto ok;
+        }
+        {
+            var str = key.AsString();
+            if (variants.TryGet(str, out info)) goto ok;
+        }
+        throw new DeserializeException("Unknown Union Variant");
+        ok:
+        reader.MoveNext();
+        reader.ReadComma();
+        var c = new JsonDeserializer<B>.ValueVariantSeraColctor(impl);
+        var r = colion.CollectVariant<B, JsonDeserializer<B>.ValueVariantSeraColctor>(ref c, info.index);
+        reader.ReadArrayEnd();
+        return mapper.Map(r);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CUnionVariantsUntagged<C, B, M>(C colion, M mapper)
+        where C : IVariantsSeraColion<B> where M : ISeraMapper<B, T>
+    {
+        var c = new JsonDeserializer<B>.UntaggedUnionSeraColctor(impl);
+        var r = colion.CollectUntagged<B, JsonDeserializer<B>.UntaggedUnionSeraColctor>(ref c);
+        return mapper.Map(r);
+    }
+
+    private readonly struct JustVariantSeraColctor(JsonDeserializer impl) : IVariantSeraColctor<T, T>
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T CVariant<N>(N ctor) where N : ISeraCtor<T>
+            => ctor.Ctor();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T CVariantValue<C, M, I>(C colion, M mapper, Type<I> i)
+            where C : ISeraColion<I> where M : ISeraMapper<I, T>
+            => CNone();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T CVariantTuple<C, M, I>(C colion, M mapper, Type<I> i)
+            where C : ITupleSeraColion<I> where M : ISeraMapper<I, T>
+            => CNone();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T CVariantStruct<C, M, I>(C colion, M mapper, Type<I> i)
+            where C : IStructSeraColion<I> where M : ISeraMapper<I, T>
+            => CNone();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T CNone() => throw new DeserializeException($"Unable to read union {typeof(T)}");
+    }
+
+    private readonly struct ValueVariantSeraColctor(JsonDeserializer impl) : IVariantSeraColctor<T, T>
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T CVariant<N>(N ctor) where N : ISeraCtor<T>
+        {
+            impl.reader.ReadNull();
+            return ctor.Ctor();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T CVariantValue<C, M, I>(C colion, M mapper, Type<I> i)
             where C : ISeraColion<I> where M : ISeraMapper<I, T>
         {
-            throw new NotImplementedException();
+            var c = new JsonDeserializer<I>(impl);
+            var r = colion.Collect<I, JsonDeserializer<I>>(ref c);
+            return mapper.Map(r);
         }
 
-        public T CVariantTuple<C, M, I>(C colion, M mapper, Type<I> i, VariantStyle? variant_style = null)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T CVariantTuple<C, M, I>(C colion, M mapper, Type<I> i)
             where C : ITupleSeraColion<I> where M : ISeraMapper<I, T>
         {
-            throw new NotImplementedException();
+            var c = new JsonDeserializer<I>(impl);
+            var r = c.CTuple(colion, new IdentityMapper<I>(), new Type<I>());
+            return mapper.Map(r);
         }
 
-        public T CVariantStruct<C, M, I>(C colion, M mapper, Type<I> i, VariantStyle? variant_style = null)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T CVariantStruct<C, M, I>(C colion, M mapper, Type<I> i)
             where C : IStructSeraColion<I> where M : ISeraMapper<I, T>
         {
-            throw new NotImplementedException();
+            var c = new JsonDeserializer<I>(impl);
+            var r = c.CStruct(colion, new IdentityMapper<I>(), new Type<I>());
+            return mapper.Map(r);
         }
 
-        public T CNone() => throw new DeserializeException(
-            $"Unable to read union {typeof(T)}");
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T CNone() => throw new DeserializeException($"Unable to read union {typeof(T)}");
+    }
+
+    private readonly struct UntaggedUnionSeraColctor(JsonDeserializer impl) : IUntaggedUnionSeraColctor<T, T>
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T CSelect<C, M, U>(C colion, M mapper, Type<U> u)
+            where C : ISelectSeraColion<U> where M : ISeraMapper<U, T>
+        {
+            var c = new JsonDeserializer<T>(impl);
+            return c.CSelect(colion, mapper, u);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T CSelectPrimitive<C, M, U>(C colion, M mapper, Type<U> u) where C : ISelectPrimitiveSeraColion<U>
+            where M : ISeraMapper<U, T>
+        {
+            var c = new JsonDeserializer<T>(impl);
+            return c.CSelectPrimitive(colion, mapper, u);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T CNone() => throw new DeserializeException($"Unable to read union {typeof(T)}");
     }
 
     #endregion

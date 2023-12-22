@@ -213,9 +213,10 @@ public interface ISeraColctor<in T, [AssocType] out R> : ISeraAbility<ISeraColio
 
     #region Map
 
-    public R CMap<C, B, M, IK, IV>(C colion, M mapper, Type<B> b, Type<IK> k, Type<IV> v, ASeraTypeAbility? keyAbility = null)
+    public R CMap<C, B, M, IK, IV>(C colion, M mapper, Type<B> b, Type<IK> k, Type<IV> v,
+        ASeraTypeAbility? keyAbility = null)
         where C : IMapSeraColion<B, IK, IV> where M : ISeraMapper<B, T>;
-    
+
     #endregion
 
     #region Struct
@@ -227,8 +228,10 @@ public interface ISeraColctor<in T, [AssocType] out R> : ISeraAbility<ISeraColio
 
     #region Union
 
-    public R CUnion<C, B, M>(C colion, M mapper, Type<B> b, UnionStyle? union_style = null)
-        where C : IUnionSeraColion<B> where M : ISeraMapper<B, T>;
+    public R CUnionEmpty<N>(N ctor) where N : ISeraCtor<T>;
+
+    public R CUnionVariants<C, B, M>(C colion, M mapper, Type<B> b, UnionStyle? union_style = null)
+        where C : IVariantsSeraColion<B> where M : ISeraMapper<B, T>;
 
     #endregion
 }
@@ -286,19 +289,31 @@ public interface IStructSeraColctor<B, [AssocType] out R>
     public R CNone();
 }
 
-public interface IUnionSeraColctor<in T, [AssocType] out R>
+public interface IVariantSeraColctor<in T, [AssocType] out R>
 {
-    public R CVariant<N>(N ctor, VariantStyle? variant_style = null)
-        where N : ISeraCtor<T>;
+    public R CVariant<N>(N ctor) where N : ISeraCtor<T>;
 
-    public R CVariantValue<C, M, I>(C colion, M mapper, Type<I> i, VariantStyle? variant_style = null)
+    public R CVariantValue<C, M, I>(C colion, M mapper, Type<I> i)
         where C : ISeraColion<I> where M : ISeraMapper<I, T>;
 
-    public R CVariantTuple<C, M, I>(C colion, M mapper, Type<I> i, VariantStyle? variant_style = null)
+    public R CVariantTuple<C, M, I>(C colion, M mapper, Type<I> i)
         where C : ITupleSeraColion<I> where M : ISeraMapper<I, T>;
 
-    public R CVariantStruct<C, M, I>(C colion, M mapper, Type<I> i, VariantStyle? variant_style = null)
+    public R CVariantStruct<C, M, I>(C colion, M mapper, Type<I> i)
         where C : IStructSeraColion<I> where M : ISeraMapper<I, T>;
+
+    public R CNone();
+}
+
+public interface IUntaggedUnionSeraColctor<in T, [AssocType] out R>
+{
+    public R CSelect<C, M, U>(C colion, M mapper, Type<U> u)
+        where C : ISelectSeraColion<U>
+        where M : ISeraMapper<U, T>;
+
+    public R CSelectPrimitive<C, M, U>(C colion, M mapper, Type<U> u)
+        where C : ISelectPrimitiveSeraColion<U>
+        where M : ISeraMapper<U, T>;
 
     public R CNone();
 }

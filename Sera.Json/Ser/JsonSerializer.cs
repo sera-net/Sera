@@ -760,8 +760,7 @@ public class JsonSerializer(SeraJsonOptions options, AJsonFormatter formatter, A
                         Base.writer.WriteString(tag.ToString(), true);
                         return;
                     }
-                    var formats = variant_style?.Formats ??
-                                  union_style?.VariantFormats ??
+                    var formats = union_style?.VariantFormats ??
                                   Base.formatter.DefaultFormats;
                     switch (tag.Kind)
                     {
