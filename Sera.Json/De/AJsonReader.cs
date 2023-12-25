@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Sera.Json.Utils;
 using Sera.Utils;
 
 namespace Sera.Json.De;
@@ -78,6 +80,10 @@ public abstract class AJsonReader(SeraJsonOptions options)
         Has = MoveNextImpl();
     }
 
+    /// <summary>
+    /// This method must set <see cref="CurrentToken"/> <see cref="pos"/> <see cref="Cursor"/> and return <see cref="Has"/>
+    /// </summary>
+    /// <returns></returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public abstract bool MoveNextImpl();
 
@@ -92,7 +98,127 @@ public abstract class AJsonReader(SeraJsonOptions options)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public virtual void SkipValue()
     {
-        throw new NotImplementedException();
+        var token = CurrentToken;
+        if (token.Kind is JsonTokenKind.Null or
+            JsonTokenKind.True or JsonTokenKind.False or
+            JsonTokenKind.String or JsonTokenKind.Number)
+        {
+            MoveNext();
+            return;
+        }
+        if (token.Kind is JsonTokenKind.ObjectStart)
+        {
+            MoveNext();
+            var first = true;
+            for (; Has;)
+            {
+                token = CurrentToken;
+                if (token.Kind is JsonTokenKind.ObjectEnd) break;
+                if (first) first = false;
+                else ReadComma();
+                ReadStringToken();
+                ReadColon();
+                SkipValue();
+            }
+            ReadObjectEnd();
+            return;
+        }
+        if (token.Kind is JsonTokenKind.ArrayStart)
+        {
+            MoveNext();
+            var first = true;
+            for (; Has;)
+            {
+                token = CurrentToken;
+                if (token.Kind is JsonTokenKind.ArrayEnd) break;
+                if (first) first = false;
+                else ReadComma();
+                SkipValue();
+            }
+            ReadArrayEnd();
+            return;
+        }
+        throw new JsonParseException($"Unexpected token {token.Kind} at {token.Pos}", token.Pos);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public virtual JsonAst ReadValue()
+    {
+        var token = CurrentToken;
+        if (token.Kind is JsonTokenKind.Null)
+        {
+            MoveNext();
+            return JsonAst.MakeNull(token);
+        }
+        if (token.Kind is JsonTokenKind.True or JsonTokenKind.False)
+        {
+            MoveNext();
+            return JsonAst.MakeBool(token);
+        }
+        if (token.Kind is JsonTokenKind.Number)
+        {
+            MoveNext();
+            return JsonAst.MakeNumber(token);
+        }
+        if (token.Kind is JsonTokenKind.String)
+        {
+            MoveNext();
+            return JsonAst.MakeString(token);
+        }
+        if (token.Kind is JsonTokenKind.ObjectStart)
+        {
+            return JsonAst.MakeObject(ReadObject());
+        }
+        if (token.Kind is JsonTokenKind.ArrayStart)
+        {
+            return JsonAst.MakeArray(ReadArray());
+        }
+        throw new JsonParseException($"Unexpected token {token.Kind} at {token.Pos}", token.Pos);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public virtual JsonAstObject ReadObject()
+    {
+        var start = ReadObjectStart();
+        var dict = new Dictionary<string, JsonAstObjectKeyValue>();
+        var list = new List<JsonAstObjectKeyValue>();
+        var first = true;
+        for (; Has;)
+        {
+            var token = CurrentToken;
+            if (token.Kind is JsonTokenKind.ObjectEnd) break;
+            JsonToken? comma = null;
+            if (first) first = false;
+            else comma = ReadComma();
+            var key = ReadStringToken();
+            var colon = ReadColon();
+            var val = ReadValue();
+            var kv = new JsonAstObjectKeyValue(key, val, colon, comma);
+            dict[key.AsString()] = kv;
+            list.Add(kv);
+        }
+        var end = ReadObjectEnd();
+        return new JsonAstObject(dict, list, start, end);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public virtual JsonAstArray ReadArray()
+    {
+        var start = ReadArrayStart();
+        var list = new List<JsonAstListValue>();
+        var first = true;
+        for (; Has;)
+        {
+            var token = CurrentToken;
+            JsonToken? comma = null;
+            if (token.Kind is JsonTokenKind.ArrayEnd) break;
+            if (first) first = false;
+            else comma = ReadComma();
+            var val = ReadValue();
+            list.Add(new(val, comma));
+        }
+        var end = ReadArrayEnd();
+        return new JsonAstArray(list, start, end);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -108,7 +234,7 @@ public abstract class AJsonReader(SeraJsonOptions options)
         var token = CurrentToken;
         throw new JsonParseException($"Expected {kind} but found {token.Kind} at {token.Pos}", token.Pos);
     }
-    
+
     [DoesNotReturn]
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public virtual void ThrowExpected(JsonTokenKind a, JsonTokenKind b)
@@ -161,28 +287,27 @@ public abstract class AJsonReader(SeraJsonOptions options)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public virtual JsonToken ReadStringToken() => ReadOf(JsonTokenKind.String);
 
-
     /// <summary>Read <c>,</c> and move next</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public virtual void ReadComma() => ReadOf(JsonTokenKind.Comma);
+    public virtual JsonToken ReadComma() => ReadOf(JsonTokenKind.Comma);
 
     /// <summary>Read <c>:</c> and move next</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public virtual void ReadColon() => ReadOf(JsonTokenKind.Colon);
+    public virtual JsonToken ReadColon() => ReadOf(JsonTokenKind.Colon);
 
     /// <summary>Read <c>[</c> and move next</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public virtual void ReadArrayStart() => ReadOf(JsonTokenKind.ArrayStart);
+    public virtual JsonToken ReadArrayStart() => ReadOf(JsonTokenKind.ArrayStart);
 
     /// <summary>Read <c>]</c> and move next</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public virtual void ReadArrayEnd() => ReadOf(JsonTokenKind.ArrayEnd);
+    public virtual JsonToken ReadArrayEnd() => ReadOf(JsonTokenKind.ArrayEnd);
 
     /// <summary>Read <c>{</c> and move next</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public virtual void ReadObjectStart() => ReadOf(JsonTokenKind.ObjectStart);
+    public virtual JsonToken ReadObjectStart() => ReadOf(JsonTokenKind.ObjectStart);
 
     /// <summary>Read <c>}</c> and move next</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public virtual void ReadObjectEnd() => ReadOf(JsonTokenKind.ObjectEnd);
+    public virtual JsonToken ReadObjectEnd() => ReadOf(JsonTokenKind.ObjectEnd);
 }

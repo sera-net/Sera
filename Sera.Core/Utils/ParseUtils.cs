@@ -74,49 +74,49 @@ public static class ParseUtils
         {
             case VariantTagKind.SByte:
             {
-                if (sbyte.TryParse(chars, style, null, out var v)) goto failed;
+                if (!sbyte.TryParse(chars, style, null, out var v)) goto failed;
                 tag = VariantTag.Create(v);
                 return true;
             }
             case VariantTagKind.Byte:
             {
-                if (byte.TryParse(chars, style, null, out var v)) goto failed;
+                if (!byte.TryParse(chars, style, null, out var v)) goto failed;
                 tag = VariantTag.Create(v);
                 return true;
             }
             case VariantTagKind.Int16:
             {
-                if (short.TryParse(chars, style, null, out var v)) goto failed;
+                if (!short.TryParse(chars, style, null, out var v)) goto failed;
                 tag = VariantTag.Create(v);
                 return true;
             }
             case VariantTagKind.UInt16:
             {
-                if (ushort.TryParse(chars, style, null, out var v)) goto failed;
+                if (!ushort.TryParse(chars, style, null, out var v)) goto failed;
                 tag = VariantTag.Create(v);
                 return true;
             }
             case VariantTagKind.Int32:
             {
-                if (int.TryParse(chars, style, null, out var v)) goto failed;
+                if (!int.TryParse(chars, style, null, out var v)) goto failed;
                 tag = VariantTag.Create(v);
                 return true;
             }
             case VariantTagKind.UInt32:
             {
-                if (uint.TryParse(chars, style, null, out var v)) goto failed;
+                if (!uint.TryParse(chars, style, null, out var v)) goto failed;
                 tag = VariantTag.Create(v);
                 return true;
             }
             case VariantTagKind.Int64:
             {
-                if (long.TryParse(chars, style, null, out var v)) goto failed;
+                if (!long.TryParse(chars, style, null, out var v)) goto failed;
                 tag = VariantTag.Create(v);
                 return true;
             }
             case VariantTagKind.UInt64:
             {
-                if (ulong.TryParse(chars, style, null, out var v)) goto failed;
+                if (!ulong.TryParse(chars, style, null, out var v)) goto failed;
                 tag = VariantTag.Create(v);
                 return true;
             }

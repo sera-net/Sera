@@ -7,6 +7,7 @@ namespace Sera.Utils;
 
 /// <summary>
 /// A Span that can be passed unsafely on the heap
+/// <para><br/><b>Warning</b>: No escape safety, moving out of the current call stack may result in wild pointers</para>
 /// </summary>
 /// <param name="ptr">The lifetime of this pointer needs to be manually guaranteed to be greater than this Span</param>
 /// <param name="len">Length</param>

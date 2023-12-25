@@ -22,11 +22,11 @@ public partial class TestStaticDeSerializer_Union
         }
     }
 
-    public readonly struct Union1Impl : ISeraColion<Union1>, IVariantsSeraColion<Union1>
+    public readonly struct Union1Impl(UnionStyle? style = null) : ISeraColion<Union1>, IVariantsSeraColion<Union1>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public R Collect<R, C>(ref C colctor, InType<Union1>? t = null) where C : ISeraColctor<Union1, R>
-            => colctor.CUnionVariants(this, new IdentityMapper<Union1>(), new Type<Union1>());
+            => colctor.CUnionVariants(this, new IdentityMapper<Union1>(), new Type<Union1>(), style);
 
         public SeraVariantInfos Variants
         {
@@ -84,5 +84,35 @@ public partial class TestStaticDeSerializer_Union
         Console.WriteLine(val);
 
         Assert.That(val, Is.EqualTo(Union1.MakeA(123)));
+    }
+
+    [Test]
+    public void TestAdjacent1()
+    {
+        var json = "{\"t\":\"A\",\"c\":123}";
+
+        var val = SeraJson.Deserializer
+            .Deserialize<Union1>()
+            .Use(new Union1Impl(UnionStyle.Default with { Format = UnionFormat.Adjacent }))
+            .Static.From.String(json);
+
+        Console.WriteLine(val);
+
+        Assert.That(val, Is.EqualTo(Union1.MakeA(123)));
+    }
+    
+    [Test]
+    public void TestAdjacent2()
+    {
+        var json = "{\"c\":\"asd\",\"t\":1}";
+
+        var val = SeraJson.Deserializer
+            .Deserialize<Union1>()
+            .Use(new Union1Impl(UnionStyle.Default with { Format = UnionFormat.Adjacent }))
+            .Static.From.String(json);
+
+        Console.WriteLine(val);
+
+        Assert.That(val, Is.EqualTo(Union1.MakeB("asd")));
     }
 }

@@ -5,7 +5,8 @@ using Sera.TaggedUnion;
 namespace Sera.Utils;
 
 /// <summary>
-/// Compound of char ReadOnlyMemory | string | char ReadOnlyFixedSpan
+/// Compound of <c>char ReadOnlyMemory | string | char ReadOnlyFixedSpan</c>
+/// <para><br/><b>Warning</b>: No escape safety, moving out of the current call stack may result in wild pointers</para>
 /// </summary>
 [Union]
 public readonly partial struct CompoundString

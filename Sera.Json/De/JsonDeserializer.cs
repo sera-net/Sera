@@ -1327,7 +1327,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         {
             UnionFormat.External => CUnionVariantsExternal<C, B, M>(variants, colion, mapper, union_style),
             UnionFormat.Internal => throw new NotImplementedException(),
-            UnionFormat.Adjacent => throw new NotImplementedException(),
+            UnionFormat.Adjacent => CUnionVariantsAdjacent<C, B, M>(variants, colion, mapper, union_style),
             UnionFormat.Tuple => CUnionVariantsTuple<C, B, M>(variants, colion, mapper, union_style),
             UnionFormat.Untagged => CUnionVariantsUntagged<C, B, M>(colion, mapper),
             _ => CUnionVariantsAny<C, B, M>(variants, in token, colion, mapper, union_style),
@@ -1344,6 +1344,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         C colion, M mapper, UnionStyle? union_style)
         where C : IVariantsSeraColion<B> where M : ISeraMapper<B, T>
     {
+        // todo any
         if (token.Kind is JsonTokenKind.ArrayStart)
             return CUnionVariantsTuple<C, B, M>(variants, colion, mapper, union_style);
         return CUnionVariantsExternal<C, B, M>(variants, colion, mapper, union_style);
@@ -1353,7 +1354,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
     public T CUnionVariantsExternal<C, B, M>(SeraVariantInfos variants, C colion, M mapper, UnionStyle? union_style)
         where C : IVariantsSeraColion<B> where M : ISeraMapper<B, T>
     {
-        reader.ReadObjectStart();
+        var start = reader.ReadObjectStart();
         var key = reader.ReadStringToken();
         var span = key.AsSpan();
         (Variant variant, int index) info;
@@ -1365,10 +1366,10 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             var str = key.AsString();
             if (variants.TryGet(str, out info)) goto ok;
         }
-        throw new DeserializeException("Unknown Union Variant");
+        throw new JsonParseException($"Unknown Union Variant at {key.Pos}", key.Pos);
         ok:
         reader.ReadColon();
-        var c = new JsonDeserializer<B>.ValueVariantSeraColctor(impl);
+        var c = new JsonDeserializer<B>.ValueVariantSeraColctor(impl, start.Pos);
         var r = colion.CollectVariant<B, JsonDeserializer<B>.ValueVariantSeraColctor>(ref c, info.index);
         reader.ReadObjectEnd();
         return mapper.Map(r);
@@ -1378,7 +1379,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
     public T CUnionVariantsTuple<C, B, M>(SeraVariantInfos variants, C colion, M mapper, UnionStyle? union_style)
         where C : IVariantsSeraColion<B> where M : ISeraMapper<B, T>
     {
-        reader.ReadArrayStart();
+        var start = reader.ReadArrayStart();
         var key = reader.CurrentToken;
         if (key.Kind is not (JsonTokenKind.Number or JsonTokenKind.String))
             reader.ThrowExpected(JsonTokenKind.Number, JsonTokenKind.String);
@@ -1392,11 +1393,11 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             var str = key.AsString();
             if (variants.TryGet(str, out info)) goto ok;
         }
-        throw new DeserializeException("Unknown Union Variant");
+        throw new JsonParseException($"Unknown Union Variant at {key.Pos}", key.Pos);
         ok:
         reader.MoveNext();
         reader.ReadComma();
-        var c = new JsonDeserializer<B>.ValueVariantSeraColctor(impl);
+        var c = new JsonDeserializer<B>.ValueVariantSeraColctor(impl, start.Pos);
         var r = colion.CollectVariant<B, JsonDeserializer<B>.ValueVariantSeraColctor>(ref c, info.index);
         reader.ReadArrayEnd();
         return mapper.Map(r);
@@ -1408,6 +1409,50 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
     {
         var c = new JsonDeserializer<B>.UntaggedUnionSeraColctor(impl);
         var r = colion.CollectUntagged<B, JsonDeserializer<B>.UntaggedUnionSeraColctor>(ref c);
+        return mapper.Map(r);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CUnionVariantsAdjacent<C, B, M>(SeraVariantInfos variants, C colion, M mapper, UnionStyle? union_style)
+        where C : IVariantsSeraColion<B> where M : ISeraMapper<B, T>
+    {
+        var ast = reader.ReadObject();
+        var style = union_style ?? UnionStyle.Default;
+        if (!ast.Dictionary.TryGetValue(style.AdjacentTagName, out var key))
+            throw new JsonParseException(
+                $"The key \"{style.AdjacentTagName}\" does not exist in the object at {ast.ObjectStart.Pos}",
+                ast.ObjectStart.Pos);
+
+        (Variant variant, int index) variant;
+        {
+            var token = key.Value.Tag switch
+            {
+                JsonAst.Tags.String => key.Value.String,
+                JsonAst.Tags.Number => key.Value.Number,
+                _ => throw new JsonParseException($"Unexpected tag kind {key.Value.Tag} at {key.Value.Pos}",
+                    key.Value.Pos)
+            };
+
+            var span = token.AsSpan();
+            if (span.TryParseVariantTag(variants.TagKind, union_style?.VariantFormats, out var tag))
+            {
+                if (variants.TryGet(tag, out variant)) goto ok;
+            }
+            if (!variants.TryGet(span.ToString(), out variant))
+                throw new JsonParseException($"Unknown Union Variant \"{span}\" at {key.Value.Pos}", key.Value.Pos);
+            ok: ;
+        }
+
+        if (!ast.Dictionary.TryGetValue(style.AdjacentValueName, out var value))
+            throw new JsonParseException(
+                $"The key \"{style.AdjacentValueName}\" does not exist in the object at {ast.ObjectStart.Pos}",
+                ast.ObjectStart.Pos);
+
+        var ast_reader = new AstJsonReader(reader.Options, value.Value);
+        var sub_deserializer = new JsonDeserializer(reader.Options, ast_reader);
+        var c = new JsonDeserializer<B>.ValueVariantSeraColctor(sub_deserializer, ast.ObjectStart.Pos);
+
+        var r = colion.CollectVariant<B, JsonDeserializer<B>.ValueVariantSeraColctor>(ref c, variant.index);
         return mapper.Map(r);
     }
 
@@ -1436,7 +1481,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         public T CNone() => throw new DeserializeException($"Unable to read union {typeof(T)}");
     }
 
-    private readonly struct ValueVariantSeraColctor(JsonDeserializer impl) : IVariantSeraColctor<T, T>
+    private readonly struct ValueVariantSeraColctor(JsonDeserializer impl, SourcePos pos) : IVariantSeraColctor<T, T>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T CVariant<N>(N ctor) where N : ISeraCtor<T>
@@ -1473,7 +1518,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public T CNone() => throw new DeserializeException($"Unable to read union {typeof(T)}");
+        public T CNone() => throw new JsonParseException($"Unable to read union {typeof(T)} at {pos}", pos);
     }
 
     private readonly struct UntaggedUnionSeraColctor(JsonDeserializer impl) : IUntaggedUnionSeraColctor<T, T>
