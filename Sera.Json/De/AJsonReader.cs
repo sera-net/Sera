@@ -180,8 +180,7 @@ public abstract class AJsonReader(SeraJsonOptions options)
     public virtual JsonAstObject ReadObject()
     {
         var start = ReadObjectStart();
-        var dict = new Dictionary<string, JsonAstObjectKeyValue>();
-        var list = new List<JsonAstObjectKeyValue>();
+        var map = new JsonAstObject.LinkedMultiMap();
         var first = true;
         for (; Has;)
         {
@@ -193,12 +192,12 @@ public abstract class AJsonReader(SeraJsonOptions options)
             var key = ReadStringToken();
             var colon = ReadColon();
             var val = ReadValue();
-            var kv = new JsonAstObjectKeyValue(key, val, colon, comma);
-            dict[key.AsString()] = kv;
-            list.Add(kv);
+            var stringKey = key.AsString();
+            var kv = new JsonAstObjectKeyValue(stringKey, key, val, colon, comma);
+            map.Add(kv);
         }
         var end = ReadObjectEnd();
-        return new JsonAstObject(dict, list, start, end);
+        return new JsonAstObject(map, start, end);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

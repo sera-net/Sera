@@ -89,6 +89,7 @@ public sealed class AstJsonReader : AJsonReader
         public int index = 0;
         public JsonAstArray? arr;
         public JsonAstObject? obj;
+        public LinkedListNode<JsonAstObjectKeyValue>? node;
     }
 
     #endregion
@@ -135,7 +136,7 @@ public sealed class AstJsonReader : AJsonReader
                 CurrentToken = ast.Array.ArrayStart;
                 break;
             case JsonAst.Tags.Object:
-                PushState(new SubState { state = State.ObjectValue, obj = ast.Object });
+                PushState(new SubState { state = State.ObjectValue, obj = ast.Object, node = ast.Object.Map.First });
                 CurrentToken = ast.Object.ObjectStart;
                 break;
             default:
@@ -191,30 +192,30 @@ public sealed class AstJsonReader : AJsonReader
     private bool MoveNextObject()
     {
         var obj = subState.obj!;
-        var list = obj.List;
         JsonAstObjectKeyValue val;
+        var node = subState.node;
         switch (subState.state)
         {
             case State.ObjectComma:
             {
-                val = list[subState.index];
+                val = node!.Value;
                 goto on_key;
             }
             case State.ObjectKey:
-                val = list[subState.index];
+                val = node!.Value;
                 subState.state = State.ObjectColon;
                 CurrentToken = val.Colon;
                 return MoveNextEnd();
             case State.ObjectColon:
-                val = list[subState.index];
+                val = node!.Value;
                 subState.state = State.ObjectValue;
                 ast = val.Value;
-                subState.index++;
+                subState.node = node.Next;
                 return MoveNextValue();
             case State.ObjectValue:
             {
-                if (subState.index >= list.Count) goto on_end;
-                val = list[subState.index];
+                if (node == null) goto on_end;
+                val = node.Value;
                 if (val.Comma.HasValue)
                 {
                     subState.state = State.ObjectComma;

@@ -20,6 +20,9 @@ namespace Sera.Core.Formats
 
     public enum NumberTextFormat
     {
+        /// <summary>
+        /// Any is not All, Any means to let the (de)serializer handle it
+        /// </summary>
         Any,
         /// <summary>
         /// Format numbers in generic, Use "G"
@@ -76,6 +79,9 @@ namespace Sera.Core.Formats
 
     public enum GuidTextFormat
     {
+        /// <summary>
+        /// Any is not All, Any means to let the (de)serializer handle it
+        /// </summary>
         Any,
         /// <summary>
         /// Use "N" to format <see cref="Guid"/>
@@ -106,6 +112,9 @@ namespace Sera.Core.Formats
 
     public enum GuidBinaryFormat
     {
+        /// <summary>
+        /// Any is not All, Any means to let the (de)serializer handle it
+        /// </summary>
         Any,
         /// <summary>
         /// Use the UUID standard for <see cref="Guid"/> in binary serialization
@@ -134,7 +143,7 @@ namespace Sera.Core
         public NumberTextFormat NumberTextFormat { get; set; } = NumberTextFormat.Any;
         public NumberStyles NumberStyles { get; set; } = NumberStyles.None;
         public string? CustomNumberTextFormat { get; set; }
-        
+
         public bool ComplexAsString { get; set; }
 
         public DateTimeFormatFlags DateTimeFormat { get; set; } = DateTimeFormatFlags.None;
@@ -158,8 +167,6 @@ namespace Sera.Core
                 GuidBinaryFormat = attr.GuidBinaryFormat,
                 CustomGuidTextFormat = attr.CustomGuidTextFormat,
             };
-
-       
     }
 
 }

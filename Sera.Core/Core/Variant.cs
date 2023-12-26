@@ -291,15 +291,33 @@ public readonly struct Variant : IEquatable<Variant>, IEqualityOperators<Variant
 
 public enum VariantKind : byte
 {
+    /// <summary>
+    /// Only string
+    /// </summary>
     Name,
+    /// <summary>
+    /// Only number
+    /// </summary>
     Tag,
+    /// <summary>
+    /// Number and string
+    /// </summary>
     NameAndTag,
 }
 
 public enum VariantPriority : byte
 {
+    /// <summary>
+    /// Any is not All, Any means to let the (de)serializer handle it
+    /// </summary>
     Any,
+    /// <summary>
+    /// Prefer numeric tags if possible
+    /// </summary>
     TagFirst,
+    /// <summary>
+    /// Prefer string tags if possible
+    /// </summary>
     NameFirst,
 }
 
@@ -308,6 +326,9 @@ public enum VariantPriority : byte
 /// </summary>
 public enum UnionFormat
 {
+    /// <summary>
+    /// Any is not All, Any means to let the (de)serializer handle it
+    /// </summary>
     Any,
     /// <summary>
     /// Json is <code>{ "Tag": Value }</code>
