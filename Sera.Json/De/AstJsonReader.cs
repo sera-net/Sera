@@ -89,7 +89,7 @@ public sealed class AstJsonReader : AJsonReader
         public int index = 0;
         public JsonAstArray? arr;
         public JsonAstObject? obj;
-        public LinkedListNode<JsonAstObjectKeyValue>? node;
+        public JsonAstObjectNode? node;
     }
 
     #endregion
@@ -164,7 +164,7 @@ public sealed class AstJsonReader : AJsonReader
             {
                 if (subState.index >= list.Count) goto on_end;
                 val = list[subState.index];
-                if (val.Comma.HasValue)
+                if (val.Comma.HasValue && subState.index != 0)
                 {
                     subState.state = State.ArrayComma;
                     CurrentToken = val.Comma.Value;
@@ -198,25 +198,26 @@ public sealed class AstJsonReader : AJsonReader
         {
             case State.ObjectComma:
             {
-                val = node!.Value;
+                val = node!.Value.Value;
                 goto on_key;
             }
             case State.ObjectKey:
-                val = node!.Value;
+                val = node!.Value.Value;
                 subState.state = State.ObjectColon;
                 CurrentToken = val.Colon;
                 return MoveNextEnd();
             case State.ObjectColon:
-                val = node!.Value;
+                val = node!.Value.Value;
                 subState.state = State.ObjectValue;
                 ast = val.Value;
-                subState.node = node.Next;
+                subState.node = node.Value.Next;
+                subState.index++;
                 return MoveNextValue();
             case State.ObjectValue:
             {
-                if (node == null) goto on_end;
-                val = node.Value;
-                if (val.Comma.HasValue)
+                if (node is null) goto on_end;
+                val = node.Value.Value;
+                if (val.Comma.HasValue && subState.index != 0)
                 {
                     subState.state = State.ObjectComma;
                     CurrentToken = val.Comma.Value;

@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Buffers.Text;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -1326,7 +1327,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         return format switch
         {
             UnionFormat.External => CUnionVariantsExternal<C, B, M>(variants, colion, mapper, union_style),
-            UnionFormat.Internal => throw new NotImplementedException(),
+            UnionFormat.Internal => CUnionVariantsInternal<C, B, M>(variants, colion, mapper, union_style),
             UnionFormat.Adjacent => CUnionVariantsAdjacent<C, B, M>(variants, colion, mapper, union_style),
             UnionFormat.Tuple => CUnionVariantsTuple<C, B, M>(variants, colion, mapper, union_style),
             UnionFormat.Untagged => CUnionVariantsUntagged<C, B, M>(colion, mapper),
@@ -1421,7 +1422,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             throw new JsonParseException(
                 $"The key \"{style.AdjacentTagName}\" does not exist in the object at {ast.ObjectStart.Pos}",
                 ast.ObjectStart.Pos);
-        var key = keys.Last!.Value;
+        var key = keys.SubLast.Value;
 
         (Variant variant, int index) variant;
         {
@@ -1447,7 +1448,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             throw new JsonParseException(
                 $"The key \"{style.AdjacentValueName}\" does not exist in the object at {ast.ObjectStart.Pos}",
                 ast.ObjectStart.Pos);
-        var value = values.Last!.Value;
+        var value = values.SubLast.Value;
 
         var ast_reader = new AstJsonReader(reader.Options, value.Value);
         var sub_deserializer = new JsonDeserializer(reader.Options, ast_reader);
@@ -1456,7 +1457,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         var r = colion.CollectVariant<B, JsonDeserializer<B>.ValueVariantSeraColctor>(ref c, variant.index);
         return mapper.Map(r);
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public T CUnionVariantsInternal<C, B, M>(SeraVariantInfos variants, C colion, M mapper, UnionStyle? union_style)
         where C : IVariantsSeraColion<B> where M : ISeraMapper<B, T>
@@ -1467,7 +1468,8 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             throw new JsonParseException(
                 $"The key \"{style.InternalTagName}\" does not exist in the object at {ast.ObjectStart.Pos}",
                 ast.ObjectStart.Pos);
-        var key = keys.Last!.Value;
+        var keys_last = keys.SubLast;
+        var key = keys_last.Value;
 
         (Variant variant, int index) variant;
         {
@@ -1489,10 +1491,14 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             ok: ;
         }
 
-        throw new NotImplementedException();
+        var removed_ast = ast with { Map = ast.Map.TryRemove(keys_last)! };
+        Debug.Assert(removed_ast.Map != null);
+        var c = new JsonDeserializer<B>.InternalVariantSeraColctor(impl, removed_ast, style);
+
+        var r = colion.CollectVariant<B, JsonDeserializer<B>.InternalVariantSeraColctor>(ref c, variant.index);
+        return mapper.Map(r);
     }
 
-    
     private readonly struct JustVariantSeraColctor(JsonDeserializer impl) : IVariantSeraColctor<T, T>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1578,6 +1584,70 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T CNone() => throw new DeserializeException($"Unable to read union {typeof(T)}");
+    }
+
+    private readonly struct InternalVariantSeraColctor(JsonDeserializer impl, JsonAstObject ast, UnionStyle style)
+        : IVariantSeraColctor<T, T>
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T CVariant<N>(N ctor) where N : ISeraCtor<T>
+        {
+            return ctor.Ctor();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private JsonDeserializer GetValue()
+        {
+            if (!ast.Map.TryGetValue(style.InternalValueName, out var values))
+                throw new JsonParseException(
+                    $"The key \"{style.InternalValueName}\" does not exist in the object at {ast.ObjectStart.Pos}",
+                    ast.ObjectStart.Pos);
+            var value = values.SubLast.Value;
+
+            var ast_reader = new AstJsonReader(impl.reader.Options, value.Value);
+            var sub_deserializer = new JsonDeserializer(impl.reader.Options, ast_reader);
+
+            return sub_deserializer;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T CVariantValue<C, M, I>(C colion, M mapper, Type<I> i)
+            where C : ISeraColion<I> where M : ISeraMapper<I, T>
+        {
+            var sub_deserializer = GetValue();
+            var c = new JsonDeserializer<I>(sub_deserializer);
+
+            var r = colion.Collect<I, JsonDeserializer<I>>(ref c);
+            return mapper.Map(r);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T CVariantTuple<C, M, I>(C colion, M mapper, Type<I> i)
+            where C : ITupleSeraColion<I> where M : ISeraMapper<I, T>
+        {
+            var sub_deserializer = GetValue();
+            var c = new JsonDeserializer<I>(sub_deserializer);
+
+            var r = c.CTuple(colion, new IdentityMapper<I>(), new Type<I>());
+            return mapper.Map(r);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T CVariantStruct<C, M, I>(C colion, M mapper, Type<I> i)
+            where C : IStructSeraColion<I> where M : ISeraMapper<I, T>
+        {
+            var sub_ast = JsonAst.MakeObject(ast);
+            var ast_reader = new AstJsonReader(impl.reader.Options, sub_ast);
+            var sub_deserializer = new JsonDeserializer(impl.reader.Options, ast_reader);
+            var c = new JsonDeserializer<I>(sub_deserializer);
+
+            var r = c.CStruct(colion, new IdentityMapper<I>(), new Type<I>());
+            return mapper.Map(r);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T CNone() => throw new JsonParseException($"Unable to read union {typeof(T)} at {ast.ObjectStart.Pos}",
+            ast.ObjectStart.Pos);
     }
 
     #endregion
