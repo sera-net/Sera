@@ -415,7 +415,8 @@ public record JsonAstObject(
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool TryGetValue(string key, out JsonAstObjectNode values)
         {
-            if (!BaseMap.TryGetValue(key, out values) || values.Value == RemovedItem) return false;
+            if (!BaseMap.TryGetValue(key, out values)) return false;
+            values = values.SubFirst;
             return true;
         }
 
@@ -532,7 +533,8 @@ public record JsonAstObject(
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool TryGetValue(string key, out JsonAstObjectNode values)
         {
-            if (!BaseMap.TryGetValue(key, out values) || RemovedItems.Contains(values.Value)) return false;
+            if (!BaseMap.TryGetValue(key, out values)) return false;
+            values = values.SubFirst;
             return true;
         }
 
@@ -554,7 +556,7 @@ public record JsonAstObject(
             get
             {
                 var first = BaseMap.First;
-                if (first != null && RemovedItems.Contains(first.Value.Value)) return first.Value.Next;
+                while (first != null && RemovedItems.Contains(first.Value.Value)) first = first.Value.Next;
                 return first;
             }
         }
@@ -564,7 +566,7 @@ public record JsonAstObject(
             get
             {
                 var last = BaseMap.Last;
-                if (last != null && RemovedItems.Contains(last.Value.Value)) return last.Value.Previous;
+                while (last != null && RemovedItems.Contains(last.Value.Value)) last = last.Value.Previous;
                 return last;
             }
         }
@@ -574,7 +576,7 @@ public record JsonAstObject(
         {
             if (RemovedItems.Contains(node.Value)) throw new ArgumentOutOfRangeException(nameof(node));
             var result = BaseMap.SubFirst(node);
-            if (RemovedItems.Contains(result.Value)) return result.SubNext!.Value;
+            while (RemovedItems.Contains(result.Value)) result = result.SubNext!.Value;
             return result;
         }
 
@@ -583,7 +585,7 @@ public record JsonAstObject(
         {
             if (RemovedItems.Contains(node.Value)) throw new ArgumentOutOfRangeException(nameof(node));
             var result = BaseMap.SubLast(node);
-            if (RemovedItems.Contains(result.Value)) return result.SubPrevious!.Value;
+            while (RemovedItems.Contains(result.Value)) result = result.SubPrevious!.Value;
             return result;
         }
 
@@ -592,7 +594,7 @@ public record JsonAstObject(
         {
             if (RemovedItems.Contains(node.Value)) throw new ArgumentOutOfRangeException(nameof(node));
             var result = BaseMap.Next(node);
-            if (result.HasValue && RemovedItems.Contains(result.Value.Value)) return result.Value.Next!.Value;
+            while (result.HasValue && RemovedItems.Contains(result.Value.Value)) result = result.Value.Next!.Value;
             return result;
         }
 
@@ -601,7 +603,7 @@ public record JsonAstObject(
         {
             if (RemovedItems.Contains(node.Value)) throw new ArgumentOutOfRangeException(nameof(node));
             var result = BaseMap.SubNext(node);
-            if (result.HasValue && RemovedItems.Contains(result.Value.Value)) return result.Value.SubNext!.Value;
+            while (result.HasValue && RemovedItems.Contains(result.Value.Value)) result = result.Value.SubNext!.Value;
             return result;
         }
 
@@ -610,7 +612,7 @@ public record JsonAstObject(
         {
             if (RemovedItems.Contains(node.Value)) throw new ArgumentOutOfRangeException(nameof(node));
             var result = BaseMap.Previous(node);
-            if (result.HasValue && RemovedItems.Contains(result.Value.Value)) return result.Value.Previous!.Value;
+            while (result.HasValue && RemovedItems.Contains(result.Value.Value)) result = result.Value.Previous!.Value;
             return result;
         }
 
@@ -619,7 +621,8 @@ public record JsonAstObject(
         {
             if (RemovedItems.Contains(node.Value)) throw new ArgumentOutOfRangeException(nameof(node));
             var result = BaseMap.SubPrevious(node);
-            if (result.HasValue && RemovedItems.Contains(result.Value.Value)) return result.Value.SubPrevious!.Value;
+            while (result.HasValue && RemovedItems.Contains(result.Value.Value))
+                result = result.Value.SubPrevious!.Value;
             return result;
         }
 
