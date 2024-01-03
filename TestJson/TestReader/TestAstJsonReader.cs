@@ -1,5 +1,6 @@
 ﻿using Sera.Json;
 using Sera.Json.De;
+using Sera.Json.Utils;
 using Sera.Utils;
 
 namespace TestJson.TestReader;
@@ -26,7 +27,7 @@ public class TestAstJsonReader
             Assert.That(tokens[0].Kind, Is.EqualTo(JsonTokenKind.Number));
         });
     }
-    
+
     [Test]
     public void TestArray1()
     {
@@ -43,7 +44,7 @@ public class TestAstJsonReader
         Assert.Multiple(() =>
         {
             Assert.That(tokens.Count, Is.EqualTo(9));
-        
+
             Assert.That(tokens[0].Kind, Is.EqualTo(JsonTokenKind.ArrayStart));
             Assert.That(tokens[1].Kind, Is.EqualTo(JsonTokenKind.Number));
             Assert.That(tokens[2].Kind, Is.EqualTo(JsonTokenKind.Comma));
@@ -55,11 +56,12 @@ public class TestAstJsonReader
             Assert.That(tokens[8].Kind, Is.EqualTo(JsonTokenKind.ArrayEnd));
         });
     }
-    
+
     [Test]
     public void TestObject1()
     {
-        var ast = new StringJsonReader(SeraJsonOptions.Default, CompoundString.MakeString("{\"a\":1,\"b\":{\"c\":2}}")).ReadValue();
+        var ast = new StringJsonReader(SeraJsonOptions.Default, CompoundString.MakeString("{\"a\":1,\"b\":{\"c\":2}}"))
+            .ReadValue();
         Console.WriteLine(ast);
         var reader = new AstJsonReader(SeraJsonOptions.Default, ast);
         var tokens = new List<JsonToken>();
@@ -72,7 +74,7 @@ public class TestAstJsonReader
         Assert.Multiple(() =>
         {
             Assert.That(tokens.Count, Is.EqualTo(13));
-        
+
             Assert.That(tokens[0].Kind, Is.EqualTo(JsonTokenKind.ObjectStart));
             Assert.That(tokens[1].Kind, Is.EqualTo(JsonTokenKind.String));
             Assert.That(tokens[2].Kind, Is.EqualTo(JsonTokenKind.Colon));

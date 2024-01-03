@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using Sera.Json.Utils;
 
@@ -27,22 +28,53 @@ public sealed class AstJsonReader : AJsonReader
         get => true;
     }
 
+    private Dictionary<long, SavePoint>? savePoints;
+    private long saves;
+
+    private struct SavePoint
+    {
+        public bool Has;
+        public JsonToken CurrentToken;
+        public SourcePos pos;
+        public int cursor;
+        public SubState subState;
+        public ImmutableStack<SubState> subStates;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override long Save()
     {
-        throw new System.NotImplementedException();
+        savePoints ??= new();
+        var save = saves++;
+        savePoints[save] = new()
+        {
+            Has = Has,
+            CurrentToken = CurrentToken,
+            pos = pos,
+            cursor = cursor,
+            subState = subState,
+            subStates = subStates,
+        };
+        return save;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override void Load(long pos)
     {
-        throw new System.NotImplementedException();
+        var savePoint = savePoints![pos];
+        Has = savePoint.Has;
+        CurrentToken = savePoint.CurrentToken;
+        this.pos = savePoint.pos;
+        cursor = savePoint.cursor;
+        subState = savePoint.subState;
+        subStates = savePoint.subStates;
+        Has = true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override void UnSave(long pos)
     {
-        throw new System.NotImplementedException();
+        savePoints!.Remove(pos);
     }
 
     #endregion
@@ -57,19 +89,19 @@ public sealed class AstJsonReader : AJsonReader
     private int cursor;
 
     private SubState subState;
-    private Stack<SubState> subStates = new();
+    private ImmutableStack<SubState> subStates = ImmutableStack<SubState>.Empty;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void PushState(SubState newState)
     {
-        subStates.Push(subState);
+        subStates = subStates.Push(subState);
         subState = newState;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void PopState()
     {
-        subState = subStates.Pop();
+        subStates = subStates.Pop(out subState);
     }
 
     private enum State
@@ -238,36 +270,6 @@ public sealed class AstJsonReader : AJsonReader
         subState.state = State.ObjectKey;
         CurrentToken = val.Key;
         return MoveNextEnd();
-    }
-
-    #endregion
-
-    #region ReadValue
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override JsonAst ReadValue() => subState.state switch
-    {
-        State.ArrayComma or State.ArrayValue => ReadValueArray(),
-        State.ObjectComma or State.ObjectKey or State.ObjectColon or State.ObjectValue => ReadValueObject(),
-        _ => ReadValueValue()
-    };
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private JsonAst ReadValueValue()
-    {
-        throw new NotImplementedException();
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private JsonAst ReadValueArray()
-    {
-        throw new NotImplementedException();
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private JsonAst ReadValueObject()
-    {
-        throw new NotImplementedException();
     }
 
     #endregion

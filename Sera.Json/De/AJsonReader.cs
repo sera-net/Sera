@@ -71,7 +71,7 @@ public abstract class AJsonReader(SeraJsonOptions options)
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private set;
+        protected set;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

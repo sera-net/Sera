@@ -15,8 +15,15 @@ public sealed class StringJsonReader : AJsonReader
 
     #region Seek
 
-    private Dictionary<long, SourcePos>? SavePoints;
+    private Dictionary<long, SavePoint>? SavePoints;
     private long saves = 0;
+
+    private struct SavePoint
+    {
+        public bool Has;
+        public JsonToken CurrentToken;
+        public SourcePos pos;
+    }
 
     public override bool CanSeek
     {
@@ -29,7 +36,12 @@ public sealed class StringJsonReader : AJsonReader
     {
         SavePoints ??= new();
         var pos = saves++;
-        SavePoints[pos] = this.pos;
+        SavePoints[pos] = new()
+        {
+            Has = Has,
+            CurrentToken = CurrentToken,
+            pos = this.pos,
+        };
         return pos;
     }
 
@@ -37,8 +49,10 @@ public sealed class StringJsonReader : AJsonReader
     public override void Load(long pos)
     {
         var save = SavePoints![pos];
-        last = ExternalSpan.From(source.AsSpan())[save.Index..];
-        this.pos = save;
+        Has = save.Has;
+        CurrentToken = save.CurrentToken;
+        last = ExternalSpan.From(source.AsSpan())[save.pos.Index..];
+        this.pos = save.pos;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
