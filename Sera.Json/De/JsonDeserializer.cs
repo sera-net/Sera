@@ -50,7 +50,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         Unsafe.SkipInit(out T r);
         var mark = SeraKinds.None;
         List<Exception>? ex = null;
-        var pos = reader.CanSeek ? (long?)reader.Save() : null;
+        var pos = (long?)reader.Save();
         try
         {
             if (colion.Priorities.HasValue)
@@ -68,7 +68,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         }
         finally
         {
-            if (pos.HasValue) reader.UnSave(pos.Value);
+            reader.UnSave(pos.Value);
         }
     }
 
@@ -124,7 +124,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
                 return colion.SelectPrimitive<bool, JsonDeserializer<U>.SelectSeraColctor>(ref c);
             case SeraKinds.String:
                 if (token.Kind is not JsonTokenKind.String) return false;
-                return colion.SelectString<bool, JsonDeserializer<U>.SelectSeraColctor>(ref c, reader.Encoding);
+                return colion.SelectString<bool, JsonDeserializer<U>.SelectSeraColctor>(ref c);
             case SeraKinds.Bytes:
                 if (token.Kind is not (JsonTokenKind.String or JsonTokenKind.ArrayStart)) return false;
                 return colion.SelectBytes<bool, JsonDeserializer<U>.SelectSeraColctor>(ref c);
@@ -166,7 +166,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         Unsafe.SkipInit(out T r);
         var mark = SeraPrimitiveKinds.None;
         List<Exception>? ex = null;
-        var pos = reader.CanSeek ? (long?)reader.Save() : null;
+        var pos = (long?)reader.Save();
         try
         {
             if (colion.Priorities.HasValue)
@@ -184,7 +184,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         }
         finally
         {
-            if (pos.HasValue) reader.UnSave(pos.Value);
+            reader.UnSave(pos.Value);
         }
     }
 
@@ -669,7 +669,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         reader.ReadArrayStart();
         var first = true;
         var c = new JsonDeserializer<short>(impl);
-        for (; reader.Has;)
+        for (; reader.CurrentHas;)
         {
             token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ArrayEnd) break;
@@ -714,16 +714,16 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         reader.ReadArrayStart();
         var vec = new Vec<I>();
         var first = true;
-        for (; reader.Has;)
+        for (; reader.CurrentHas;)
         {
             var token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ArrayEnd) break;
             if (first) first = false;
             else reader.ReadComma();
             var c = new JsonDeserializer<I>(impl);
-            var cursor = reader.Cursor;
+            var version = reader.Version;
             var i = colion.Collect<I, JsonDeserializer<I>>(ref c);
-            reader.AssertMove(cursor);
+            reader.AssertMove(version);
             vec.Add(i);
         }
         reader.ReadArrayEnd();
@@ -819,24 +819,24 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             {
                 if (first) first = false;
                 else reader.ReadComma();
-                var cursor = reader.Cursor;
+                var version = reader.Version;
                 var err = colion.CollectItem<bool, TupleSeraColctor<B>>(ref colctor, i);
                 if (err) throw new DeserializeException($"Unable to read item {i} of tuple {typeof(T)}");
-                reader.AssertMove(cursor);
+                reader.AssertMove(version);
             }
         }
         else
         {
-            for (; reader.Has; i++)
+            for (; reader.CurrentHas; i++)
             {
                 var token = reader.CurrentToken;
                 if (token.Kind is JsonTokenKind.ArrayEnd) break;
                 if (first) first = false;
                 else reader.ReadComma();
-                var cursor = reader.Cursor;
+                var version = reader.Version;
                 var err = colion.CollectItem<bool, TupleSeraColctor<B>>(ref colctor, i);
                 if (err) throw new DeserializeException($"Unable to read item {i} of tuple {typeof(T)}");
-                reader.AssertMove(cursor);
+                reader.AssertMove(version);
             }
         }
         reader.ReadArrayEnd();
@@ -890,24 +890,24 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
                 {
                     if (first) first = false;
                     else reader.ReadComma();
-                    var cursor = reader.Cursor;
+                    var version = reader.Version;
                     var err = colion.CollectItem<bool, TupleSeraColctor<B>>(ref colctor, i);
                     if (err) throw new DeserializeException($"Unable to read item {i} of tuple {typeof(T)}");
-                    reader.AssertMove(cursor);
+                    reader.AssertMove(version);
                 }
             }
             else
             {
-                for (; reader.Has; i++)
+                for (; reader.CurrentHas; i++)
                 {
                     var token = reader.CurrentToken;
                     if (token.Kind is JsonTokenKind.ArrayEnd) break;
                     if (first) first = false;
                     else reader.ReadComma();
-                    var cursor = reader.Cursor;
+                    var version = reader.Version;
                     var err = colion.CollectItem<bool, TupleSeraColctor<B>>(ref colctor, i);
                     if (err) throw new DeserializeException($"Unable to read item {i} of tuple {typeof(T)}");
-                    reader.AssertMove(cursor);
+                    reader.AssertMove(version);
                 }
             }
             if (!colion.FinishCollect(i)) throw new DeserializeException("Failed to collect tuple");
@@ -927,15 +927,15 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         var colctor = new SeqSeraColctor<B, I>(colion.Builder(null), impl);
         var first = true;
         var i = 0;
-        for (; reader.Has; i++)
+        for (; reader.CurrentHas; i++)
         {
             var token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ArrayEnd) break;
             if (first) first = false;
             else reader.ReadComma();
-            var cursor = reader.Cursor;
+            var version = reader.Version;
             colion.CollectItem<Unit, SeqSeraColctor<B, I>>(ref colctor);
-            reader.AssertMove(cursor);
+            reader.AssertMove(version);
         }
         reader.ReadArrayEnd();
         if (!colion.FinishCollect(i)) throw new DeserializeException("Failed to collect seq");
@@ -984,15 +984,15 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         var colctor = new ArrayMapSeraColctor<B, IK, IV>(colion.Builder(null), impl);
         var first = true;
         var i = 0;
-        for (; reader.Has; i++)
+        for (; reader.CurrentHas; i++)
         {
             token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ArrayEnd) break;
             if (first) first = false;
             else reader.ReadComma();
-            var cursor = reader.Cursor;
+            var version = reader.Version;
             colion.CollectItem<Unit, ArrayMapSeraColctor<B, IK, IV>>(ref colctor);
-            reader.AssertMove(cursor);
+            reader.AssertMove(version);
         }
         reader.ReadArrayEnd();
         if (!colion.FinishCollect(i)) throw new DeserializeException("Failed to collect map");
@@ -1011,15 +1011,15 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         var colctor = new ObjectMapStringKeySeraColctor<B, IK, IV>(colion.Builder(null), impl);
         var first = true;
         var i = 0;
-        for (; reader.Has; i++)
+        for (; reader.CurrentHas; i++)
         {
             token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ObjectEnd) break;
             if (first) first = false;
             else reader.ReadComma();
-            var cursor = reader.Cursor;
+            var version = reader.Version;
             colion.CollectItem<Unit, ObjectMapStringKeySeraColctor<B, IK, IV>>(ref colctor);
-            reader.AssertMove(cursor);
+            reader.AssertMove(version);
         }
         reader.ReadObjectEnd();
         if (!colion.FinishCollect(i)) throw new DeserializeException("Failed to collect map");
@@ -1033,15 +1033,15 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         var colctor = new ObjectMapSubJsonKeySeraColctor<B, IK, IV>(colion.Builder(null), impl);
         var first = true;
         var i = 0;
-        for (; reader.Has; i++)
+        for (; reader.CurrentHas; i++)
         {
             var token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ObjectEnd) break;
             if (first) first = false;
             else reader.ReadComma();
-            var cursor = reader.Cursor;
+            var version = reader.Version;
             colion.CollectItem<Unit, ObjectMapSubJsonKeySeraColctor<B, IK, IV>>(ref colctor);
-            reader.AssertMove(cursor);
+            reader.AssertMove(version);
         }
         reader.ReadObjectEnd();
         if (!colion.FinishCollect(i)) throw new DeserializeException("Failed to collect map");
@@ -1055,15 +1055,15 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         var colctor = new ObjectMapAsStringKeySeraColctor<B, IK, IV>(colion.Builder(null), impl);
         var first = true;
         var i = 0;
-        for (; reader.Has; i++)
+        for (; reader.CurrentHas; i++)
         {
             var token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ObjectEnd) break;
             if (first) first = false;
             else reader.ReadComma();
-            var cursor = reader.Cursor;
+            var version = reader.Version;
             colion.CollectItem<Unit, ObjectMapAsStringKeySeraColctor<B, IK, IV>>(ref colctor);
-            reader.AssertMove(cursor);
+            reader.AssertMove(version);
         }
         reader.ReadObjectEnd();
         if (!colion.FinishCollect(i)) throw new DeserializeException("Failed to collect map");
@@ -1180,7 +1180,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         var c = new StructSeraColctor<B>(colion.Builder(null), impl);
         var first = true;
         var i = 0;
-        for (; reader.Has; i++)
+        for (; reader.CurrentHas; i++)
         {
             var token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ObjectEnd) break;
@@ -1194,7 +1194,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
                 continue;
             }
             var key = long.TryParse(field_name, out var key_) ? (long?)key_ : null;
-            var cursor = reader.Cursor;
+            var version = reader.Version;
             var r = colion.CollectField<StructRes, StructSeraColctor<B>>(ref c, info.index, field_name, key);
             switch (r)
             {
@@ -1205,7 +1205,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
                     reader.SkipValue();
                     break;
                 case StructRes.Field:
-                    reader.AssertMove(cursor);
+                    reader.AssertMove(version);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -1223,7 +1223,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         var c = new StructSeraColctor<B>(colion.Builder(null), impl);
         var first = true;
         var i = 0;
-        for (; reader.Has; i++)
+        for (; reader.CurrentHas; i++)
         {
             var token = reader.CurrentToken;
             if (token.Kind is JsonTokenKind.ObjectEnd) break;
@@ -1450,7 +1450,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
                 ast.ObjectStart.Pos);
         var value = values.SubLast.Value;
 
-        var ast_reader = new AstJsonReader(reader.Options, value.Value);
+        var ast_reader = AstJsonReader.Create(reader.Options, value.Value);
         var sub_deserializer = new JsonDeserializer(reader.Options, ast_reader);
         var c = new JsonDeserializer<B>.ValueVariantSeraColctor(sub_deserializer, ast.ObjectStart.Pos);
 
@@ -1604,7 +1604,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
                     ast.ObjectStart.Pos);
             var value = values.SubLast.Value;
 
-            var ast_reader = new AstJsonReader(impl.reader.Options, value.Value);
+            var ast_reader = AstJsonReader.Create(impl.reader.Options, value.Value);
             var sub_deserializer = new JsonDeserializer(impl.reader.Options, ast_reader);
 
             return sub_deserializer;
@@ -1637,7 +1637,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             where C : IStructSeraColion<I> where M : ISeraMapper<I, T>
         {
             var sub_ast = JsonAst.MakeObject(ast);
-            var ast_reader = new AstJsonReader(impl.reader.Options, sub_ast);
+            var ast_reader = AstJsonReader.Create(impl.reader.Options, sub_ast);
             var sub_deserializer = new JsonDeserializer(impl.reader.Options, ast_reader);
             var c = new JsonDeserializer<I>(sub_deserializer);
 

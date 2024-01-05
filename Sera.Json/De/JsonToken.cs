@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Sera.Utils;
 
@@ -45,12 +46,15 @@ public record struct SourcePos(int Index, int Line, int Char)
 {
     public override string ToString() => $"{Line + 1}:{Char + 1}";
 
+    [UnscopedRef]
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public SourcePos AddChar(int c) => new(Index + c, Line, Char + c);
 
+    [UnscopedRef]
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public SourcePos AddLine(int c) => new(Index + c, Line + c, 0);
 
+    [UnscopedRef]
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void MutAddChar(int len)
     {
@@ -58,6 +62,7 @@ public record struct SourcePos(int Index, int Line, int Char)
         Char += len;
     }
 
+    [UnscopedRef]
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void MutAddLine(int len)
     {

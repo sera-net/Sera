@@ -9,7 +9,7 @@ public class TestSeek
     [Test]
     public void Test1()
     {
-        var reader = new StringJsonReader(SeraJsonOptions.Default, CompoundString.MakeString("[123,456]"));
+        var reader = StringJsonReader.Create(SeraJsonOptions.Default, CompoundString.MakeString("[123,456]"));
         Assert.That(reader.CurrentToken.Kind, Is.EqualTo(JsonTokenKind.ArrayStart));
         var save = reader.Save();
         reader.MoveNext();
@@ -24,8 +24,8 @@ public class TestSeek
     [Test]
     public void Test2()
     {
-        var reader = new AstJsonReader(SeraJsonOptions.Default,
-            new StringJsonReader(SeraJsonOptions.Default, CompoundString.MakeString("[123,456]")).ReadValue());
+        var reader = AstJsonReader.Create(SeraJsonOptions.Default,
+            StringJsonReader.Create(SeraJsonOptions.Default, CompoundString.MakeString("[123,456]")).ReadValue());
         Assert.That(reader.CurrentToken.Kind, Is.EqualTo(JsonTokenKind.ArrayStart));
         var save = reader.Save();
         reader.MoveNext();

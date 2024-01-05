@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using System.Text;
 using Sera.Json.Utils;
-using Sera.Utils;
 
 namespace Sera.Json.De;
 
@@ -15,85 +12,35 @@ public abstract class AJsonReader(SeraJsonOptions options)
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get;
     } = options;
-    public Encoding Encoding
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => Options.Encoding;
-    }
-
-    protected SourcePos pos;
 
     #region Seek
 
-    /// <summary>
-    /// Can use <see cref="Save"/> <see cref="Load"/>
-    /// </summary>
-    public abstract bool CanSeek
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get;
-    }
-
-    /// <summary>Returns a save point that can be loaded</summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public abstract long Save();
-
-    /// <summary>Load save point</summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public abstract void Load(long pos);
-
-    /// <summary>Delete save point</summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public abstract void UnSave(long pos);
+    public abstract void Load(long savePoint);
+    public abstract void UnSave(long savePoint);
 
     #endregion
 
-    #region Cursor
+    #region Iter
 
-    public abstract ulong Cursor
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get;
-    }
-
+    public abstract bool CurrentHas { get; }
+    public abstract JsonToken CurrentToken { get; }
+    public abstract SourcePos SourcePos { get; }
+    public abstract void MoveNext();
+    
+    public ulong Version { get; protected set; }
+    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public virtual void AssertMove(ulong cursor)
+    public void AssertMove(ulong version)
     {
-        if (Cursor <= cursor)
+        if (Version == version)
             throw new JsonParserStateException(
-                "The cursor is abnormal. It is expected to move but does not actually move. Deserialization may be implemented incorrectly.");
+                "It is expected to move but does not actually move. Deserialization may be implemented incorrectly.");
     }
 
     #endregion
 
-    public bool Has
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get;
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected set;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void MoveNext()
-    {
-        Has = MoveNextImpl();
-    }
-
-    /// <summary>
-    /// This method must set <see cref="CurrentToken"/> <see cref="pos"/> <see cref="Cursor"/> and return <see cref="Has"/>
-    /// </summary>
-    /// <returns></returns>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public abstract bool MoveNextImpl();
-
-    public JsonToken CurrentToken
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get;
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected set;
-    }
+    #region Utils
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public virtual void SkipValue()
@@ -110,7 +57,7 @@ public abstract class AJsonReader(SeraJsonOptions options)
         {
             MoveNext();
             var first = true;
-            for (; Has;)
+            for (; CurrentHas;)
             {
                 token = CurrentToken;
                 if (token.Kind is JsonTokenKind.ObjectEnd) break;
@@ -127,7 +74,7 @@ public abstract class AJsonReader(SeraJsonOptions options)
         {
             MoveNext();
             var first = true;
-            for (; Has;)
+            for (; CurrentHas;)
             {
                 token = CurrentToken;
                 if (token.Kind is JsonTokenKind.ArrayEnd) break;
@@ -182,7 +129,7 @@ public abstract class AJsonReader(SeraJsonOptions options)
         var start = ReadObjectStart();
         var map = new JsonAstObject.LinkedMultiMap();
         var first = true;
-        for (; Has;)
+        for (; CurrentHas;)
         {
             var token = CurrentToken;
             if (token.Kind is JsonTokenKind.ObjectEnd) break;
@@ -206,7 +153,7 @@ public abstract class AJsonReader(SeraJsonOptions options)
         var start = ReadArrayStart();
         var list = new List<JsonAstListValue>();
         var first = true;
-        for (; Has;)
+        for (; CurrentHas;)
         {
             var token = CurrentToken;
             JsonToken? comma = null;
@@ -219,12 +166,6 @@ public abstract class AJsonReader(SeraJsonOptions options)
         var end = ReadArrayEnd();
         return new JsonAstArray(list, start, end);
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    protected void MovePos(int len) => pos.MutAddChar(len);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    protected void MovePosToNextLine(int len) => pos.MutAddLine(len);
 
     [DoesNotReturn]
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -246,7 +187,7 @@ public abstract class AJsonReader(SeraJsonOptions options)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public virtual JsonToken ReadOf(JsonTokenKind kind)
     {
-        if (!Has) throw new JsonParseException($"Expected {kind} but found eof", pos);
+        if (!CurrentHas) throw new JsonParseException($"Expected {kind} but found eof", SourcePos);
         var token = CurrentToken;
         if (token.Kind != kind)
             throw new JsonParseException($"Expected {kind} but found {token.Kind} at {token.Pos}", token.Pos);
@@ -262,7 +203,7 @@ public abstract class AJsonReader(SeraJsonOptions options)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public virtual bool ReadBool()
     {
-        if (!Has) throw new JsonParseException($"Expected Bool but found eof", pos);
+        if (!CurrentHas) throw new JsonParseException($"Expected Bool but found eof", SourcePos);
         var token = CurrentToken;
         var r = token.Kind switch
         {
@@ -309,4 +250,85 @@ public abstract class AJsonReader(SeraJsonOptions options)
     /// <summary>Read <c>}</c> and move next</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public virtual JsonToken ReadObjectEnd() => ReadOf(JsonTokenKind.ObjectEnd);
+
+    #endregion
+}
+
+public class JsonReader<State>(SeraJsonOptions options, State state)
+    : AJsonReader(options) where State : IJsonReaderState<State>
+{
+    #region Seek
+
+    private Dictionary<long, State>? saves;
+    private long save_inc;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public sealed override long Save()
+    {
+        saves ??= new();
+        var savePoint = save_inc++;
+        saves[savePoint] = state.Save();
+        return savePoint;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public sealed override void Load(long savePoint)
+    {
+        state = saves![savePoint];
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public sealed override void UnSave(long savePoint)
+    {
+        saves!.Remove(savePoint);
+    }
+
+    #endregion
+
+    #region Iter
+
+    public sealed override bool CurrentHas
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => state.CurrentHas;
+    }
+    public sealed override JsonToken CurrentToken
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => state.CurrentToken;
+    }
+    public override SourcePos SourcePos
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => state.SourcePos;
+    }
+
+    public sealed override void MoveNext()
+    {
+        if (!state.CurrentHas) return;
+        state = state.MoveNext();
+        Version++;
+    }
+
+    #endregion
+}
+
+// ReSharper disable once TypeParameterCanBeVariant
+public interface IJsonReaderState<S> where S : IJsonReaderState<S>
+{
+    #region Seek
+
+    public S Save();
+
+    #endregion
+
+    #region Iter
+
+    public bool CurrentHas { get; }
+    public JsonToken CurrentToken { get; }
+    public SourcePos SourcePos { get; }
+
+    public S MoveNext();
+
+    #endregion
 }

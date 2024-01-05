@@ -1,6 +1,5 @@
 ﻿using Sera.Json;
 using Sera.Json.De;
-using Sera.Json.Utils;
 using Sera.Utils;
 
 namespace TestJson.TestReader;
@@ -10,11 +9,11 @@ public class TestAstJsonReader
     [Test]
     public void Test1()
     {
-        var ast = new StringJsonReader(SeraJsonOptions.Default, CompoundString.MakeString("123")).ReadValue();
+        var ast = StringJsonReader.Create(SeraJsonOptions.Default, CompoundString.MakeString("123")).ReadValue();
         Console.WriteLine(ast);
-        var reader = new AstJsonReader(SeraJsonOptions.Default, ast);
+        var reader = AstJsonReader.Create(SeraJsonOptions.Default, ast);
         var tokens = new List<JsonToken>();
-        for (; reader.Has; reader.MoveNext())
+        for (; reader.CurrentHas; reader.MoveNext())
         {
             tokens.Add(reader.CurrentToken);
         }
@@ -31,11 +30,11 @@ public class TestAstJsonReader
     [Test]
     public void TestArray1()
     {
-        var ast = new StringJsonReader(SeraJsonOptions.Default, CompoundString.MakeString("[1,[2],3]")).ReadValue();
+        var ast = StringJsonReader.Create(SeraJsonOptions.Default, CompoundString.MakeString("[1,[2],3]")).ReadValue();
         Console.WriteLine(ast);
-        var reader = new AstJsonReader(SeraJsonOptions.Default, ast);
+        var reader = AstJsonReader.Create(SeraJsonOptions.Default, ast);
         var tokens = new List<JsonToken>();
-        for (; reader.Has; reader.MoveNext())
+        for (; reader.CurrentHas; reader.MoveNext())
         {
             tokens.Add(reader.CurrentToken);
         }
@@ -60,12 +59,13 @@ public class TestAstJsonReader
     [Test]
     public void TestObject1()
     {
-        var ast = new StringJsonReader(SeraJsonOptions.Default, CompoundString.MakeString("{\"a\":1,\"b\":{\"c\":2}}"))
+        var ast = StringJsonReader
+            .Create(SeraJsonOptions.Default, CompoundString.MakeString("{\"a\":1,\"b\":{\"c\":2}}"))
             .ReadValue();
         Console.WriteLine(ast);
-        var reader = new AstJsonReader(SeraJsonOptions.Default, ast);
+        var reader = AstJsonReader.Create(SeraJsonOptions.Default, ast);
         var tokens = new List<JsonToken>();
-        for (; reader.Has; reader.MoveNext())
+        for (; reader.CurrentHas; reader.MoveNext())
         {
             tokens.Add(reader.CurrentToken);
         }

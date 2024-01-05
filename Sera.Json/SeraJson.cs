@@ -95,7 +95,7 @@ namespace Sera.Json.Builders
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public R BuildStringInput<T, R, A>(A accept, InputBuildParam param, CompoundString str)
             where A : AcceptASeraColctor<T, T, R>
-            => accept.Accept(new JsonDeserializer(new StringJsonReader(Options, str))
+            => accept.Accept(new JsonDeserializer(StringJsonReader.Create(Options, str))
                 { RuntimeProviderOverride = param.RuntimeProvider }.MakeColctor<T>());
     }
 

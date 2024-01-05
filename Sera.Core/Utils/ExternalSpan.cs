@@ -5,6 +5,12 @@ namespace Sera.Utils;
 
 public readonly record struct ExternalSpan(int Offset, int Length)
 {
+    public bool IsEmpty
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Length == 0;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ExternalSpan From<T>(Span<T> source) => new(0, source.Length);
 

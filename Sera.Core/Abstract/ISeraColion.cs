@@ -103,7 +103,7 @@ public interface IStructSeraColion<B>
 public interface IVariantsSeraColion<out T>
 {
     public SeraVariantInfos Variants { get; }
-    
+
     public R CollectVariant<R, C>(ref C colctor, int variant)
         where C : IVariantSeraColctor<T, R>;
 
@@ -123,7 +123,7 @@ public interface ISelectSeraColion<out T>
         where C : ISelectSeraColctor<T, R>
         => colctor.CNone();
 
-    public R SelectString<R, C>(ref C colctor, Encoding encoding, InType<T>? t = null)
+    public R SelectString<R, C>(ref C colctor, InType<T>? t = null)
         where C : ISelectSeraColctor<T, R>
         => colctor.CNone();
 

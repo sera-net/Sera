@@ -9,9 +9,9 @@ public class TestStringJsonReader
     public void Test1()
     {
         var json = "[null, true, false, {}]";
-        var reader = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+        var reader = StringJsonReader.Create(SeraJsonOptions.Default, json.AsMemory());
         var tokens = new List<JsonToken>();
-        for (; reader.Has; reader.MoveNext())
+        for (; reader.CurrentHas; reader.MoveNext())
         {
             tokens.Add(reader.CurrentToken);
         }
@@ -40,9 +40,9 @@ public class TestStringJsonReader
     ""asd"": 123,
     ""123"": ""zxc""
 }";
-        var reader = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+        var reader = StringJsonReader.Create(SeraJsonOptions.Default, json.AsMemory());
         var tokens = new List<JsonToken>();
-        for (; reader.Has; reader.MoveNext())
+        for (; reader.CurrentHas; reader.MoveNext())
         {
             tokens.Add(reader.CurrentToken);
         }
@@ -50,7 +50,7 @@ public class TestStringJsonReader
         Assert.Multiple(() =>
         {
             Assert.That(tokens.Count, Is.EqualTo(9));
-            
+
             Assert.That(tokens[0].Kind, Is.EqualTo(JsonTokenKind.ObjectStart));
             Assert.That(tokens[1].Kind, Is.EqualTo(JsonTokenKind.String));
             Assert.That(tokens[2].Kind, Is.EqualTo(JsonTokenKind.Colon));
@@ -67,9 +67,9 @@ public class TestStringJsonReader
     public void TestNumber1()
     {
         var json = "123 0 -1 -0 0.123 123.456 1e-5 1e5 1e+5 -123.456E+789 -1.2e3 0e3";
-        var reader = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+        var reader = StringJsonReader.Create(SeraJsonOptions.Default, json.AsMemory());
         var tokens = new List<JsonToken>();
-        for (; reader.Has; reader.MoveNext())
+        for (; reader.CurrentHas; reader.MoveNext())
         {
             tokens.Add(reader.CurrentToken);
         }
@@ -103,9 +103,9 @@ public class TestStringJsonReader
     {
         var json =
             "\"asd\" \"\" \"\\t\" \"123456789\" \"\\u2a5f\" \"123\\t456\" \"asd镍😂\" \"asd\\u954D\\uD83D\\uDE02\"";
-        var reader = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+        var reader = StringJsonReader.Create(SeraJsonOptions.Default, json.AsMemory());
         var tokens = new List<JsonToken>();
-        for (; reader.Has; reader.MoveNext())
+        for (; reader.CurrentHas; reader.MoveNext())
         {
             tokens.Add(reader.CurrentToken);
         }
@@ -136,7 +136,7 @@ public class TestStringJsonReader
         var e = Assert.Throws<JsonParseException>(() =>
         {
             var json = "asd";
-            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+            _ = StringJsonReader.Create(SeraJsonOptions.Default, json.AsMemory());
         });
         Console.WriteLine(e);
         Console.WriteLine(0);
@@ -145,7 +145,7 @@ public class TestStringJsonReader
         e = Assert.Throws<JsonParseException>(() =>
         {
             var json = "-";
-            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+            _ = StringJsonReader.Create(SeraJsonOptions.Default, json.AsMemory());
         });
         Console.WriteLine(e);
         Console.WriteLine(1);
@@ -154,7 +154,7 @@ public class TestStringJsonReader
         e = Assert.Throws<JsonParseException>(() =>
         {
             var json = "-a";
-            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+            _ = StringJsonReader.Create(SeraJsonOptions.Default, json.AsMemory());
         });
         Console.WriteLine(e);
         Console.WriteLine(2);
@@ -163,7 +163,7 @@ public class TestStringJsonReader
         e = Assert.Throws<JsonParseException>(() =>
         {
             var json = "0e";
-            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+            _ = StringJsonReader.Create(SeraJsonOptions.Default, json.AsMemory());
         });
         Console.WriteLine(e);
         Console.WriteLine(3);
@@ -172,7 +172,7 @@ public class TestStringJsonReader
         e = Assert.Throws<JsonParseException>(() =>
         {
             var json = "0e-";
-            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+            _ = StringJsonReader.Create(SeraJsonOptions.Default, json.AsMemory());
         });
         Console.WriteLine(e);
         Console.WriteLine(4);
@@ -181,7 +181,7 @@ public class TestStringJsonReader
         e = Assert.Throws<JsonParseException>(() =>
         {
             var json = "\"asd";
-            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+            _ = StringJsonReader.Create(SeraJsonOptions.Default, json.AsMemory());
         });
         Console.WriteLine(e);
         Console.WriteLine(5);
@@ -190,7 +190,7 @@ public class TestStringJsonReader
         e = Assert.Throws<JsonParseException>(() =>
         {
             var json = "\"asd\n";
-            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+            _ = StringJsonReader.Create(SeraJsonOptions.Default, json.AsMemory());
         });
         Console.WriteLine(e);
         Console.WriteLine(6);
@@ -199,7 +199,7 @@ public class TestStringJsonReader
         e = Assert.Throws<JsonParseException>(() =>
         {
             var json = "\"\\n asd";
-            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+            _ = StringJsonReader.Create(SeraJsonOptions.Default, json.AsMemory());
         });
         Console.WriteLine(e);
         Console.WriteLine(7);
@@ -208,7 +208,7 @@ public class TestStringJsonReader
         e = Assert.Throws<JsonParseException>(() =>
         {
             var json = "\"\\x";
-            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+            _ = StringJsonReader.Create(SeraJsonOptions.Default, json.AsMemory());
         });
         Console.WriteLine(e);
         Console.WriteLine(8);
@@ -217,7 +217,7 @@ public class TestStringJsonReader
         e = Assert.Throws<JsonParseException>(() =>
         {
             var json = "\"\\u";
-            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+            _ = StringJsonReader.Create(SeraJsonOptions.Default, json.AsMemory());
         });
         Console.WriteLine(e);
         Console.WriteLine(9);
@@ -226,7 +226,7 @@ public class TestStringJsonReader
         e = Assert.Throws<JsonParseException>(() =>
         {
             var json = "\"\\uzxc";
-            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+            _ = StringJsonReader.Create(SeraJsonOptions.Default, json.AsMemory());
         });
         Console.WriteLine(e);
         Console.WriteLine(10);
@@ -235,7 +235,7 @@ public class TestStringJsonReader
         e = Assert.Throws<JsonParseException>(() =>
         {
             var json = "\"\\uvbnm";
-            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+            _ = StringJsonReader.Create(SeraJsonOptions.Default, json.AsMemory());
         });
         Console.WriteLine(e);
         Console.WriteLine(11);
@@ -244,7 +244,7 @@ public class TestStringJsonReader
         e = Assert.Throws<JsonParseException>(() =>
         {
             var json = "\"\\n asd \n";
-            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+            _ = StringJsonReader.Create(SeraJsonOptions.Default, json.AsMemory());
         });
         Console.WriteLine(e);
         Console.WriteLine(12);
@@ -253,7 +253,7 @@ public class TestStringJsonReader
         e = Assert.Throws<JsonParseException>(() =>
         {
             var json = "nul";
-            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+            _ = StringJsonReader.Create(SeraJsonOptions.Default, json.AsMemory());
         });
         Console.WriteLine(e);
         Console.WriteLine(13);
@@ -262,7 +262,7 @@ public class TestStringJsonReader
         e = Assert.Throws<JsonParseException>(() =>
         {
             var json = "tr";
-            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+            _ = StringJsonReader.Create(SeraJsonOptions.Default, json.AsMemory());
         });
         Console.WriteLine(e);
         Console.WriteLine(14);
@@ -271,7 +271,7 @@ public class TestStringJsonReader
         e = Assert.Throws<JsonParseException>(() =>
         {
             var json = "fa";
-            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+            _ = StringJsonReader.Create(SeraJsonOptions.Default, json.AsMemory());
         });
         Console.WriteLine(e);
         Console.WriteLine(15);
@@ -280,7 +280,7 @@ public class TestStringJsonReader
         e = Assert.Throws<JsonParseException>(() =>
         {
             var json = "nuxx";
-            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+            _ = StringJsonReader.Create(SeraJsonOptions.Default, json.AsMemory());
         });
         Console.WriteLine(e);
         Console.WriteLine(16);
@@ -289,7 +289,7 @@ public class TestStringJsonReader
         e = Assert.Throws<JsonParseException>(() =>
         {
             var json = "trxx";
-            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+            _ = StringJsonReader.Create(SeraJsonOptions.Default, json.AsMemory());
         });
         Console.WriteLine(e);
         Console.WriteLine(17);
@@ -298,7 +298,7 @@ public class TestStringJsonReader
         e = Assert.Throws<JsonParseException>(() =>
         {
             var json = "faxx";
-            _ = new StringJsonReader(SeraJsonOptions.Default, json.AsMemory());
+            _ = StringJsonReader.Create(SeraJsonOptions.Default, json.AsMemory());
         });
         Console.WriteLine(e);
         Console.WriteLine(18);

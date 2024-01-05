@@ -24,7 +24,7 @@ public readonly struct DynamicImpl : ISeraColion<object?>, ISelectSeraColion<obj
         => colctor.CSome(new SeraPrimitiveImpl(), new SeraPrimitiveToObjectMapper(), new Type<SeraPrimitive>());
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R SelectString<R, C>(ref C colctor, Encoding encoding, InType<object?>? t = null)
+    public R SelectString<R, C>(ref C colctor, InType<object?>? t = null)
         where C : ISelectSeraColctor<object?, R>
         => colctor.CSome(new StringImpl(), new ToObjectMapper<string>(), new Type<string>());
 

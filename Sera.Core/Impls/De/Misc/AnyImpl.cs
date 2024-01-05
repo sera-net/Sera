@@ -25,7 +25,7 @@ public readonly struct AnyImpl(SeraFormats? formats = null) : ISeraColion<Any>, 
         => colctor.CSome(new SeraPrimitiveImpl(), new PrimitiveMapper(), new Type<SeraPrimitive>());
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public R SelectString<R, C>(ref C colctor, Encoding encoding, InType<Any>? t = null)
+    public R SelectString<R, C>(ref C colctor, InType<Any>? t = null)
         where C : ISelectSeraColctor<Any, R>
         => colctor.CSome(new StringImpl(), new StringMapper(), new Type<string>());
 
