@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using Sera.Core.Formats;
 
 namespace Sera.Core.Formats
@@ -19,22 +20,35 @@ namespace Sera.Core.Formats
 
     public enum NumberTextFormat
     {
+        /// <summary>
+        /// Any is not All, Any means to let the (de)serializer handle it
+        /// </summary>
         Any,
         /// <summary>
-        /// Format numbers in decimal, Use "N"
+        /// Format numbers in generic, Use "G"
+        /// <code>123.456</code>
+        /// </summary>
+        Generic,
+        /// <summary>
+        /// Format numbers in decimal, Use "D" for integers and "N" for floating points
         /// <code>1234</code>
         /// </summary>
         Decimal,
         /// <summary>
-        /// Format numbers in hexadecimal, Use "X"
+        /// Format numbers in hexadecimal, Use "X", Integers only
         /// <code>FF</code>
         /// </summary>
         Hex,
         /// <summary>
-        /// Format numbers in binary, Use "B"
+        /// Format numbers in binary, Use "B", Integers only
         /// <code>101010</code>
         /// </summary>
         Binary,
+        /// <summary>
+        /// Format numbers in exponent, Use "E", Floating points only
+        /// <code>1.052033E+003</code> 
+        /// </summary>
+        Exponent,
     }
 
     [Flags]
@@ -65,6 +79,9 @@ namespace Sera.Core.Formats
 
     public enum GuidTextFormat
     {
+        /// <summary>
+        /// Any is not All, Any means to let the (de)serializer handle it
+        /// </summary>
         Any,
         /// <summary>
         /// Use "N" to format <see cref="Guid"/>
@@ -95,6 +112,9 @@ namespace Sera.Core.Formats
 
     public enum GuidBinaryFormat
     {
+        /// <summary>
+        /// Any is not All, Any means to let the (de)serializer handle it
+        /// </summary>
         Any,
         /// <summary>
         /// Use the UUID standard for <see cref="Guid"/> in binary serialization
@@ -121,7 +141,10 @@ namespace Sera.Core
         public ToUpperOrLower ToUpperOrLower { get; set; } = ToUpperOrLower.None;
 
         public NumberTextFormat NumberTextFormat { get; set; } = NumberTextFormat.Any;
+        public NumberStyles NumberStyles { get; set; } = NumberStyles.None;
         public string? CustomNumberTextFormat { get; set; }
+
+        public bool ComplexAsString { get; set; }
 
         public DateTimeFormatFlags DateTimeFormat { get; set; } = DateTimeFormatFlags.None;
 
@@ -136,7 +159,9 @@ namespace Sera.Core
                 BooleanAsNumber = attr.BooleanAsNumber,
                 ToUpperOrLower = attr.ToUpperOrLower,
                 NumberTextFormat = attr.NumberTextFormat,
+                NumberStyles = attr.NumberStyles,
                 CustomNumberTextFormat = attr.CustomNumberTextFormat,
+                ComplexAsString = attr.ComplexAsString,
                 DateTimeFormat = attr.DateTimeFormat,
                 GuidTextFormat = attr.GuidTextFormat,
                 GuidBinaryFormat = attr.GuidBinaryFormat,

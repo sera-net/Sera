@@ -17,7 +17,7 @@ public readonly struct Enum1Impl : ISeraVision<Enum1>, IUnionSeraVision<Enum1>
     public R Accept<R, V>(V visitor, Enum1 value) where V : ASeraVisitor<R>
         => visitor.VUnion(this, value);
 
-    public string Name => nameof(Enum1);
+    public string? Name => nameof(Enum1);
 
     public R AcceptUnion<R, V>(V visitor, ref Enum1 value) where V : AUnionSeraVisitor<R>
         => value switch

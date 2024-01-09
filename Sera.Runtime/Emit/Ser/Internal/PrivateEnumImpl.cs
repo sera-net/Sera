@@ -20,7 +20,7 @@ public readonly struct PrivateEnumImpl<T> : ISeraVision<T>, IUnionSeraVision<T> 
     public R Accept<R, V>(V visitor, T value) where V : ASeraVisitor<R>
         => visitor.VUnion(this, value);
 
-    public string Name => inner.Name;
+    public string? Name => inner.Name;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R AcceptUnion<R, V>(V visitor, ref T value) where V : AUnionSeraVisitor<R>

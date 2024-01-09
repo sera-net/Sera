@@ -8,6 +8,7 @@ open Microsoft.FSharp.Core
 open Sera.Core
 open Sera.Core.Builders
 open Sera.Core.Builders.Outputs
+open Sera.Core.Builders.Ser
 open Sera.FSharp.Builders
 open Sera.Runtime
 
@@ -79,24 +80,24 @@ type SeraBuilderForRuntimeStaticSerFs =
     static member inline OutputToStream<'s, 'b, 'a, 'i
         when 's :> ISerBuilder and 'b :> ISerBuilder and 'b :> IStreamOutput and 'i :> ISeraVision<'a>>
         (
-            __: 's,
-            (b, v, i, _): 'b * 'a * 'i * FsUse,
+            __: 's SerBuilder,
+            (b, v, i, _): 'b SerBuilder * 'a * 'i * FsUse,
             stream: Stream
         ) =
-        RuntimeStaticSerFs.SerOutputToStream b v i stream
+        RuntimeStaticSerFs.SerOutputToStream b.Target v i stream
 
     [<Extension; CustomOperation("ToString")>]
     static member inline OutputToString<'s, 'b, 'a, 'i
         when 's :> ISerBuilder and 'b :> ISerBuilder and 'b :> IStringBuilderOutput and 'i :> ISeraVision<'a>>
         (
-            __: 's,
-            (b, v, i, _): 'b * 'a * 'i * FsUse,
+            __: 's SerBuilder,
+            (b, v, i, _): 'b SerBuilder * 'a * 'i * FsUse,
             sb: StringBuilder
         ) =
-        RuntimeStaticSerFs.SerOutputToString b v i sb
+        RuntimeStaticSerFs.SerOutputToString b.Target v i sb
 
     [<Extension; CustomOperation("ToString")>]
-    static member inline OutputToString(__: #ISerBuilder, b: 'b * 'a * 'i * FsUse) =
+    static member inline OutputToString(__: #ISerBuilder SerBuilder, b: 'b SerBuilder * 'a * 'i * FsUse) =
         let sb = StringBuilder()
         __.OutputToString(b, sb) |> ignore
         sb.ToString()
@@ -105,39 +106,40 @@ type SeraBuilderForRuntimeStaticSerFs =
     static member inline OutputToStreamAsync<'s, 'b, 'a, 'i
         when 's :> ISerBuilder and 'b :> ISerBuilder and 'b :> IAsyncStreamOutput and 'i :> ISeraVision<'a>>
         (
-            __: 's,
-            (b, v, i, _): 'b * 'a * 'i * FsUse,
+            __: 's SerBuilder,
+            (b, v, i, _): 'b SerBuilder * 'a * 'i * FsUse,
             stream: Stream
         ) =
-        RuntimeStaticSerFs.SerOutputToStreamAsync b v i stream
+        RuntimeStaticSerFs.SerOutputToStreamAsync b.Target v i stream
 
 [<Extension; Sealed; AbstractClass>]
 type SeraBuilderForRuntimeSerFs =
     [<Extension; CustomOperation("Styles")>]
-    static member inline Styles(__: #ISerBuilder, (b, v): #ISerBuilder * 'a, styles: SeraStyles) = (b, v, styles)
+    static member inline Styles(__: #ISerBuilder SerBuilder, (b, v): #ISerBuilder SerBuilder * 'a, styles: SeraStyles) =
+        (b, v, styles)
 
     [<Extension; CustomOperation("ToStream")>]
     static member inline OutputToStream<'s, 'b, 'a, 'i
         when 's :> ISerBuilder and 'b :> ISerBuilder and 'b :> IStreamOutput and 'i :> ISeraVision<'a>>
         (
-            __: 's,
-            (b, v, styles): 'b * 'a * SeraStyles,
+            __: 's SerBuilder,
+            (b, v, styles): 'b SerBuilder * 'a * SeraStyles,
             stream: Stream
         ) =
-        RuntimeSerFs.SerOutputToStream b v (Nullable styles) stream
+        RuntimeSerFs.SerOutputToStream b.Target v (Nullable styles) stream
 
     [<Extension; CustomOperation("ToString")>]
     static member inline OutputToString<'s, 'b, 'a, 'i
         when 's :> ISerBuilder and 'b :> ISerBuilder and 'b :> IStringBuilderOutput and 'i :> ISeraVision<'a>>
         (
-            __: 's,
-            (b, v, styles): 'b * 'a * SeraStyles,
+            __: 's SerBuilder,
+            (b, v, styles): 'b SerBuilder * 'a * SeraStyles,
             sb: StringBuilder
         ) =
-        RuntimeSerFs.SerOutputToString b v (Nullable styles) sb
+        RuntimeSerFs.SerOutputToString b.Target v (Nullable styles) sb
 
     [<Extension; CustomOperation("ToString")>]
-    static member inline OutputToString(__: #ISerBuilder, b: 'b * 'a * SeraStyles) =
+    static member inline OutputToString(__: #ISerBuilder SerBuilder, b: 'b SerBuilder * 'a * SeraStyles) =
         let sb = StringBuilder()
         __.OutputToString(b, sb) |> ignore
         sb.ToString()
@@ -146,8 +148,8 @@ type SeraBuilderForRuntimeSerFs =
     static member inline OutputToStreamAsync<'s, 'b, 'a, 'i
         when 's :> ISerBuilder and 'b :> ISerBuilder and 'b :> IAsyncStreamOutput and 'i :> ISeraVision<'a>>
         (
-            __: 's,
-            (b, v, styles): 'b * 'a * SeraStyles,
+            __: 's SerBuilder,
+            (b, v, styles): 'b SerBuilder * 'a * SeraStyles,
             stream: Stream
         ) =
-        RuntimeSerFs.SerOutputToStreamAsync b v (Nullable styles) stream
+        RuntimeSerFs.SerOutputToStreamAsync b.Target v (Nullable styles) stream

@@ -7,9 +7,9 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using BetterCollections.Memories;
 using Sera.Core;
 using Sera.Runtime.Emit.Ser;
-using Sera.Utils;
 
 namespace Sera.Runtime.Utils;
 
@@ -580,7 +580,7 @@ internal class BytesSerializer(Stream stream, ISeraOptions options) : ASeraVisit
 
     private class StructSeraVisitor(BytesSerializer Base) : AStructSeraVisitor<Unit>(Base)
     {
-        public override Unit VField<V, T>(V vision, T value, string name, long key)
+        public override Unit VField<V, T>(V vision, T value, string? name, long key)
         {
             Base.VPrimitive(key);
             Base.Writer.Write((byte)((byte)TypeToken.Map | (byte)SplitToken.Mid << 3));

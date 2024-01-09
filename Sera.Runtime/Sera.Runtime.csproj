@@ -8,6 +8,7 @@
 	    <PackageReadmeFile>README.md</PackageReadmeFile>
 	    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 		<Description>Format-agnostic (de)serialization abstraction layer</Description>
+		<NoWarn>CS9113</NoWarn>
     </PropertyGroup>
 
 	<ItemGroup>
