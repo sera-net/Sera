@@ -131,6 +131,30 @@ public class TestStringJsonReader
     }
 
     [Test]
+    public void TestString2()
+    {
+        var json = "\"asd\\\\asd\"";
+        var reader = StringJsonReader.Create(SeraJsonOptions.Default, json.AsMemory());
+        var tokens = new List<JsonToken>();
+        for (; reader.CurrentHas; reader.MoveNext())
+        {
+            tokens.Add(reader.CurrentToken);
+        }
+        Console.WriteLine(string.Join("\n", tokens));
+        Assert.Multiple(() =>
+        {
+            Assert.That(tokens.Count, Is.EqualTo(1));
+
+            foreach (var token in tokens)
+            {
+                Assert.That(token.Kind, Is.EqualTo(JsonTokenKind.String));
+            }
+
+            Assert.That(tokens[0].Text.AsString(), Is.EqualTo("asd\\asd"));
+        });
+    }
+
+    [Test]
     public void TestExceptions()
     {
         var e = Assert.Throws<JsonParseException>(() =>

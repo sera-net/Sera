@@ -19,6 +19,21 @@ public readonly partial struct CompoundString
         ReadOnlyFixedSpan<char> Span();
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public CompoundString() => this = MakeString(string.Empty);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public CompoundString(ReadOnlyMemory<char> memory) => this = MakeMemory(memory);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public CompoundString(string str) => this = MakeString(str);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public CompoundString(ReadOnlyFixedSpan<char> span) => this = MakeSpan(span);
+
+    /// <summary>
+    /// Gets the number of characters in the current <see cref="CompoundString"/>.
+    /// </summary>
     public int Length
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

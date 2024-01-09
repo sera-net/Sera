@@ -148,8 +148,7 @@ public readonly struct StringJsonReader : IJsonReaderState<StringJsonReader>
             }
             throw new JsonParseException($"Unexpected character at {pos}", pos);
         }
-
-
+        
         #region Number
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -314,6 +313,11 @@ public readonly struct StringJsonReader : IJsonReaderState<StringJsonReader>
 
             found_escape:
             {
+                if (offset == span.Length)
+                {
+                    var err_pos = pos.AddChar(offset);
+                    throw new JsonParseException($"Unterminated string at {err_pos}", err_pos);
+                }
                 var c = span[offset];
                 switch (c)
                 {
@@ -387,10 +391,10 @@ public readonly struct StringJsonReader : IJsonReaderState<StringJsonReader>
                     var err_pos = pos.AddChar(new_offset);
                     throw new JsonParseException($"Bad control character in string literal at {err_pos}", err_pos);
                 }
+                sb.Append(span.Slice(offset, content_len));
                 switch (c)
                 {
                     case '"':
-                        sb.Append(span.Slice(offset, content_len));
                         var token = new JsonToken(JsonTokenKind.String, pos, sb.ToString());
                         MovePos(len);
                         last = last[len..];

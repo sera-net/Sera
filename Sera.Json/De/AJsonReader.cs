@@ -27,9 +27,9 @@ public abstract class AJsonReader(SeraJsonOptions options)
     public abstract JsonToken CurrentToken { get; }
     public abstract SourcePos SourcePos { get; }
     public abstract void MoveNext();
-    
+
     public ulong Version { get; protected set; }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void AssertMove(ulong version)
     {
@@ -254,9 +254,28 @@ public abstract class AJsonReader(SeraJsonOptions options)
     #endregion
 }
 
-public class JsonReader<State>(SeraJsonOptions options, State state)
-    : AJsonReader(options) where State : IJsonReaderState<State>
+public class JsonReader<State> : AJsonReader where State : IJsonReaderState<State>
 {
+    #region Fields
+
+    protected State state;
+
+    #endregion
+
+    #region Ctor
+
+    public JsonReader(SeraJsonOptions options, State state) : base(options)
+    {
+        this.state = state;
+    }
+
+    protected JsonReader(SeraJsonOptions options) : base(options)
+    {
+        Unsafe.SkipInit(out state);
+    }
+
+    #endregion
+
     #region Seek
 
     private Dictionary<long, State>? saves;
