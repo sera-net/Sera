@@ -8,7 +8,7 @@ public class TestStringJsonReader
     [Test]
     public void Test1()
     {
-        var json = "[null, true, false, {}]";
+        var json = "[null, \r\ntrue, \rfalse, \n{}]";
         var reader = StringJsonReader.Create(SeraJsonOptions.Default, json.AsMemory());
         var tokens = new List<JsonToken>();
         for (; reader.CurrentHas; reader.MoveNext())
@@ -321,7 +321,7 @@ public class TestStringJsonReader
 
         e = Assert.Throws<JsonParseException>(() =>
         {
-            var json = "faxx";
+            var json = "faxxx";
             _ = StringJsonReader.Create(SeraJsonOptions.Default, json.AsMemory());
         });
         Console.WriteLine(e);

@@ -111,6 +111,7 @@ public class StreamJsonReader : JsonReader<StreamJsonReader.State>
                     }
                 }
                 FoundSpace(total);
+                MoveRange(ref span, total);
                 goto re_try;
             }
             case ',':
@@ -164,7 +165,15 @@ public class StreamJsonReader : JsonReader<StreamJsonReader.State>
                 Found(JsonTokenKind.False, 5);
                 MoveRange(ref span, 5);
                 return;
-            // todo number
+            case '-':
+                FoundNumberNeg(span, 1);
+                return;
+            case '0':
+                FoundNumberZero(span, 1);
+                return;
+            case '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9':
+                FoundNumberDigit(span, 1);
+                return;
             case '"':
                 FoundString(span, 1);
                 return;
@@ -224,6 +233,153 @@ public class StreamJsonReader : JsonReader<StreamJsonReader.State>
         range = new(0, 0);
         span = ReadOnlySpan<char>.Empty;
         ReRead(ref span);
+    }
+
+    #endregion
+
+    #region Number
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void FoundNumberNeg(ReadOnlySpan<char> span, int offset)
+    {
+        if (offset >= span.Length) ReRead(ref span);
+        if (offset >= span.Length) goto err;
+        var c = span[offset];
+        switch (c)
+        {
+            case '0':
+                FoundNumberZero(span, offset + 1);
+                return;
+            case '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9':
+                FoundNumberDigit(span, offset + 1);
+                return;
+        }
+        err:
+        var err_pos = pos.AddChar(offset);
+        throw new JsonParseException($"No number after minus sign at {err_pos}", err_pos);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void FoundNumberZero(ReadOnlySpan<char> span, int offset)
+    {
+        var c = span[offset];
+        switch (c)
+        {
+            case '.':
+                FoundNumberFraction(span, offset + 1);
+                return;
+            case 'e' or 'E':
+                FoundNumberExponentE(span, offset + 1);
+                return;
+        }
+        Found(JsonTokenKind.Number, offset);
+        MoveRange(ref span, offset);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void FoundNumberDigit(ReadOnlySpan<char> span, int offset)
+    {
+        if (offset >= span.Length) ReRead(ref span);
+        while (offset < span.Length)
+        {
+            var c = span[offset];
+            switch (c)
+            {
+                case '0' or '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9':
+                    offset++;
+                    if (offset >= span.Length) ReRead(ref span);
+                    continue;
+                case '.':
+                    FoundNumberFraction(span, offset + 1);
+                    return;
+                case 'e' or 'E':
+                    FoundNumberExponentE(span, offset + 1);
+                    return;
+            }
+            break;
+        }
+        Found(JsonTokenKind.Number, offset);
+        MoveRange(ref span, offset);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void FoundNumberFraction(ReadOnlySpan<char> span, int offset)
+    {
+        if (offset >= span.Length) ReRead(ref span);
+        while (offset < span.Length)
+        {
+            var c = span[offset];
+            switch (c)
+            {
+                case '0' or '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9':
+                    offset++;
+                    if (offset >= span.Length) ReRead(ref span);
+                    continue;
+                case 'e' or 'E':
+                    FoundNumberExponentE(span, offset + 1);
+                    return;
+            }
+            break;
+        }
+        Found(JsonTokenKind.Number, offset);
+        MoveRange(ref span, offset);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void FoundNumberExponentE(ReadOnlySpan<char> span, int offset)
+    {
+        if (offset >= span.Length) ReRead(ref span);
+        if (offset >= span.Length) goto err;
+        var c = span[offset];
+        switch (c)
+        {
+            case '-' or '+':
+                FoundNumberExponentSign(span, offset + 1);
+                return;
+            case '0' or '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9':
+                FoundNumberExponentDigit(span, offset + 1);
+                return;
+        }
+        err:
+        var err_pos = pos.AddChar(offset);
+        throw new JsonParseException($"Exponent part is missing a number at {err_pos}", err_pos);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void FoundNumberExponentSign(ReadOnlySpan<char> span, int offset)
+    {
+        if (offset >= span.Length) ReRead(ref span);
+        if (offset >= span.Length) goto err;
+        var c = span[offset];
+        if (c is '0' or '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9')
+        {
+            FoundNumberExponentDigit(span, offset + 1);
+            return;
+        }
+        err:
+        var err_pos = pos.AddChar(offset);
+        throw new JsonParseException($"Exponent part is missing a number at {err_pos}", err_pos);
+    }
+
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void FoundNumberExponentDigit(ReadOnlySpan<char> span, int offset)
+    {
+        if (offset >= span.Length) ReRead(ref span);
+        while (offset < span.Length)
+        {
+            var c = span[offset];
+            switch (c)
+            {
+                case '0' or '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9':
+                    offset++;
+                    if (offset >= span.Length) ReRead(ref span);
+                    continue;
+            }
+            break;
+        }
+        Found(JsonTokenKind.Number, offset);
+        MoveRange(ref span, offset);
     }
 
     #endregion
@@ -316,7 +472,7 @@ public class StreamJsonReader : JsonReader<StreamJsonReader.State>
                         var err_pos = pos.AddChar(offset);
                         throw new JsonParseException($"Hex escape length is insufficient at {err_pos}", err_pos);
                     }
-                    var hex = span[(offset + 1)..4];
+                    var hex = span[(offset + 1)..(offset + 5)];
                     try
                     {
                         var un_escape = (char)ushort.Parse(hex, NumberStyles.HexNumber);
@@ -336,7 +492,7 @@ public class StreamJsonReader : JsonReader<StreamJsonReader.State>
                     throw new JsonParseException($"Illegal escape at {err_pos}", err_pos);
                 }
             }
-            
+
             offset++;
         }
 
