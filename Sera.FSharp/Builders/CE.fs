@@ -6,24 +6,26 @@ open System.Text
 open Sera.Core
 open Sera.Core.Builders
 open Sera.Core.Builders.Outputs
+open Sera.Core.Builders.Ser
 open Sera.FSharp.Builders
 
 [<Extension; Sealed; AbstractClass>]
 type SeraBuilderForSerFs =
     [<Extension>]
-    static member inline Zero(__: #ISerBuilder) = __
+    static member inline Zero(__: #ISerBuilder SerBuilder) = __
 
     [<Extension>]
-    static member inline Yield(__: #ISerBuilder, _: unit) = __
+    static member inline Yield(__: #ISerBuilder SerBuilder, _: unit) = __
 
     [<Extension; CustomOperation("Serialize")>]
-    static member inline Serialize(__: #ISerBuilder, b: #ISerBuilder, v: 'a) = b, v
+    static member inline Serialize(__: #ISerBuilder SerBuilder, b: #ISerBuilder SerBuilder, v: 'a) = b, v
 
     [<Extension; CustomOperation("Use")>]
-    static member inline Use(__: #ISerBuilder, (b, v): #ISerBuilder * 'a, i: #ISeraVision<'a>) = (b, v, i, FsUse)
+    static member inline Use(__: #ISerBuilder SerBuilder, (b, v): #ISerBuilder SerBuilder * 'a, i: #ISeraVision<'a>) =
+        (b, v, i, FsUse)
 
     [<Extension; CustomOperation("Static")>]
-    static member inline Static(__: #ISerBuilder, (b, v, i, _): #ISerBuilder * 'a * 'i * FsUse) =
+    static member inline Static(__: #ISerBuilder SerBuilder, (b, v, i, _): #ISerBuilder SerBuilder * 'a * 'i * FsUse) =
         (b, v, i, FsUse, FsStatic)
 
 module StaticSerFs =
@@ -63,24 +65,24 @@ type SeraBuilderForStaticSerFs =
     static member inline OutputToStream<'s, 'b, 'a, 'i
         when 's :> ISerBuilder and 'b :> ISerBuilder and 'b :> IStreamOutput and 'i :> ISeraVision<'a>>
         (
-            __: 's,
-            (b, v, i, _, _): 'b * 'a * 'i * FsUse * FsStatic,
+            __: 's SerBuilder,
+            (b, v, i, _, _): 'b SerBuilder * 'a * 'i * FsUse * FsStatic,
             stream: Stream
         ) =
-        StaticSerFs.SerOutputToStream b v i stream
+        StaticSerFs.SerOutputToStream b.Target v i stream
 
     [<Extension; CustomOperation("ToString")>]
     static member inline OutputToString<'s, 'b, 'a, 'i
         when 's :> ISerBuilder and 'b :> ISerBuilder and 'b :> IStringBuilderOutput and 'i :> ISeraVision<'a>>
         (
-            __: 's,
-            (b, v, i, _, _): 'b * 'a * 'i * FsUse * FsStatic,
+            __: 's SerBuilder,
+            (b, v, i, _, _): 'b SerBuilder * 'a * 'i * FsUse * FsStatic,
             sb: StringBuilder
         ) =
-        StaticSerFs.SerOutputToString b v i sb
+        StaticSerFs.SerOutputToString b.Target v i sb
 
     [<Extension; CustomOperation("ToString")>]
-    static member inline OutputToString(__: #ISerBuilder, b: 'b * 'a * 'i * FsUse * FsStatic) =
+    static member inline OutputToString(__: #ISerBuilder SerBuilder, b: 'b SerBuilder * 'a * 'i * FsUse * FsStatic) =
         let sb = StringBuilder()
         __.OutputToString(b, sb) |> ignore
         sb.ToString()
@@ -89,8 +91,8 @@ type SeraBuilderForStaticSerFs =
     static member inline OutputToStreamAsync<'s, 'b, 'a, 'i
         when 's :> ISerBuilder and 'b :> ISerBuilder and 'b :> IAsyncStreamOutput and 'i :> ISeraVision<'a>>
         (
-            __: 's,
-            (b, v, i, _, _): 'b * 'a * 'i * FsUse * FsStatic,
+            __: 's SerBuilder,
+            (b, v, i, _, _): 'b SerBuilder * 'a * 'i * FsUse * FsStatic,
             stream: Stream
         ) =
-        StaticSerFs.SerOutputToStreamAsync b v i stream
+        StaticSerFs.SerOutputToStreamAsync b.Target v i stream
