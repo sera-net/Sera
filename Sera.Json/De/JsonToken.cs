@@ -23,6 +23,7 @@ public readonly struct JsonToken(
 
 public enum JsonTokenKind
 {
+    Eof,
     Null,
     True,
     False,
