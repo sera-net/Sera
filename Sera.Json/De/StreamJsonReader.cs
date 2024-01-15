@@ -111,7 +111,7 @@ public class StreamJsonReader : JsonReader<StreamJsonReader.State>
                     }
                 }
                 FoundSpace(total);
-                MoveRange(ref span, total);
+                MoveRange(ref span, count);
                 goto re_try;
             }
             case ',':
@@ -184,22 +184,31 @@ public class StreamJsonReader : JsonReader<StreamJsonReader.State>
     #region Read
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void DoRead()
+    private void DoRead(bool discard)
     {
         if (IsEnd) return;
-        var new_buffer = new char[buffer.Length == 0 ? BufferInitialSize : buffer.Length * 2];
-        if (buffer.Length != 0) buffer.CopyTo(new_buffer.AsSpan());
-        var count = reader.ReadBlock(new_buffer.AsSpan(range.Offset + range.Length));
-        if (count != new_buffer.Length - buffer.Length) IsEnd = true;
-        buffer = new_buffer;
-        range = range with { Length = range.Length + count };
+        if (discard)
+        {
+            var count = reader.ReadBlock(buffer.AsSpan());
+            if (count != buffer.Length) IsEnd = true;
+            range = new(Offset: 0, Length: count);
+        }
+        else
+        {
+            var new_buffer = new char[buffer.Length == 0 ? BufferInitialSize : buffer.Length * 2];
+            if (buffer.Length != 0) buffer.CopyTo(new_buffer.AsSpan());
+            var count = reader.ReadBlock(new_buffer.AsSpan(range.Offset + range.Length));
+            if (count != new_buffer.Length - buffer.Length) IsEnd = true;
+            buffer = new_buffer;
+            range = range with { Length = range.Length + count };
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void ReRead(ref ReadOnlySpan<char> span)
+    private void ReRead(ref ReadOnlySpan<char> span, bool discard = false)
     {
         if (IsEnd) return;
-        DoRead();
+        DoRead(discard);
         span = this.span;
     }
 
@@ -214,16 +223,12 @@ public class StreamJsonReader : JsonReader<StreamJsonReader.State>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void DoDiscard(ref ReadOnlySpan<char> span)
     {
-        var old_buffer = buffer;
-        var old_range = range;
-        buffer = Array.Empty<char>();
-        range = range with { Offset = 0 };
-        span = ReadOnlySpan<char>.Empty;
-        ReRead(ref span);
-        if (old_range.Length > 0)
+        if (range != new ExternalSpan(0, 0))
         {
-            old_buffer.AsSpan(0, old_range.Length).CopyTo(buffer.AsSpan(0, old_range.Length));
+            buffer = new char[BufferInitialSize];
+            range = new(0, 0);
         }
+        ReRead(ref span, discard: true);
     }
 
     // ReSharper disable once RedundantAssignment
@@ -232,7 +237,7 @@ public class StreamJsonReader : JsonReader<StreamJsonReader.State>
     {
         range = new(0, 0);
         span = ReadOnlySpan<char>.Empty;
-        ReRead(ref span);
+        ReRead(ref span, discard: true);
     }
 
     #endregion
@@ -400,7 +405,7 @@ public class StreamJsonReader : JsonReader<StreamJsonReader.State>
                 var err_pos = pos.AddChar(new_offset);
                 throw new JsonParseException($"Unterminated string at {err_pos}", err_pos);
             }
-            content_len_count = span[offset..].CountLeadingStringContent();
+            content_len_count = span[new_offset..].CountLeadingStringContent();
             content_len_total += content_len_count;
             new_offset = content_len_total + offset;
         }
@@ -513,7 +518,7 @@ public class StreamJsonReader : JsonReader<StreamJsonReader.State>
                     var err_pos = pos.AddChar(new_offset);
                     throw new JsonParseException($"Unterminated string at {err_pos}", err_pos);
                 }
-                content_len_count = span[offset..].CountLeadingStringContent();
+                content_len_count = span[new_offset..].CountLeadingStringContent();
                 content_len_total += content_len_count;
                 new_offset = content_len_total + offset;
             }
