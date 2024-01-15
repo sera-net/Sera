@@ -18,8 +18,8 @@ public interface IStreamInput
 
 public interface IAsyncStreamInput
 {
-    public R BuildAsyncStreamInput<T, R, A>(A accept, InputBuildParam param, Stream stream)
-        where A : AcceptASeraColctor<T, ValueTask<T>, R>;
+    public ValueTask<R> BuildAsyncStreamInput<T, R, A>(A accept, InputBuildParam param, Stream stream)
+        where A : AcceptASeraColctor<T, ValueTask<T>, ValueTask<R>>;
 }
 
 public readonly record struct InputBuildParam(

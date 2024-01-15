@@ -126,7 +126,7 @@ public class TestStringJsonReader
             Assert.That(tokens[4].Text.AsString(), Is.EqualTo("\u2a5f"));
             Assert.That(tokens[5].Text.AsString(), Is.EqualTo("123\t456"));
             Assert.That(tokens[6].Text.AsString(), Is.EqualTo("asd镍😂"));
-            Assert.That(tokens[6].Text.AsString(), Is.EqualTo("asd镍😂"));
+            Assert.That(tokens[7].Text.AsString(), Is.EqualTo("asd镍😂"));
         });
     }
 

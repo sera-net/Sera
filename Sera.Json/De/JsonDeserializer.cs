@@ -50,7 +50,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         Unsafe.SkipInit(out T r);
         var mark = SeraKinds.None;
         List<Exception>? ex = null;
-        var pos = (long?)reader.Save();
+        var pos = reader.Save();
         try
         {
             if (colion.Priorities.HasValue)
@@ -68,7 +68,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         }
         finally
         {
-            reader.UnSave(pos.Value);
+            reader.UnSave(pos);
         }
     }
 
@@ -166,7 +166,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         Unsafe.SkipInit(out T r);
         var mark = SeraPrimitiveKinds.None;
         List<Exception>? ex = null;
-        var pos = (long?)reader.Save();
+        var pos = reader.Save();
         try
         {
             if (colion.Priorities.HasValue)
@@ -184,7 +184,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         }
         finally
         {
-            reader.UnSave(pos.Value);
+            reader.UnSave(pos);
         }
     }
 
@@ -1524,7 +1524,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         public T CNone() => throw new DeserializeException($"Unable to read union {typeof(T)}");
     }
 
-    private readonly struct ValueVariantSeraColctor(JsonDeserializer impl, SourcePos pos) : IVariantSeraColctor<T, T>
+    internal readonly struct ValueVariantSeraColctor(JsonDeserializer impl, SourcePos pos) : IVariantSeraColctor<T, T>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T CVariant<N>(N ctor) where N : ISeraCtor<T>
@@ -1586,7 +1586,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
         public T CNone() => throw new DeserializeException($"Unable to read union {typeof(T)}");
     }
 
-    private readonly struct InternalVariantSeraColctor(JsonDeserializer impl, JsonAstObject ast, UnionStyle style)
+    internal readonly struct InternalVariantSeraColctor(JsonDeserializer impl, JsonAstObject ast, UnionStyle style)
         : IVariantSeraColctor<T, T>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

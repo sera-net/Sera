@@ -86,7 +86,7 @@ namespace Sera.Json.Builders
     }
 
     public readonly record struct DeserializerBuilder(SeraJsonOptions Options) :
-        IDeBuilder, IStringInput
+        IDeBuilder, IStringInput, IStreamInput, IAsyncStreamInput
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public DeserializerBuilder WithOptions(SeraJsonOptions options) =>
@@ -96,6 +96,18 @@ namespace Sera.Json.Builders
         public R BuildStringInput<T, R, A>(A accept, InputBuildParam param, CompoundString str)
             where A : AcceptASeraColctor<T, T, R>
             => accept.Accept(new JsonDeserializer(StringJsonReader.Create(Options, str))
+                { RuntimeProviderOverride = param.RuntimeProvider }.MakeColctor<T>());
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public R BuildStreamInput<T, R, A>(A accept, InputBuildParam param, Stream stream)
+            where A : AcceptASeraColctor<T, T, R>
+            => accept.Accept(new JsonDeserializer(StreamJsonReader.Create(Options, stream))
+                { RuntimeProviderOverride = param.RuntimeProvider }.MakeColctor<T>());
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public async ValueTask<R> BuildAsyncStreamInput<T, R, A>(A accept, InputBuildParam param, Stream stream)
+            where A : AcceptASeraColctor<T, ValueTask<T>, ValueTask<R>>
+            => await accept.Accept(new AsyncJsonDeserializer(await AsyncStreamJsonReader.Create(Options, stream))
                 { RuntimeProviderOverride = param.RuntimeProvider }.MakeColctor<T>());
     }
 

@@ -1,5 +1,7 @@
 ﻿using System;
+using System.IO;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Sera.Core;
 using Sera.Core.Builders;
 using Sera.Core.Builders.De;
@@ -25,6 +27,14 @@ public static class SeraBuilderForStaticDe
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public T Accept<CI>(CI colctor) where CI : ISeraColctor<T, T>
             => Colion.Collect<T, CI>(ref colctor);
+    }
+
+    public readonly struct AsyncStaticAccept<T, C>(C Colion) : AcceptASeraColctor<T, ValueTask<T>, ValueTask<T>>
+        where C : ISeraColion<T>
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ValueTask<T> Accept<CI>(CI colctor) where CI : ISeraColctor<T, ValueTask<T>>
+            => Colion.Collect<ValueTask<T>, CI>(ref colctor);
     }
 
     #endregion
@@ -68,6 +78,37 @@ public static class SeraBuilderForStaticDe
         var (Target, Colion) = self.Target.Target;
         var source = CompoundString.MakeSpan(str);
         return Target.BuildStringInput<T, T, StaticAccept<T, C>>(new StaticAccept<T, C>(Colion), default, source);
+    }
+
+    #endregion
+
+    #region Stream
+
+    /// <summary>
+    /// Does not require ownership of stream, stream's dispose will not be called
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static T Stream<B, T, C>(this From<Static<DeBuilder<B, T, C>>> self, Stream stream)
+        where B : IDeBuilder, IStreamInput where C : ISeraColion<T>
+    {
+        var (Target, Colion) = self.Target.Target;
+        return Target.BuildStreamInput<T, T, StaticAccept<T, C>>(new StaticAccept<T, C>(Colion), default, stream);
+    }
+
+    #endregion
+
+    #region StreamAsync
+
+    /// <summary>
+    /// Does not require ownership of stream, stream's dispose will not be called
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ValueTask<T> StreamAsync<B, T, C>(this From<Static<DeBuilder<B, T, C>>> self, Stream stream)
+        where B : IDeBuilder, IAsyncStreamInput where C : ISeraColion<T>
+    {
+        var (Target, Colion) = self.Target.Target;
+        return Target.BuildAsyncStreamInput<T, T, AsyncStaticAccept<T, C>>(
+            new AsyncStaticAccept<T, C>(Colion), default, stream);
     }
 
     #endregion

@@ -343,4 +343,86 @@ public static class StringUtils
         }
         return len;
     }
+
+    /// <summary>Count the number of leading 0..9 characters</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int CountLeadingNumberDigitBody(this ReadOnlySpan<char> str)
+    {
+        var len = 0;
+        var span = str;
+        if (Vector512.IsHardwareAccelerated)
+        {
+            for (; span.Length >= 32; span = span[32..])
+            {
+                var vec = Vector512.LoadUnsafe(
+                    ref Unsafe.As<char, ushort>(ref Unsafe.AsRef(in span.GetPinnableReference())));
+                var a = vec - Vector512.Create((ushort)'0');
+                var cmp_v = Vector512.GreaterThan(a, Vector512.Create((ushort)('9' - '0')));
+                var cmp = cmp_v.ExtractMostSignificantBits();
+                if (cmp == 0) len += 32;
+                else
+                {
+                    var nth = (int)ulong.TrailingZeroCount(cmp);
+                    return len + nth;
+                }
+            }
+        }
+        if (Vector256.IsHardwareAccelerated)
+        {
+            for (; span.Length >= 16; span = span[16..])
+            {
+                var vec = Vector256.LoadUnsafe(
+                    ref Unsafe.As<char, ushort>(ref Unsafe.AsRef(in span.GetPinnableReference())));
+                var a = vec - Vector256.Create((ushort)'0');
+                var cmp_v = Vector256.GreaterThan(a, Vector256.Create((ushort)('9' - '0')));
+                var cmp = cmp_v.ExtractMostSignificantBits();
+                if (cmp == 0) len += 16;
+                else
+                {
+                    var nth = (int)ulong.TrailingZeroCount(cmp);
+                    return len + nth;
+                }
+            }
+        }
+        if (Vector128.IsHardwareAccelerated)
+        {
+            for (; span.Length >= 8; span = span[8..])
+            {
+                var vec = Vector128.LoadUnsafe(
+                    ref Unsafe.As<char, ushort>(ref Unsafe.AsRef(in span.GetPinnableReference())));
+                var a = vec - Vector128.Create((ushort)'0');
+                var cmp_v = Vector128.GreaterThan(a, Vector128.Create((ushort)('9' - '0')));
+                var cmp = cmp_v.ExtractMostSignificantBits();
+                if (cmp == 0) len += 8;
+                else
+                {
+                    var nth = (int)ulong.TrailingZeroCount(cmp);
+                    return len + nth;
+                }
+            }
+        }
+        if (Vector64.IsHardwareAccelerated)
+        {
+            for (; span.Length >= 4; span = span[4..])
+            {
+                var vec = Vector64.LoadUnsafe(
+                    ref Unsafe.As<char, ushort>(ref Unsafe.AsRef(in span.GetPinnableReference())));
+                var a = vec - Vector64.Create((ushort)'0');
+                var cmp_v = Vector64.GreaterThan(a, Vector64.Create((ushort)('9' - '0')));
+                var cmp = cmp_v.ExtractMostSignificantBits();
+                if (cmp == 0) len += 4;
+                else
+                {
+                    var nth = (int)ulong.TrailingZeroCount(cmp);
+                    return len + nth;
+                }
+            }
+        }
+        foreach (var c in span)
+        {
+            if (!char.IsAsciiDigit(c)) return len;
+            len++;
+        }
+        return len;
+    }
 }

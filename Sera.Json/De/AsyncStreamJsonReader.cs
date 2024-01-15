@@ -1,19 +1,19 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading.Tasks;
 using BetterCollections;
 using BetterCollections.Buffers;
-using Sera.Utils;
 using Sera.Json.Utils;
+using Sera.Utils;
 
 namespace Sera.Json.De;
 
-public sealed class StreamJsonReader : AJsonReader, IDisposable
+public sealed class AsyncStreamJsonReader : AAsyncJsonReader, IDisposable
 {
     #region Fields
 
@@ -26,7 +26,7 @@ public sealed class StreamJsonReader : AJsonReader, IDisposable
 
     #region Create
 
-    private StreamJsonReader(SeraJsonOptions options, Stream stream) : base(options)
+    private AsyncStreamJsonReader(SeraJsonOptions options, Stream stream) : base(options)
     {
         reader = new(stream, options.Encoding, leaveOpen: true);
     }
@@ -35,10 +35,10 @@ public sealed class StreamJsonReader : AJsonReader, IDisposable
     /// Does not require ownership of stream, stream's dispose will not be called
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static StreamJsonReader Create(SeraJsonOptions options, Stream stream)
+    public static async ValueTask<AsyncStreamJsonReader> Create(SeraJsonOptions options, Stream stream)
     {
-        var r = new StreamJsonReader(options, stream);
-        r.MoveNext(true);
+        var r = new AsyncStreamJsonReader(options, stream);
+        await r.MoveNext(true);
         return r;
     }
 
@@ -48,10 +48,10 @@ public sealed class StreamJsonReader : AJsonReader, IDisposable
 
     private char[] buffer = Array.Empty<char>();
     private ExternalSpan range = new(0, 0);
-    private ReadOnlySpan<char> span
+    private ReadOnlyMemory<char> span
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => range.GetSpan(buffer.AsSpan());
+        get => range.GetMemory(buffer.AsMemory());
     }
 
     private bool IsEnd;
@@ -92,7 +92,7 @@ public sealed class StreamJsonReader : AJsonReader, IDisposable
     private SourcePos pos;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override void MoveNext()
+    public override async ValueTask MoveNext()
     {
         if (IsOnSave)
         {
@@ -101,135 +101,135 @@ public sealed class StreamJsonReader : AJsonReader, IDisposable
             if (!IsOnSave)
             {
                 if (!HasSaves) ClearSaves();
-                MoveNext(false);
+                await MoveNext(false);
                 Version++;
             }
         }
         else
         {
             if (!CurrentHas) return;
-            MoveNext(false);
+            await MoveNext(false);
             Version++;
         }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void MoveNext(bool firstMove)
+    private async ValueTask MoveNext(bool firstMove)
     {
         var span = this.span;
         re_try:
-        if (span.IsEmpty) ReRead(ref span);
+        if (span.IsEmpty) span = await ReRead(span);
         if (span.IsEmpty)
         {
             currentHas = false;
             return;
         }
 
-        if (!firstMove) TryDiscard(ref span);
+        if (!firstMove) span = await TryDiscard(span);
 
-        var first = span[0];
+        var first = span.Span[0];
         switch (first)
         {
             case '\n':
                 FoundLine(1);
-                MoveRange(ref span, 1);
+                span = MoveRange(span, 1);
                 goto re_try;
             case '\r':
             {
-                MoveRange(ref span, 1);
-                if (span.IsEmpty) ReRead(ref span);
-                if (span[0] is '\n')
+                span = MoveRange(span, 1);
+                if (span.IsEmpty) span = await ReRead(span);
+                if (span.Span[0] is '\n')
                 {
                     FoundLine(2);
-                    MoveRange(ref span, 1);
+                    span = MoveRange(span, 1);
                 }
                 else FoundLine(1);
                 goto re_try;
             }
             case '\x20' or '\x09':
             {
-                var count = span.CountLeadingSpace();
+                var count = span.Span.CountLeadingSpace();
                 var total = count;
                 Debug.Assert(count > 0);
                 if (span.Length == count)
                 {
-                    if (firstMove) ClearDiscard(ref span);
-                    else DoDiscard(ref span);
-                    count = span.CountLeadingSpace();
+                    if (firstMove) span = await ClearDiscard(span);
+                    else span = await DoDiscard(span);
+                    count = span.Span.CountLeadingSpace();
                     total += count;
                     while (count != 0 && span.Length == count)
                     {
-                        ClearDiscard(ref span);
-                        count = span.CountLeadingSpace();
+                        span = await ClearDiscard(span);
+                        count = span.Span.CountLeadingSpace();
                         total += count;
                     }
                 }
                 FoundSpace(total);
-                MoveRange(ref span, count);
+                span = MoveRange(span, count);
                 goto re_try;
             }
             case ',':
                 Found(JsonTokenKind.Comma, 1);
-                MoveRange(ref span, 1);
+                MoveRange(span, 1);
                 return;
             case ':':
                 Found(JsonTokenKind.Colon, 1);
-                MoveRange(ref span, 1);
+                MoveRange(span, 1);
                 return;
             case '[':
                 Found(JsonTokenKind.ArrayStart, 1);
-                MoveRange(ref span, 1);
+                MoveRange(span, 1);
                 return;
             case ']':
                 Found(JsonTokenKind.ArrayEnd, 1);
-                MoveRange(ref span, 1);
+                MoveRange(span, 1);
                 return;
             case '{':
                 Found(JsonTokenKind.ObjectStart, 1);
-                MoveRange(ref span, 1);
+                MoveRange(span, 1);
                 return;
             case '}':
                 Found(JsonTokenKind.ObjectEnd, 1);
-                MoveRange(ref span, 1);
+                MoveRange(span, 1);
                 return;
             case 'n':
-                if (span.Length < 4) ReRead(ref span);
+                if (span.Length < 4) span = await ReRead(span);
                 if (span.Length < 4)
                     throw new JsonParseException($"Expected 'null' but found '{span.ToString()}' at {pos}", pos);
-                if (span is not [_, 'u', 'l', 'l', ..])
+                if (span.Span is not [_, 'u', 'l', 'l', ..])
                     throw new JsonParseException($"Expected 'null' but found '{span[..4].ToString()}' at {pos}", pos);
                 Found(JsonTokenKind.Null, 4);
-                MoveRange(ref span, 4);
+                MoveRange(span, 4);
                 return;
             case 't':
-                if (span.Length < 4) ReRead(ref span);
+                if (span.Length < 4) span = await ReRead(span);
                 if (span.Length < 4)
                     throw new JsonParseException($"Expected 'true' but found '{span.ToString()}' at {pos}", pos);
-                if (span is not [_, 'r', 'u', 'e', ..])
+                if (span.Span is not [_, 'r', 'u', 'e', ..])
                     throw new JsonParseException($"Expected 'true' but found '{span[..4].ToString()}' at {pos}", pos);
                 Found(JsonTokenKind.True, 4);
-                MoveRange(ref span, 4);
+                MoveRange(span, 4);
                 return;
             case 'f':
-                if (span.Length < 5) ReRead(ref span);
+                if (span.Length < 5) span = await ReRead(span);
                 if (span.Length < 5)
                     throw new JsonParseException($"Expected 'false' but found '{span.ToString()}' at {pos}", pos);
-                if (span is not [_, 'a', 'l', 's', 'e', ..])
+                if (span.Span is not [_, 'a', 'l', 's', 'e', ..])
                     throw new JsonParseException($"Expected 'false' but found '{span[..4].ToString()}' at {pos}", pos);
                 Found(JsonTokenKind.False, 5);
-                MoveRange(ref span, 5);
+                MoveRange(span, 5);
                 return;
             case '-':
-                FoundNumberNeg(span, 1);
+                await FoundNumberNeg(span, 1);
                 return;
             case '0':
-                FoundNumberZero(span, 1);
+                await FoundNumberZero(span, 1);
                 return;
             case '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9':
-                FoundNumberDigit(span, 1);
+                await FoundNumberDigit(span, 1);
                 return;
             case '"':
-                FoundString(span, 1);
+                await FoundString(span, 1);
                 return;
         }
         throw new JsonParseException($"Unexpected character at {pos}", pos);
@@ -238,12 +238,12 @@ public sealed class StreamJsonReader : AJsonReader, IDisposable
     #region Read
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void DoRead(bool discard)
+    private async ValueTask DoRead(bool discard)
     {
         if (IsEnd) return;
         if (discard)
         {
-            var count = reader.ReadBlock(buffer.AsSpan());
+            var count = await reader.ReadBlockAsync(buffer.AsMemory());
             if (count != buffer.Length) IsEnd = true;
             range = new(Offset: 0, Length: count);
         }
@@ -251,7 +251,7 @@ public sealed class StreamJsonReader : AJsonReader, IDisposable
         {
             var new_buffer = new char[buffer.Length == 0 ? BufferInitialSize : buffer.Length * 2];
             if (buffer.Length != 0) buffer.CopyTo(new_buffer.AsSpan());
-            var count = reader.ReadBlock(new_buffer.AsSpan(range.Offset + range.Length));
+            var count = await reader.ReadBlockAsync(new_buffer.AsMemory(range.Offset + range.Length));
             if (count != new_buffer.Length - buffer.Length) IsEnd = true;
             buffer = new_buffer;
             range = range with { Length = range.Length + count };
@@ -259,39 +259,39 @@ public sealed class StreamJsonReader : AJsonReader, IDisposable
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void ReRead(ref ReadOnlySpan<char> span, bool discard = false)
+    private async ValueTask<ReadOnlyMemory<char>> ReRead(ReadOnlyMemory<char> span, bool discard = false)
     {
-        if (IsEnd) return;
-        DoRead(discard);
-        span = this.span;
+        if (IsEnd) return span;
+        await DoRead(discard);
+        return this.span;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void TryDiscard(ref ReadOnlySpan<char> span)
+    private async ValueTask<ReadOnlyMemory<char>> TryDiscard(ReadOnlyMemory<char> span)
     {
-        if (buffer.Length < DiscardThreshold) return;
-        DoDiscard(ref span);
+        if (buffer.Length < DiscardThreshold) return span;
+        return await DoDiscard(span);
     }
 
     // ReSharper disable once RedundantAssignment
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void DoDiscard(ref ReadOnlySpan<char> span)
+    private async ValueTask<ReadOnlyMemory<char>> DoDiscard(ReadOnlyMemory<char> span)
     {
         if (range != new ExternalSpan(0, 0))
         {
             buffer = new char[BufferInitialSize];
             range = new(0, 0);
         }
-        ReRead(ref span, discard: true);
+        return await ReRead(span, discard: true);
     }
 
     // ReSharper disable once RedundantAssignment
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void ClearDiscard(ref ReadOnlySpan<char> span)
+    private async ValueTask<ReadOnlyMemory<char>> ClearDiscard(ReadOnlyMemory<char> span)
     {
         range = new(0, 0);
-        span = ReadOnlySpan<char>.Empty;
-        ReRead(ref span, discard: true);
+        span = ReadOnlyMemory<char>.Empty;
+        return await ReRead(span, discard: true);
     }
 
     #endregion
@@ -299,18 +299,18 @@ public sealed class StreamJsonReader : AJsonReader, IDisposable
     #region Number
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void FoundNumberNeg(ReadOnlySpan<char> span, int offset)
+    private async ValueTask FoundNumberNeg(ReadOnlyMemory<char> span, int offset)
     {
-        if (offset >= span.Length) ReRead(ref span);
+        if (offset >= span.Length) span = await ReRead(span);
         if (offset >= span.Length) goto err;
-        var c = span[offset];
+        var c = span.Span[offset];
         switch (c)
         {
             case '0':
-                FoundNumberZero(span, offset + 1);
+                await FoundNumberZero(span, offset + 1);
                 return;
             case '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9':
-                FoundNumberDigit(span, offset + 1);
+                await FoundNumberDigit(span, offset + 1);
                 return;
         }
         err:
@@ -319,91 +319,91 @@ public sealed class StreamJsonReader : AJsonReader, IDisposable
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void FoundNumberZero(ReadOnlySpan<char> span, int offset)
+    private async ValueTask FoundNumberZero(ReadOnlyMemory<char> span, int offset)
     {
-        var c = span[offset];
+        var c = span.Span[offset];
         switch (c)
         {
             case '.':
-                FoundNumberFraction(span, offset + 1);
+                await FoundNumberFraction(span, offset + 1);
                 return;
             case 'e' or 'E':
-                FoundNumberExponentE(span, offset + 1);
+                await FoundNumberExponentE(span, offset + 1);
                 return;
         }
         Found(JsonTokenKind.Number, offset);
-        MoveRange(ref span, offset);
+        MoveRange(span, offset);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void FoundNumberDigit(ReadOnlySpan<char> span, int offset)
+    private async ValueTask FoundNumberDigit(ReadOnlyMemory<char> span, int offset)
     {
-        if (offset >= span.Length) ReRead(ref span);
-        var count = span[offset..].CountLeadingNumberDigitBody();
+        if (offset >= span.Length) span = await ReRead(span);
+        var count = span[offset..].Span.CountLeadingNumberDigitBody();
         var new_offset = offset + count;
         while (count != 0 && new_offset >= span.Length)
         {
-            ReRead(ref span);
-            count = span[new_offset..].CountLeadingNumberDigitBody();
+            span = await ReRead(span);
+            count = span[new_offset..].Span.CountLeadingNumberDigitBody();
             new_offset += count;
         }
-        if (new_offset >= span.Length) ReRead(ref span);
+        if (new_offset >= span.Length) span = await ReRead(span);
         if (new_offset < span.Length)
         {
-            var c = span[new_offset];
+            var c = span.Span[new_offset];
             switch (c)
             {
                 case '.':
-                    FoundNumberFraction(span, new_offset + 1);
+                    await FoundNumberFraction(span, new_offset + 1);
                     return;
                 case 'e' or 'E':
-                    FoundNumberExponentE(span, new_offset + 1);
+                    await FoundNumberExponentE(span, new_offset + 1);
                     return;
             }
         }
         Found(JsonTokenKind.Number, new_offset);
-        MoveRange(ref span, new_offset);
+        MoveRange(span, new_offset);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void FoundNumberFraction(ReadOnlySpan<char> span, int offset)
+    private async ValueTask FoundNumberFraction(ReadOnlyMemory<char> span, int offset)
     {
-        if (offset >= span.Length) ReRead(ref span);
-        var count = span[offset..].CountLeadingNumberDigitBody();
+        if (offset >= span.Length) span = await ReRead(span);
+        var count = span[offset..].Span.CountLeadingNumberDigitBody();
         var new_offset = offset + count;
         while (count != 0 && new_offset >= span.Length)
         {
-            ReRead(ref span);
-            count = span[new_offset..].CountLeadingNumberDigitBody();
+            span = await ReRead(span);
+            count = span[new_offset..].Span.CountLeadingNumberDigitBody();
             new_offset += count;
         }
-        if (new_offset >= span.Length) ReRead(ref span);
+        if (new_offset >= span.Length) span = await ReRead(span);
         if (new_offset < span.Length)
         {
-            var c = span[new_offset];
+            var c = span.Span[new_offset];
             if (c is 'e' or 'E')
             {
-                FoundNumberExponentE(span, new_offset + 1);
+                await FoundNumberExponentE(span, new_offset + 1);
                 return;
             }
         }
         Found(JsonTokenKind.Number, new_offset);
-        MoveRange(ref span, new_offset);
+        MoveRange(span, new_offset);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void FoundNumberExponentE(ReadOnlySpan<char> span, int offset)
+    private async ValueTask FoundNumberExponentE(ReadOnlyMemory<char> span, int offset)
     {
-        if (offset >= span.Length) ReRead(ref span);
+        if (offset >= span.Length) span = await ReRead(span);
         if (offset >= span.Length) goto err;
-        var c = span[offset];
+        var c = span.Span[offset];
         switch (c)
         {
             case '-' or '+':
-                FoundNumberExponentSign(span, offset + 1);
+                await FoundNumberExponentSign(span, offset + 1);
                 return;
             case '0' or '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9':
-                FoundNumberExponentDigit(span, offset + 1);
+                await FoundNumberExponentDigit(span, offset + 1);
                 return;
         }
         err:
@@ -412,14 +412,14 @@ public sealed class StreamJsonReader : AJsonReader, IDisposable
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void FoundNumberExponentSign(ReadOnlySpan<char> span, int offset)
+    private async ValueTask FoundNumberExponentSign(ReadOnlyMemory<char> span, int offset)
     {
-        if (offset >= span.Length) ReRead(ref span);
+        if (offset >= span.Length) span = await ReRead(span);
         if (offset >= span.Length) goto err;
-        var c = span[offset];
+        var c = span.Span[offset];
         if (c is '0' or '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9')
         {
-            FoundNumberExponentDigit(span, offset + 1);
+            await FoundNumberExponentDigit(span, offset + 1);
             return;
         }
         err:
@@ -428,19 +428,19 @@ public sealed class StreamJsonReader : AJsonReader, IDisposable
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void FoundNumberExponentDigit(ReadOnlySpan<char> span, int offset)
+    private async ValueTask FoundNumberExponentDigit(ReadOnlyMemory<char> span, int offset)
     {
-        if (offset >= span.Length) ReRead(ref span);
-        var count = span[offset..].CountLeadingNumberDigitBody();
+        if (offset >= span.Length) span = await ReRead(span);
+        var count = span[offset..].Span.CountLeadingNumberDigitBody();
         var new_offset = offset + count;
         while (count != 0 && new_offset >= span.Length)
         {
-            ReRead(ref span);
-            count = span[new_offset..].CountLeadingNumberDigitBody();
+            span = await ReRead(span);
+            count = span[new_offset..].Span.CountLeadingNumberDigitBody();
             new_offset += count;
         }
         Found(JsonTokenKind.Number, new_offset);
-        MoveRange(ref span, new_offset);
+        MoveRange(span, new_offset);
     }
 
     #endregion
@@ -448,25 +448,25 @@ public sealed class StreamJsonReader : AJsonReader, IDisposable
     #region String
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void FoundString(ReadOnlySpan<char> span, int offset)
+    private async ValueTask FoundString(ReadOnlyMemory<char> span, int offset)
     {
-        var content_len_count = span[offset..].CountLeadingStringContent();
+        var content_len_count = span[offset..].Span.CountLeadingStringContent();
         var content_len_total = content_len_count;
         var new_offset = content_len_total + offset;
         while (new_offset == span.Length)
         {
-            ReRead(ref span);
+            span = await ReRead(span);
             if (new_offset == span.Length)
             {
                 var err_pos = pos.AddChar(new_offset);
                 throw new JsonParseException($"Unterminated string at {err_pos}", err_pos);
             }
-            content_len_count = span[new_offset..].CountLeadingStringContent();
+            content_len_count = span[new_offset..].Span.CountLeadingStringContent();
             content_len_total += content_len_count;
             new_offset = content_len_total + offset;
         }
         var len = new_offset + 1;
-        var c = span[new_offset];
+        var c = span.Span[new_offset];
         if (char.IsControl(c))
         {
             var err_pos = pos.AddChar(new_offset);
@@ -478,20 +478,21 @@ public sealed class StreamJsonReader : AJsonReader, IDisposable
                 var token = new JsonToken(JsonTokenKind.String, pos,
                     CompoundString.MakeMemory(buffer).Slice(range.Slice(1, content_len_total)));
                 MovePos(len);
-                MoveRange(ref span, len);
+                MoveRange(span, len);
                 currentHas = true;
                 currentToken = token;
                 SavedTokens?.Add(token);
                 return;
             case '\\':
-                FoundStringWithEscape(span, span.Slice(offset, content_len_total), len);
+                await FoundStringWithEscape(span, span.Slice(offset, content_len_total), len);
                 return;
         }
         throw new Exception("never");
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void FoundStringWithEscape(ReadOnlySpan<char> span, ReadOnlySpan<char> first_content, int offset)
+    private async ValueTask FoundStringWithEscape(ReadOnlyMemory<char> span, ReadOnlyMemory<char> first_content,
+        int offset)
     {
         var sb = new StringBuilder();
         sb.Append(first_content);
@@ -505,7 +506,7 @@ public sealed class StreamJsonReader : AJsonReader, IDisposable
                 var err_pos = pos.AddChar(offset);
                 throw new JsonParseException($"Unterminated string at {err_pos}", err_pos);
             }
-            var c = span[offset];
+            var c = span.Span[offset];
             switch (c)
             {
                 case '"' or '\\' or '/':
@@ -528,7 +529,7 @@ public sealed class StreamJsonReader : AJsonReader, IDisposable
                     break;
                 case 'u':
                 {
-                    if (span.Length < offset + 5) ReRead(ref span);
+                    if (span.Length < offset + 5) span = await ReRead(span);
                     if (span.Length < offset + 5)
                     {
                         var err_pos = pos.AddChar(offset);
@@ -537,7 +538,7 @@ public sealed class StreamJsonReader : AJsonReader, IDisposable
                     var hex = span[(offset + 1)..(offset + 5)];
                     try
                     {
-                        var un_escape = (char)ushort.Parse(hex, NumberStyles.HexNumber);
+                        var un_escape = (char)ushort.Parse(hex.Span, NumberStyles.HexNumber);
                         sb.Append(un_escape);
                     }
                     catch (Exception e)
@@ -564,23 +565,23 @@ public sealed class StreamJsonReader : AJsonReader, IDisposable
 
         next_content:
         {
-            var content_len_count = span[offset..].CountLeadingStringContent();
+            var content_len_count = span[offset..].Span.CountLeadingStringContent();
             var content_len_total = content_len_count;
             var new_offset = content_len_total + offset;
             while (new_offset == span.Length)
             {
-                ReRead(ref span);
+                span = await ReRead(span);
                 if (new_offset == span.Length)
                 {
                     var err_pos = pos.AddChar(new_offset);
                     throw new JsonParseException($"Unterminated string at {err_pos}", err_pos);
                 }
-                content_len_count = span[new_offset..].CountLeadingStringContent();
+                content_len_count = span[new_offset..].Span.CountLeadingStringContent();
                 content_len_total += content_len_count;
                 new_offset = content_len_total + offset;
             }
             var len = new_offset + 1;
-            var c = span[new_offset];
+            var c = span.Span[new_offset];
             if (char.IsControl(c))
             {
                 var err_pos = pos.AddChar(new_offset);
@@ -592,7 +593,7 @@ public sealed class StreamJsonReader : AJsonReader, IDisposable
                 case '"':
                     var token = new JsonToken(JsonTokenKind.String, pos, sb.ToString());
                     MovePos(len);
-                    MoveRange(ref span, len);
+                    MoveRange(span, len);
                     currentHas = true;
                     currentToken = token;
                     SavedTokens?.Add(token);
@@ -638,10 +639,10 @@ public sealed class StreamJsonReader : AJsonReader, IDisposable
     #region MovePos
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void MoveRange(ref ReadOnlySpan<char> span, int len)
+    private ReadOnlyMemory<char> MoveRange(ReadOnlyMemory<char> span, int len)
     {
         range = range[len..];
-        span = span[len..];
+        return span[len..];
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -676,7 +677,7 @@ public sealed class StreamJsonReader : AJsonReader, IDisposable
         }
     }
 
-    public override long Save()
+    public override ValueTask<long> Save()
     {
         saves ??= new();
         if (SavedTokens == null)
@@ -686,18 +687,20 @@ public sealed class StreamJsonReader : AJsonReader, IDisposable
             SavedTokens.Add(CurrentToken);
         }
         saves.Add(savedOffset);
-        return savedOffset;
+        return ValueTask.FromResult<long>(savedOffset);
     }
 
-    public override void Load(long savePoint)
+    public override ValueTask Load(long savePoint)
     {
         Debug.Assert(SavedTokens != null && savePoint < SavedTokens.Count);
         savedOffset = (int)savePoint;
+        return ValueTask.CompletedTask;
     }
 
-    public override void UnSave(long savePoint)
+    public override ValueTask UnSave(long savePoint)
     {
         saves!.Remove((int)savePoint);
+        return ValueTask.CompletedTask;
     }
 
     #endregion

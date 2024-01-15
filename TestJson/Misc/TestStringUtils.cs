@@ -76,4 +76,24 @@ public class TestStringUtils
         Console.WriteLine(len);
         Assert.That(len, Is.EqualTo(-1));
     }
+    
+    [Test, Parallelizable]
+    public void TestCountLeadingNumberDigitBody1([Range(0, 256)] int count)
+    {
+        Span<char> span = stackalloc char[256];
+        span[..count].Fill('1');
+        var len = StringUtils.CountLeadingNumberDigitBody(span);
+        Console.WriteLine(len);
+        Assert.That(len, Is.EqualTo(count));
+    }
+    
+    [Test, Parallelizable]
+    public void TestCountLeadingNumberDigitBody2([Range(0, 256)] int count)
+    {
+        Span<char> span = stackalloc char[count];
+        span[..count].Fill('1');
+        var len = StringUtils.CountLeadingNumberDigitBody(span);
+        Console.WriteLine(len);
+        Assert.That(len, Is.EqualTo(count));
+    }
 }
