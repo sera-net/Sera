@@ -254,35 +254,16 @@ public abstract class AJsonReader(SeraJsonOptions options)
     #endregion
 }
 
-public class JsonReader<State> : AJsonReader where State : IJsonReaderState<State>
+public sealed class JsonReader<State>(SeraJsonOptions options, State state) : AJsonReader(options)
+    where State : IJsonReaderState<State>
 {
-    #region Fields
-
-    protected State state;
-
-    #endregion
-
-    #region Ctor
-
-    public JsonReader(SeraJsonOptions options, State state) : base(options)
-    {
-        this.state = state;
-    }
-
-    protected JsonReader(SeraJsonOptions options) : base(options)
-    {
-        Unsafe.SkipInit(out state);
-    }
-
-    #endregion
-
     #region Seek
 
     private Dictionary<long, State>? saves;
     private long save_inc;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public sealed override long Save()
+    public override long Save()
     {
         saves ??= new();
         var savePoint = save_inc++;
@@ -291,13 +272,13 @@ public class JsonReader<State> : AJsonReader where State : IJsonReaderState<Stat
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public sealed override void Load(long savePoint)
+    public override void Load(long savePoint)
     {
         state = saves![savePoint];
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public sealed override void UnSave(long savePoint)
+    public override void UnSave(long savePoint)
     {
         saves!.Remove(savePoint);
     }
@@ -306,12 +287,12 @@ public class JsonReader<State> : AJsonReader where State : IJsonReaderState<Stat
 
     #region Iter
 
-    public sealed override bool CurrentHas
+    public override bool CurrentHas
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => state.CurrentHas;
     }
-    public sealed override JsonToken CurrentToken
+    public override JsonToken CurrentToken
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get => state.CurrentToken;
@@ -322,7 +303,7 @@ public class JsonReader<State> : AJsonReader where State : IJsonReaderState<Stat
         get => state.SourcePos;
     }
 
-    public sealed override void MoveNext()
+    public override void MoveNext()
     {
         if (!state.CurrentHas) return;
         state = state.MoveNext();

@@ -1,17 +1,19 @@
 ﻿using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
 using BetterCollections;
+using BetterCollections.Buffers;
 using Sera.Utils;
 using Sera.Json.Utils;
 
 namespace Sera.Json.De;
 
-public class StreamJsonReader : JsonReader<StreamJsonReader.State>
+public sealed class StreamJsonReader : AJsonReader, IDisposable
 {
     #region Fields
 
@@ -27,7 +29,6 @@ public class StreamJsonReader : JsonReader<StreamJsonReader.State>
     private StreamJsonReader(SeraJsonOptions options, Stream stream) : base(options)
     {
         reader = new(stream, options.Encoding, leaveOpen: true);
-        state = new(this);
     }
 
     /// <summary>
@@ -54,10 +55,63 @@ public class StreamJsonReader : JsonReader<StreamJsonReader.State>
     }
 
     private bool IsEnd;
-    private new bool CurrentHas { get; set; }
-    private new JsonToken CurrentToken { get; set; }
-    private new SourcePos SourcePos => pos;
+    private bool IsOnSave
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => SavedTokens != null && savedOffset < SavedTokens.Count;
+    }
+    public override bool CurrentHas
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => IsOnSave || currentHas;
+    }
+    public override JsonToken CurrentToken
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => IsOnSave ? SavedTokens![savedOffset] : currentToken;
+    }
+    public override SourcePos SourcePos
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => IsOnSave ? SavedTokens![savedOffset].Pos : pos;
+    }
+    private bool currentHas
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        set;
+    }
+    private JsonToken currentToken
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        set;
+    }
     private SourcePos pos;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public override void MoveNext()
+    {
+        if (IsOnSave)
+        {
+            savedOffset++;
+            Version++;
+            if (!IsOnSave)
+            {
+                if (!HasSaves) ClearSaves();
+                MoveNext(false);
+                Version++;
+            }
+        }
+        else
+        {
+            if (!CurrentHas) return;
+            MoveNext(false);
+            Version++;
+        }
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void MoveNext(bool firstMove)
@@ -67,7 +121,7 @@ public class StreamJsonReader : JsonReader<StreamJsonReader.State>
         if (span.IsEmpty) ReRead(ref span);
         if (span.IsEmpty)
         {
-            CurrentHas = false;
+            currentHas = false;
             return;
         }
 
@@ -372,7 +426,7 @@ public class StreamJsonReader : JsonReader<StreamJsonReader.State>
         var err_pos = pos.AddChar(offset);
         throw new JsonParseException($"Exponent part is missing a number at {err_pos}", err_pos);
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void FoundNumberExponentDigit(ReadOnlySpan<char> span, int offset)
     {
@@ -425,8 +479,9 @@ public class StreamJsonReader : JsonReader<StreamJsonReader.State>
                     CompoundString.MakeMemory(buffer).Slice(range.Slice(1, content_len_total)));
                 MovePos(len);
                 MoveRange(ref span, len);
-                CurrentHas = true;
-                CurrentToken = token;
+                currentHas = true;
+                currentToken = token;
+                SavedTokens?.Add(token);
                 return;
             case '\\':
                 FoundStringWithEscape(span, span.Slice(offset, content_len_total), len);
@@ -538,8 +593,9 @@ public class StreamJsonReader : JsonReader<StreamJsonReader.State>
                     var token = new JsonToken(JsonTokenKind.String, pos, sb.ToString());
                     MovePos(len);
                     MoveRange(ref span, len);
-                    CurrentHas = true;
-                    CurrentToken = token;
+                    currentHas = true;
+                    currentToken = token;
+                    SavedTokens?.Add(token);
                     return;
                 case '\\':
                     offset = len;
@@ -560,8 +616,9 @@ public class StreamJsonReader : JsonReader<StreamJsonReader.State>
     {
         var token = new JsonToken(kind, pos, CompoundString.MakeMemory(buffer).Slice(range[..len]));
         MovePos(len);
-        CurrentHas = true;
-        CurrentToken = token;
+        currentHas = true;
+        currentToken = token;
+        SavedTokens?.Add(token);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -597,38 +654,60 @@ public class StreamJsonReader : JsonReader<StreamJsonReader.State>
 
     #endregion
 
-    public struct State(StreamJsonReader source) : IJsonReaderState<State>
+    #region Seek
+
+    private HashSet<int>? saves;
+    private Vec<JsonToken>? SavedTokens;
+    private int savedOffset;
+
+    private bool HasSaves
     {
-        #region Seek
-
-        public State Save()
-        {
-            throw new NotImplementedException();
-        }
-
-        #endregion
-
-        #region Iter
-
-        public bool CurrentHas
-        {
-            get => source.CurrentHas; // todo
-        }
-        public JsonToken CurrentToken
-        {
-            get => source.CurrentToken; // todo
-        }
-        public SourcePos SourcePos
-        {
-            get => source.SourcePos; // todo
-        }
-
-        public State MoveNext()
-        {
-            source.MoveNext(false);
-            return this; // todo
-        }
-
-        #endregion
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => saves != null && saves!.Count > 0;
     }
+
+    private void ClearSaves()
+    {
+        if (SavedTokens != null)
+        {
+            SavedTokens!.Dispose();
+            SavedTokens = null;
+            savedOffset = 0;
+        }
+    }
+
+    public override long Save()
+    {
+        saves ??= new();
+        if (SavedTokens == null)
+        {
+            SavedTokens = new Vec<JsonToken>(ArrayPoolFactory.Shared);
+            savedOffset = 0;
+            SavedTokens.Add(CurrentToken);
+        }
+        saves.Add(savedOffset);
+        return savedOffset;
+    }
+
+    public override void Load(long savePoint)
+    {
+        Debug.Assert(SavedTokens != null && savePoint < SavedTokens.Count);
+        savedOffset = (int)savePoint;
+    }
+
+    public override void UnSave(long savePoint)
+    {
+        saves!.Remove((int)savePoint);
+    }
+
+    #endregion
+
+    #region Dispose
+
+    public void Dispose()
+    {
+        SavedTokens?.Dispose();
+    }
+
+    #endregion
 }
