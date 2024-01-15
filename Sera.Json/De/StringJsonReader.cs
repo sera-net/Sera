@@ -148,7 +148,7 @@ public readonly struct StringJsonReader : IJsonReaderState<StringJsonReader>
             }
             throw new JsonParseException($"Unexpected character at {pos}", pos);
         }
-        
+
         #region Number
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -185,41 +185,34 @@ public readonly struct StringJsonReader : IJsonReaderState<StringJsonReader>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private StringJsonReader FoundNumberDigit(ReadOnlySpan<char> span, int offset)
         {
-            while (offset < span.Length)
+            var count = span[offset..].CountLeadingNumberDigitBody();
+            var new_offset = offset + count;
+            if (new_offset < span.Length)
             {
-                var c = span[offset];
+                var c = span[new_offset];
                 switch (c)
                 {
-                    case '0' or '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9':
-                        offset++;
-                        continue;
                     case '.':
-                        return FoundNumberFraction(span, offset + 1);
+                        return FoundNumberFraction(span, new_offset + 1);
                     case 'e' or 'E':
-                        return FoundNumberExponentE(span, offset + 1);
+                        return FoundNumberExponentE(span, new_offset + 1);
                 }
-                break;
             }
-            return Found(JsonTokenKind.Number, offset);
+            return Found(JsonTokenKind.Number, new_offset);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private StringJsonReader FoundNumberFraction(ReadOnlySpan<char> span, int offset)
         {
-            while (offset < span.Length)
+            var count = span[offset..].CountLeadingNumberDigitBody();
+            var new_offset = offset + count;
+            if (new_offset < span.Length)
             {
-                var c = span[offset];
-                switch (c)
-                {
-                    case '0' or '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9':
-                        offset++;
-                        continue;
-                    case 'e' or 'E':
-                        return FoundNumberExponentE(span, offset + 1);
-                }
-                break;
+                var c = span[new_offset];
+                if (c is 'e' or 'E')
+                    return FoundNumberExponentE(span, new_offset + 1);
             }
-            return Found(JsonTokenKind.Number, offset);
+            return Found(JsonTokenKind.Number, new_offset);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -254,18 +247,9 @@ public readonly struct StringJsonReader : IJsonReaderState<StringJsonReader>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private StringJsonReader FoundNumberExponentDigit(ReadOnlySpan<char> span, int offset)
         {
-            while (offset < span.Length)
-            {
-                var c = span[offset];
-                switch (c)
-                {
-                    case '0' or '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9':
-                        offset++;
-                        continue;
-                }
-                break;
-            }
-            return Found(JsonTokenKind.Number, offset);
+            var count = span[offset..].CountLeadingNumberDigitBody();
+            var new_offset = offset + count;
+            return Found(JsonTokenKind.Number, new_offset);
         }
 
         #endregion

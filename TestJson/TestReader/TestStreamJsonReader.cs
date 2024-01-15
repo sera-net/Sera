@@ -113,7 +113,7 @@ public class TestStreamJsonReader
     {
         using var memory = new MemoryStream();
         memory.Write(
-            "\"asd\" \"\" \"\\t\" \"123456789\" \"\\u2a5f\" \"123\\t456\" \"asd镍😂\" \"asd\\u954D\\uD83D\\uDE02\""u8);
+            "\"asd\" \"\" \"\\t\" \"123456789\" \"\\u2a5f\" \"123\\t456\" \"asd镍😂\" \"asd\\u954D\\uD83D\\uDE02\" \"\\b\\f\\r\\n\""u8);
         memory.Position = 0;
         var options = SeraJsonOptions.Default with { Encoding = Encoding.UTF8 };
         var reader = StreamJsonReader.Create(options, memory);
@@ -125,7 +125,7 @@ public class TestStreamJsonReader
         Console.WriteLine(string.Join("\n", tokens));
         Assert.Multiple(() =>
         {
-            Assert.That(tokens.Count, Is.EqualTo(8));
+            Assert.That(tokens.Count, Is.EqualTo(9));
 
             foreach (var token in tokens)
             {
@@ -139,7 +139,8 @@ public class TestStreamJsonReader
             Assert.That(tokens[4].Text.AsString(), Is.EqualTo("\u2a5f"));
             Assert.That(tokens[5].Text.AsString(), Is.EqualTo("123\t456"));
             Assert.That(tokens[6].Text.AsString(), Is.EqualTo("asd镍😂"));
-            Assert.That(tokens[6].Text.AsString(), Is.EqualTo("asd镍😂"));
+            Assert.That(tokens[7].Text.AsString(), Is.EqualTo("asd镍😂"));
+            Assert.That(tokens[8].Text.AsString(), Is.EqualTo("\b\f\r\n"));
         });
     }
 
@@ -545,6 +546,56 @@ public class TestStreamJsonReader
     public void TestNumberLarge1()
     {
         using var memory = new MemoryStream();
+        var arr = new byte[1024];
+        arr.AsSpan().Fill("1"u8[0]);
+        memory.Write(arr);
+        memory.Position = 0;
+        var options = SeraJsonOptions.Default with { Encoding = Encoding.UTF8 };
+        var reader = StreamJsonReader.Create(options, memory);
+        var tokens = new List<JsonToken>();
+        for (; reader.CurrentHas; reader.MoveNext())
+        {
+            tokens.Add(reader.CurrentToken);
+        }
+        Console.WriteLine(string.Join("\n", tokens));
+        Assert.Multiple(() =>
+        {
+            Assert.That(tokens.Count, Is.EqualTo(1));
+            
+            Assert.That(tokens[0].Kind, Is.EqualTo(JsonTokenKind.Number));
+        });
+    }
+    
+    [Test]
+    public void TestNumberLarge2()
+    {
+        using var memory = new MemoryStream();
+        memory.Write("123."u8);
+        var arr = new byte[1024];
+        arr.AsSpan().Fill("1"u8[0]);
+        memory.Write(arr);
+        memory.Position = 0;
+        var options = SeraJsonOptions.Default with { Encoding = Encoding.UTF8 };
+        var reader = StreamJsonReader.Create(options, memory);
+        var tokens = new List<JsonToken>();
+        for (; reader.CurrentHas; reader.MoveNext())
+        {
+            tokens.Add(reader.CurrentToken);
+        }
+        Console.WriteLine(string.Join("\n", tokens));
+        Assert.Multiple(() =>
+        {
+            Assert.That(tokens.Count, Is.EqualTo(1));
+            
+            Assert.That(tokens[0].Kind, Is.EqualTo(JsonTokenKind.Number));
+        });
+    }
+    
+    [Test]
+    public void TestNumberLarge3()
+    {
+        using var memory = new MemoryStream();
+        memory.Write("123.456e"u8);
         var arr = new byte[1024];
         arr.AsSpan().Fill("1"u8[0]);
         memory.Write(arr);

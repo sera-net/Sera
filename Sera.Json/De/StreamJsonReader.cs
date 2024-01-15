@@ -285,49 +285,56 @@ public class StreamJsonReader : JsonReader<StreamJsonReader.State>
     private void FoundNumberDigit(ReadOnlySpan<char> span, int offset)
     {
         if (offset >= span.Length) ReRead(ref span);
-        while (offset < span.Length)
+        var count = span[offset..].CountLeadingNumberDigitBody();
+        var new_offset = offset + count;
+        while (count != 0 && new_offset >= span.Length)
         {
-            var c = span[offset];
+            ReRead(ref span);
+            count = span[new_offset..].CountLeadingNumberDigitBody();
+            new_offset += count;
+        }
+        if (new_offset >= span.Length) ReRead(ref span);
+        if (new_offset < span.Length)
+        {
+            var c = span[new_offset];
             switch (c)
             {
-                case '0' or '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9':
-                    offset++;
-                    if (offset >= span.Length) ReRead(ref span);
-                    continue;
                 case '.':
-                    FoundNumberFraction(span, offset + 1);
+                    FoundNumberFraction(span, new_offset + 1);
                     return;
                 case 'e' or 'E':
-                    FoundNumberExponentE(span, offset + 1);
+                    FoundNumberExponentE(span, new_offset + 1);
                     return;
             }
-            break;
         }
-        Found(JsonTokenKind.Number, offset);
-        MoveRange(ref span, offset);
+        Found(JsonTokenKind.Number, new_offset);
+        MoveRange(ref span, new_offset);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void FoundNumberFraction(ReadOnlySpan<char> span, int offset)
     {
         if (offset >= span.Length) ReRead(ref span);
-        while (offset < span.Length)
+        var count = span[offset..].CountLeadingNumberDigitBody();
+        var new_offset = offset + count;
+        while (count != 0 && new_offset >= span.Length)
         {
-            var c = span[offset];
-            switch (c)
-            {
-                case '0' or '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9':
-                    offset++;
-                    if (offset >= span.Length) ReRead(ref span);
-                    continue;
-                case 'e' or 'E':
-                    FoundNumberExponentE(span, offset + 1);
-                    return;
-            }
-            break;
+            ReRead(ref span);
+            count = span[new_offset..].CountLeadingNumberDigitBody();
+            new_offset += count;
         }
-        Found(JsonTokenKind.Number, offset);
-        MoveRange(ref span, offset);
+        if (new_offset >= span.Length) ReRead(ref span);
+        if (new_offset < span.Length)
+        {
+            var c = span[new_offset];
+            if (c is 'e' or 'E')
+            {
+                FoundNumberExponentE(span, new_offset + 1);
+                return;
+            }
+        }
+        Found(JsonTokenKind.Number, new_offset);
+        MoveRange(ref span, new_offset);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -365,26 +372,21 @@ public class StreamJsonReader : JsonReader<StreamJsonReader.State>
         var err_pos = pos.AddChar(offset);
         throw new JsonParseException($"Exponent part is missing a number at {err_pos}", err_pos);
     }
-
-
+    
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void FoundNumberExponentDigit(ReadOnlySpan<char> span, int offset)
     {
         if (offset >= span.Length) ReRead(ref span);
-        while (offset < span.Length)
+        var count = span[offset..].CountLeadingNumberDigitBody();
+        var new_offset = offset + count;
+        while (count != 0 && new_offset >= span.Length)
         {
-            var c = span[offset];
-            switch (c)
-            {
-                case '0' or '1' or '2' or '3' or '4' or '5' or '6' or '7' or '8' or '9':
-                    offset++;
-                    if (offset >= span.Length) ReRead(ref span);
-                    continue;
-            }
-            break;
+            ReRead(ref span);
+            count = span[new_offset..].CountLeadingNumberDigitBody();
+            new_offset += count;
         }
-        Found(JsonTokenKind.Number, offset);
-        MoveRange(ref span, offset);
+        Found(JsonTokenKind.Number, new_offset);
+        MoveRange(ref span, new_offset);
     }
 
     #endregion
