@@ -24,6 +24,9 @@ public interface ISeraColctor<in T, [AssocType] out R> : ISeraAbility<ISeraColio
         where C : ISelectPrimitiveSeraColion<U>
         where M : ISeraMapper<U, T>;
 
+    public R CSelectUnion<C, M, B>(C colion, M mapper, Type<B> b, UnionStyle? union_style = null)
+        where C : ISelectUnionSeraColion<B> where M : ISeraMapper<B, T>;
+
     #endregion
 
     #region Primitive
@@ -324,4 +327,22 @@ public interface ISelectSeraColctor<in T, [AssocType] out R>
         where C : ISeraColion<U> where M : ISeraMapper<U, T>;
 
     public R CNone();
+}
+
+public interface ISelectUnionValueSeraColctor<in T, [AssocType] out R>
+{
+    public R CSome<C, M, U>(C colion, M mapper, Type<U> u)
+        where C : ISeraColion<U> where M : ISeraMapper<U, T>;
+}
+
+public interface ISelectUnionTupleSeraColctor<in T, [AssocType] out R>
+{
+    public R CTuple<C, B, M>(C colion, M mapper, Type<B> b)
+        where C : ITupleSeraColion<B> where M : ISeraMapper<B, T>;
+}
+
+public interface ISelectUnionStructSeraColctor<in T, [AssocType] out R>
+{
+    public R CStruct<C, B, M>(C colion, M mapper, Type<B> b)
+        where C : IStructSeraColion<B> where M : ISeraMapper<B, T>;
 }

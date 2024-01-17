@@ -1651,4 +1651,184 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
     }
 
     #endregion
+
+    #region Select Union
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public T CSelectUnion<C, M, B>(C colion, M mapper, Type<B> b, UnionStyle? union_style = null)
+        where C : ISelectUnionSeraColion<B> where M : ISeraMapper<B, T>
+    {
+        var style = union_style ?? UnionStyle.Default;
+        var format = style.Format;
+        if (format is UnionFormat.Untagged) goto untagged;
+
+        var token = reader.CurrentToken;
+        if (token.Kind is JsonTokenKind.Null) goto empty;
+        if (token.Kind is JsonTokenKind.Number or JsonTokenKind.String) goto variant;
+        if (token.Kind is JsonTokenKind.ArrayStart) goto arr;
+        if (token.Kind is JsonTokenKind.ObjectStart) goto obj;
+        throw new JsonParseException($"Expected union but found {token.Kind} at {token.Pos}", token.Pos);
+
+        untagged:
+        {
+            var c = new JsonDeserializer<B>.SelectUnionValueSeraColctor(impl);
+            var r = colion.SelectUnionUntagged<B, JsonDeserializer<B>.SelectUnionValueSeraColctor>(ref c);
+            return mapper.Map(r);
+        }
+
+        empty:
+        {
+            return mapper.Map(colion.SelectUnionEmpty(null));
+        }
+
+        variant:
+        {
+            var tag = token.AsString();
+            var variant = new Variant(tag);
+            reader.MoveNext();
+            return mapper.Map(colion.SelectUnionVariant(null, variant));
+        }
+
+        arr:
+        {
+            reader.ReadArrayStart();
+            token = reader.CurrentToken;
+            if (token.Kind is not (JsonTokenKind.Number or JsonTokenKind.String))
+                reader.ThrowExpected(JsonTokenKind.Number, JsonTokenKind.String);
+            reader.ReadComma();
+            var tag = token.AsString();
+            var variant = new Variant(tag);
+            var c = new JsonDeserializer<B>.SelectUnionValueSeraColctor(impl);
+            var r = colion.SelectUnionVariantValue<B, JsonDeserializer<B>.SelectUnionValueSeraColctor>(
+                ref c, null, variant);
+            reader.ReadArrayEnd();
+            return mapper.Map(r);
+        }
+
+        obj:
+        {
+            switch (format)
+            {
+                case UnionFormat.External:
+                {
+                    reader.MoveNext();
+                    if (token.Kind is JsonTokenKind.EndOfFile) reader.ThrowExpected(JsonTokenKind.ObjectEnd);
+                    if (token.Kind is JsonTokenKind.ObjectEnd)
+                    {
+                        reader.ReadObjectEnd();
+                        goto empty;
+                    }
+                    if (token.Kind is not (JsonTokenKind.Number or JsonTokenKind.String))
+                        reader.ThrowExpected(JsonTokenKind.Number, JsonTokenKind.String);
+                    var tag = token.AsString();
+                    var variant = new Variant(tag);
+                    reader.MoveNext();
+                    reader.ReadColon();
+                    var c = new JsonDeserializer<B>.SelectUnionValueSeraColctor(impl);
+                    var r = colion.SelectUnionVariantValue<B, JsonDeserializer<B>.SelectUnionValueSeraColctor>(
+                        ref c, null, variant);
+                    return mapper.Map(r);
+                }
+                case UnionFormat.Internal:
+                {
+                    var ast = reader.ReadObject();
+                    if (!ast.Map.TryGetValue(style.InternalTagName, out var keys))
+                    {
+                        throw new JsonParseException(
+                            $"The key \"{style.AdjacentTagName}\" does not exist in the object at {ast.ObjectStart.Pos}",
+                            ast.ObjectStart.Pos);
+                    }
+                    var keys_last = keys.SubLast;
+                    var key = keys_last.Value;
+
+                    var key_token = key.Value.Tag switch
+                    {
+                        JsonAst.Tags.String => key.Value.String,
+                        JsonAst.Tags.Number => key.Value.Number,
+                        _ => throw new JsonParseException($"Unexpected tag kind {key.Value.Tag} at {key.Value.Pos}",
+                            key.Value.Pos)
+                    };
+
+                    var variant = new Variant(key_token.AsString());
+
+                    var removed_ast = ast with { Map = ast.Map.TryRemove(keys_last)! };
+                    Debug.Assert(removed_ast.Map != null);
+                    var c = new JsonDeserializer<B>.SelectUnionStructSeraColctor(impl, removed_ast);
+
+                    var r = colion.SelectUnionVariantStruct<B, JsonDeserializer<B>.SelectUnionStructSeraColctor>(ref c,
+                        null, variant, null, null);
+                    return mapper.Map(r);
+                }
+                case UnionFormat.Adjacent:
+                {
+                    var ast = reader.ReadObject();
+                    if (!ast.Map.TryGetValue(style.AdjacentTagName, out var keys))
+                    {
+                        throw new JsonParseException(
+                            $"The key \"{style.AdjacentTagName}\" does not exist in the object at {ast.ObjectStart.Pos}",
+                            ast.ObjectStart.Pos);
+                    }
+
+                    var key = keys.SubLast.Value;
+
+                    var key_token = key.Value.Tag switch
+                    {
+                        JsonAst.Tags.String => key.Value.String,
+                        JsonAst.Tags.Number => key.Value.Number,
+                        _ => throw new JsonParseException($"Unexpected tag kind {key.Value.Tag} at {key.Value.Pos}",
+                            key.Value.Pos)
+                    };
+
+                    var tag = key_token.AsString();
+                    var variant = new Variant(tag);
+
+                    if (!ast.Map.TryGetValue(style.AdjacentValueName, out var values))
+                        throw new JsonParseException(
+                            $"The key \"{style.AdjacentValueName}\" does not exist in the object at {ast.ObjectStart.Pos}",
+                            ast.ObjectStart.Pos);
+                    var value = values.SubLast.Value;
+
+                    var ast_reader = AstJsonReader.Create(reader.Options, value.Value);
+                    var sub_deserializer = new JsonDeserializer(reader.Options, ast_reader);
+                    var c = new JsonDeserializer<B>.SelectUnionValueSeraColctor(sub_deserializer);
+
+                    var r = colion.SelectUnionVariantValue<B, JsonDeserializer<B>.SelectUnionValueSeraColctor>(ref c,
+                        null, variant);
+                    return mapper.Map(r);
+                }
+                default: goto case UnionFormat.External;
+            }
+        }
+    }
+
+    private readonly struct SelectUnionValueSeraColctor(JsonDeserializer impl) : ISelectUnionValueSeraColctor<T, T>
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T CSome<C, M, U>(C colion, M mapper, Type<U> u) where C : ISeraColion<U> where M : ISeraMapper<U, T>
+        {
+            var c = new JsonDeserializer<U>(impl);
+            var r = colion.Collect<U, JsonDeserializer<U>>(ref c);
+            return mapper.Map(r);
+        }
+    }
+
+    private readonly struct SelectUnionStructSeraColctor(JsonDeserializer impl, JsonAstObject ast)
+        : ISelectUnionStructSeraColctor<T, T>
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public T CStruct<C, B, M>(C colion, M mapper, Type<B> b)
+            where C : IStructSeraColion<B> where M : ISeraMapper<B, T>
+        {
+            var sub_ast = JsonAst.MakeObject(ast);
+            var ast_reader = AstJsonReader.Create(impl.reader.Options, sub_ast);
+            var sub_deserializer = new JsonDeserializer(impl.reader.Options, ast_reader);
+
+            var c = new JsonDeserializer<B>(sub_deserializer);
+
+            var r = c.CStruct(colion, new IdentityMapper<B>(), new Type<B>());
+            return mapper.Map(r);
+        }
+    }
+
+    #endregion
 }

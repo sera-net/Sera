@@ -1,4 +1,5 @@
-﻿using Sera.TaggedUnion;
+﻿using System.Collections.Generic;
+using Sera.TaggedUnion;
 
 namespace Sera.Core;
 
@@ -12,7 +13,7 @@ public readonly partial struct AnyVariantValue
     {
         void None();
         Any Value();
-        Any[] Tuple();
+        List<Any> Tuple();
         AnyStruct Struct();
     }
 }

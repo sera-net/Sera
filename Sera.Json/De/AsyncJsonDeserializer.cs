@@ -1718,4 +1718,15 @@ public readonly struct AsyncJsonDeserializer<T>(AsyncJsonDeserializer impl) : IS
     }
 
     #endregion
+
+    #region Select Union
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ValueTask<T> CSelectUnion<C, M, B>(C colion, M mapper, Type<B> b, UnionStyle? union_style = null)
+        where C : ISelectUnionSeraColion<B> where M : ISeraMapper<B, T>
+    {
+        throw new NotImplementedException();
+    }
+
+    #endregion
 }

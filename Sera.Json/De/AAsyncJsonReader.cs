@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -13,6 +14,8 @@ public abstract class AAsyncJsonReader(SeraJsonOptions options)
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get;
     } = options;
+    
+    protected readonly ConcurrentDictionary<long, string> StringCache = new();
 
     #region Seek
 
@@ -251,87 +254,6 @@ public abstract class AAsyncJsonReader(SeraJsonOptions options)
     /// <summary>Read <c>}</c> and move next</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public virtual ValueTask<JsonToken> ReadObjectEnd() => ReadOf(JsonTokenKind.ObjectEnd);
-
-    #endregion
-}
-
-public sealed class AsyncJsonReader<State>(SeraJsonOptions options, State state) : AAsyncJsonReader(options)
-    where State : IAsyncJsonReaderState<State>
-{
-    #region Seek
-
-    private Dictionary<long, State>? saves;
-    private long save_inc;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override async ValueTask<long> Save()
-    {
-        saves ??= new();
-        var savePoint = save_inc++;
-        saves[savePoint] = await state.Save();
-        return savePoint;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override ValueTask Load(long savePoint)
-    {
-        state = saves![savePoint];
-        return ValueTask.CompletedTask;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public override ValueTask UnSave(long savePoint)
-    {
-        saves!.Remove(savePoint);
-        return ValueTask.CompletedTask;
-    }
-
-    #endregion
-
-    #region Iter
-
-    public override bool CurrentHas
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => state.CurrentHas;
-    }
-    public override JsonToken CurrentToken
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => state.CurrentToken;
-    }
-    public override SourcePos SourcePos
-    {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        get => state.SourcePos;
-    }
-
-    public override async ValueTask MoveNext()
-    {
-        if (!state.CurrentHas) return;
-        state = await state.MoveNext();
-        Version++;
-    }
-
-    #endregion
-}
-
-// ReSharper disable once TypeParameterCanBeVariant
-public interface IAsyncJsonReaderState<S> where S : IAsyncJsonReaderState<S>
-{
-    #region Seek
-
-    public ValueTask<S> Save();
-
-    #endregion
-
-    #region Iter
-
-    public bool CurrentHas { get; }
-    public JsonToken CurrentToken { get; }
-    public SourcePos SourcePos { get; }
-
-    public ValueTask<S> MoveNext();
 
     #endregion
 }

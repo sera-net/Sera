@@ -91,7 +91,8 @@ public readonly struct AnyUnionImpl(AnyImpl impl, AnyUnion value) : IUnionSeraVi
                     visitor.VVariantValue(impl, Value, variant),
 
                 { Tag: AnyVariantValue.Kind.Tuple, Tuple: var Tuple } =>
-                    visitor.VVariantTuple(new TupleArrayImpl<Any, AnyImpl>(impl, Tuple.Length), Tuple, variant),
+                    visitor.VVariantTuple(
+                        new TupleIListImpl<List<Any>, Any, AnyImpl>(impl, Tuple.Count), Tuple, variant),
 
                 { Tag: AnyVariantValue.Kind.Struct, Struct: var Struct } =>
                     visitor.VVariantStruct(new AnyStructImpl(impl, Struct), Struct, variant),

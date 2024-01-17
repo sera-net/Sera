@@ -14,7 +14,7 @@ public readonly struct StringJsonReader : IJsonReaderState<StringJsonReader>
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static JsonReader<StringJsonReader> Create(SeraJsonOptions options, CompoundString source)
-        => new(options, new(source));
+        => new(options, ctx => new(source, ctx));
 
     #endregion
 
@@ -35,11 +35,11 @@ public readonly struct StringJsonReader : IJsonReaderState<StringJsonReader>
     #region Ctor
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public StringJsonReader(CompoundString source)
+    public StringJsonReader(CompoundString source, JsonReaderCtx ctx)
     {
         this.source = source;
         last = ExternalSpan.From(source.AsSpan());
-        this = MoveNext();
+        this = MoveNext(ctx);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -74,10 +74,10 @@ public readonly struct StringJsonReader : IJsonReaderState<StringJsonReader>
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public StringJsonReader MoveNext()
-        => new Moving(source, last, SourcePos).MoveNext(CurrentToken);
+    public StringJsonReader MoveNext(JsonReaderCtx ctx)
+        => new Moving(source, last, SourcePos, ctx).MoveNext(CurrentToken);
 
-    private struct Moving(CompoundString source, ExternalSpan last, SourcePos pos)
+    private struct Moving(CompoundString source, ExternalSpan last, SourcePos pos, JsonReaderCtx ctx)
     {
         private readonly CompoundString source = source;
         private ExternalSpan last = last;
@@ -276,7 +276,8 @@ public readonly struct StringJsonReader : IJsonReaderState<StringJsonReader>
             switch (c)
             {
                 case '"':
-                    var token = new JsonToken(JsonTokenKind.String, pos, source.Slice(last.Slice(1, content_len)));
+                    var token = new JsonToken(JsonTokenKind.String, pos, source.Slice(last.Slice(1, content_len)),
+                        ctx.StringCache);
                     MovePos(len);
                     last = last[len..];
                     return new(source, last, true, token, pos);
@@ -379,7 +380,7 @@ public readonly struct StringJsonReader : IJsonReaderState<StringJsonReader>
                 switch (c)
                 {
                     case '"':
-                        var token = new JsonToken(JsonTokenKind.String, pos, sb.ToString());
+                        var token = new JsonToken(JsonTokenKind.String, pos, sb.ToString(), ctx.StringCache);
                         MovePos(len);
                         last = last[len..];
                         return new(source, last, true, token, pos);
@@ -401,7 +402,7 @@ public readonly struct StringJsonReader : IJsonReaderState<StringJsonReader>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private StringJsonReader Found(JsonTokenKind kind, int len)
         {
-            var token = new JsonToken(kind, pos, source.Slice(last[..len]));
+            var token = new JsonToken(kind, pos, source.Slice(last[..len]), ctx.StringCache);
             MovePos(len);
             last = last[len..];
             return new(source, last, true, token, pos);

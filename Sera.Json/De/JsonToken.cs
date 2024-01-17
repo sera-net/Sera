@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Sera.Utils;
@@ -6,24 +7,55 @@ using Sera.Utils;
 namespace Sera.Json.De;
 
 public readonly struct JsonToken(
-    JsonTokenKind kind,
-    SourcePos pos,
-    CompoundString Text)
+    JsonTokenKind Kind,
+    SourcePos Pos,
+    CompoundString Text,
+    ConcurrentDictionary<long, string> StringCache)
 {
-    public JsonTokenKind Kind { get; } = kind;
-    public SourcePos Pos { get; } = pos;
-    public CompoundString Text { get; } = Text;
+    public JsonTokenKind Kind
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get;
+    } = Kind;
+    public SourcePos Pos
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get;
+    } = Pos;
+    public CompoundString Text
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get;
+    } = Text;
 
-    public override string ToString() => $"( {Kind.ToString(),-12}) at {Pos.ToString(),-12} \"{Text.AsString()}\"";
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public override string ToString() => $"({Kind.ToString(),-12}) at {Pos.ToString(),-12} \"{AsString()}\"";
 
-    public string AsString() => Text.AsString();
+    private long CacheKey
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => Unsafe.As<int, long>(ref ((Span<int>) [Pos.Index, Text.Length])[0]);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public string AsString()
+        => StringCache.GetOrAdd(CacheKey, static (_, Text) => Text.AsString(), Text);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ReadOnlySpan<char> AsSpan() => Text.AsSpan();
-    public ReadOnlyMemory<char> AsMemory() => Text.AsMemory();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ReadOnlyMemory<char> AsMemory() => Text.Tag switch {
+        CompoundString.Tags.Memory => Text.Memory,
+        CompoundString.Tags.String => Text.String.AsMemory(),
+        CompoundString.Tags.Span => AsString().AsMemory(),
+        _ => throw new ArgumentOutOfRangeException()
+    };
 }
 
 public enum JsonTokenKind
 {
-    Eof,
+    EndOfFile,
     Null,
     True,
     False,
@@ -45,6 +77,7 @@ public enum JsonTokenKind
 
 public record struct SourcePos(int Index, int Line, int Char)
 {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public override string ToString() => $"{Line + 1}:{Char + 1}";
 
     [UnscopedRef]

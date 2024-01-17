@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Sera.Json.Utils;
@@ -12,6 +14,8 @@ public abstract class AJsonReader(SeraJsonOptions options)
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get;
     } = options;
+
+    protected readonly ConcurrentDictionary<long, string> StringCache = new();
 
     #region Seek
 
@@ -254,9 +258,16 @@ public abstract class AJsonReader(SeraJsonOptions options)
     #endregion
 }
 
-public sealed class JsonReader<State>(SeraJsonOptions options, State state) : AJsonReader(options)
+public sealed class JsonReader<State> : AJsonReader
     where State : IJsonReaderState<State>
 {
+    private State state;
+
+    public JsonReader(SeraJsonOptions options, Func<JsonReaderCtx, State> makeState) : base(options)
+    {
+        state = makeState(new(StringCache));
+    }
+
     #region Seek
 
     private Dictionary<long, State>? saves;
@@ -306,12 +317,14 @@ public sealed class JsonReader<State>(SeraJsonOptions options, State state) : AJ
     public override void MoveNext()
     {
         if (!state.CurrentHas) return;
-        state = state.MoveNext();
+        state = state.MoveNext(new(StringCache));
         Version++;
     }
 
     #endregion
 }
+
+public record struct JsonReaderCtx(ConcurrentDictionary<long, string> StringCache);
 
 // ReSharper disable once TypeParameterCanBeVariant
 public interface IJsonReaderState<S> where S : IJsonReaderState<S>
@@ -328,7 +341,7 @@ public interface IJsonReaderState<S> where S : IJsonReaderState<S>
     public JsonToken CurrentToken { get; }
     public SourcePos SourcePos { get; }
 
-    public S MoveNext();
+    public S MoveNext(JsonReaderCtx ctx);
 
     #endregion
 }

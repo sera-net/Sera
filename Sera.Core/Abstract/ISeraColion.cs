@@ -178,3 +178,17 @@ public interface ISelectPrimitiveSeraColion<out T>
     public R SelectPrimitiveDetail<R, C>(ref C colctor, SeraPrimitiveTypes type, InType<T>? t = null)
         where C : ISelectSeraColctor<T, R>;
 }
+
+public interface ISelectUnionSeraColion<out T>
+{
+    public T SelectUnionEmpty(string? UnionName);
+    public T SelectUnionVariant(string? UnionName, Variant variant);
+    public R SelectUnionVariantValue<R, C>(ref C colctor, string? UnionName, Variant variant)
+        where C : ISelectUnionValueSeraColctor<T, R>;
+    public R SelectUnionVariantTuple<R, C>(ref C colctor, string? UnionName, Variant variant, int? size)
+        where C : ISelectUnionTupleSeraColctor<T, R>;
+    public R SelectUnionVariantStruct<R, C>(ref C colctor, string? UnionName, Variant variant, string? structName, int? size)
+        where C : ISelectUnionStructSeraColctor<T, R>;
+    public R SelectUnionUntagged<R, C>(ref C colctor)
+        where C : ISelectUnionValueSeraColctor<T, R>;
+}

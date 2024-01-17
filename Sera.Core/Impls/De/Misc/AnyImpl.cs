@@ -81,7 +81,7 @@ public readonly struct AnyImpl(SeraFormats? formats = null) : ISeraColion<Any>, 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R SelectUnion<R, C>(ref C colctor, string? name, InType<Any>? t = null)
         where C : ISelectSeraColctor<Any, R>
-        => throw new NotImplementedException();
+        => colctor.CSome(new AnyUnionImpl(this), new IdentityMapper<Any>(), new Type<Any>());
 
     public readonly struct PrimitiveMapper : ISeraMapper<SeraPrimitive, Any>
     {
@@ -152,7 +152,8 @@ public readonly struct AnyImpl(SeraFormats? formats = null) : ISeraColion<Any>, 
     }
 }
 
-public readonly struct AnyStructImpl(AnyImpl impl) : ISeraColion<AnyStruct>, IStructSeraColion<AnyStruct.Builder>
+public readonly struct AnyStructImpl(AnyImpl impl)
+    : ISeraColion<AnyStruct>, IStructSeraColion<AnyStruct.Builder>
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R Collect<R, C>(ref C colctor, InType<AnyStruct>? t = null) where C : ISeraColctor<AnyStruct, R>
@@ -184,5 +185,63 @@ public readonly struct AnyStructImpl(AnyImpl impl) : ISeraColion<AnyStruct>, ISt
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Effect(ref AnyStruct.Builder target, Any value)
             => target.Add((name, key, value));
+    }
+}
+
+public readonly struct AnyUnionImpl(AnyImpl impl) : ISeraColion<Any>, ISelectUnionSeraColion<Any>
+{
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public R Collect<R, C>(ref C colctor, InType<Any>? t = null) where C : ISeraColctor<Any, R>
+        => colctor.CSelectUnion(this, new IdentityMapper<Any>(), new Type<Any>());
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public Any SelectUnionEmpty(string? UnionName)
+        => Any.MakeUnion(new(UnionName, null));
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public Any SelectUnionVariant(string? UnionName, Variant variant)
+        => Any.MakeUnion(new(UnionName, (variant, AnyVariantValue.MakeNone())));
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public R SelectUnionVariantValue<R, C>(ref C colctor, string? UnionName, Variant variant)
+        where C : ISelectUnionValueSeraColctor<Any, R>
+        => colctor.CSome(impl, new AnyToAnyUnionAnyMapper(UnionName, variant), new Type<Any>());
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public R SelectUnionVariantTuple<R, C>(ref C colctor, string? UnionName, Variant variant, int? size)
+        where C : ISelectUnionTupleSeraColctor<Any, R>
+        => colctor.CTuple(new TupleListImpl<Any, AnyImpl>(impl, size),
+            new TupleMapper(UnionName, variant), new Type<List<Any>>());
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public R SelectUnionVariantStruct<R, C>(ref C colctor, string? UnionName, Variant variant, string? structName,
+        int? size)
+        where C : ISelectUnionStructSeraColctor<Any, R>
+        => colctor.CStruct(new AnyStructImpl(impl), new StructMapper(UnionName, variant),
+            new Type<AnyStruct.Builder>());
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public R SelectUnionUntagged<R, C>(ref C colctor) where C : ISelectUnionValueSeraColctor<Any, R>
+        => colctor.CSome(impl, new IdentityMapper<Any>(), new Type<Any>());
+
+    private readonly struct AnyToAnyUnionAnyMapper(string? UnionName, Variant variant) : ISeraMapper<Any, Any>
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Any Map(Any value, InType<Any>? u = null)
+            => Any.MakeUnion(new(UnionName, (variant, AnyVariantValue.MakeValue(value))));
+    }
+
+    private readonly struct StructMapper(string? UnionName, Variant variant) : ISeraMapper<AnyStruct.Builder, Any>
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Any Map(AnyStruct.Builder value, InType<Any>? u = null)
+            => Any.MakeUnion(new(UnionName, (variant, AnyVariantValue.MakeStruct(value.Build()))));
+    }
+
+    private readonly struct TupleMapper(string? UnionName, Variant variant) : ISeraMapper<List<Any>, Any>
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Any Map(List<Any> value, InType<Any>? u = null)
+            => Any.MakeUnion(new(UnionName, (variant, AnyVariantValue.MakeTuple(value))));
     }
 }

@@ -11,7 +11,7 @@ public readonly struct AstJsonReader : IJsonReaderState<AstJsonReader>
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static JsonReader<AstJsonReader> Create(SeraJsonOptions options, JsonAst source)
-        => new(options, new(source));
+        => new(options, ctx => new(source, ctx));
 
     #endregion
 
@@ -128,10 +128,10 @@ public readonly struct AstJsonReader : IJsonReaderState<AstJsonReader>
     #region Ctor
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public AstJsonReader(JsonAst source)
+    public AstJsonReader(JsonAst source, JsonReaderCtx ctx)
     {
         state = SubState.MakeAst(source);
-        this = MoveNext();
+        this = MoveNext(ctx);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -172,7 +172,7 @@ public readonly struct AstJsonReader : IJsonReaderState<AstJsonReader>
     #region MoveNext
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public AstJsonReader MoveNext()
+    public AstJsonReader MoveNext(JsonReaderCtx ctx)
     {
         switch (state.Tag)
         {

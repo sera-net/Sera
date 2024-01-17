@@ -476,7 +476,7 @@ public sealed class AsyncStreamJsonReader : AAsyncJsonReader, IDisposable
         {
             case '"':
                 var token = new JsonToken(JsonTokenKind.String, pos,
-                    CompoundString.MakeMemory(buffer).Slice(range.Slice(1, content_len_total)));
+                    CompoundString.MakeMemory(buffer).Slice(range.Slice(1, content_len_total)), StringCache);
                 MovePos(len);
                 MoveRange(span, len);
                 currentHas = true;
@@ -591,7 +591,7 @@ public sealed class AsyncStreamJsonReader : AAsyncJsonReader, IDisposable
             switch (c)
             {
                 case '"':
-                    var token = new JsonToken(JsonTokenKind.String, pos, sb.ToString());
+                    var token = new JsonToken(JsonTokenKind.String, pos, sb.ToString(), StringCache);
                     MovePos(len);
                     MoveRange(span, len);
                     currentHas = true;
@@ -615,7 +615,7 @@ public sealed class AsyncStreamJsonReader : AAsyncJsonReader, IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void Found(JsonTokenKind kind, int len)
     {
-        var token = new JsonToken(kind, pos, CompoundString.MakeMemory(buffer).Slice(range[..len]));
+        var token = new JsonToken(kind, pos, CompoundString.MakeMemory(buffer).Slice(range[..len]), StringCache);
         MovePos(len);
         currentHas = true;
         currentToken = token;
