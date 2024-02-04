@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
@@ -18,7 +19,7 @@ public record AnyStruct(string? Name, Any[] values, SeraFieldInfos infos) :
     int IReadOnlyCollection<KeyValuePair<int, Any>>.Count => Count;
 
     public bool ContainsKey(int key) => key >= 0 && key < Count;
-    
+
     public bool TryGet(int key, out SeraFieldInfo info, out Any value)
     {
         if (!ContainsKey(key))
@@ -122,20 +123,43 @@ public record AnyStruct(string? Name, Any[] values, SeraFieldInfos infos) :
             var info = infos.Infos[i];
             if (first) first = false;
             else sb.Append(", ");
-            sb.Append(info.Name);
-            sb.Append(" = ");
+            sb.Append(info.Key);
+            sb.Append(" : \"");
+            sb.Append(info.Name.Replace("\"", "\\\""));
+            sb.Append("\" = ");
             sb.Append(value);
         }
         sb.Append(" }");
         return sb.ToString();
     }
 
+    public virtual bool Equals(AnyStruct? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return values.SequenceEqual(other.values) && infos.Equals(other.infos) && Name == other.Name;
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(values.SeqHash(), infos, Name);
+    }
+
     public class Builder(string? Name)
     {
         private readonly List<(string? name, long? key, Any value)> items = new();
 
-        public void Add((string? name, long? key, Any value) item)
-            => items.Add(item);
+        public Builder Add((string? name, long? key, Any value) item)
+        {
+            items.Add(item);
+            return this;
+        }
+
+        public Builder Add(string? name, long? key, Any value)
+        {
+            items.Add((name, key, value));
+            return this;
+        }
 
         public AnyStruct Build()
         {

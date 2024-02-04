@@ -15,8 +15,8 @@ public readonly record struct DepPlace(
     Type ActualType, Type TransformedType, Type RawType, bool Boxed
 )
 {
-    public MethodInfo MakeBoxGetMethodInfo() => Box.GetMethodInfo.MakeGenericMethod(TransformedType);
-    public MethodInfo MakeBoxGetRefMethodInfo() => Box.GetRefMethodInfo.MakeGenericMethod(TransformedType);
+    public MethodInfo MakeBoxGetMethodInfo() => BoxUtils.GetMethodInfo.MakeGenericMethod(TransformedType);
+    public MethodInfo MakeBoxGetRefMethodInfo() => BoxUtils.GetRefMethodInfo.MakeGenericMethod(TransformedType);
 
     public Type MakeSerWrapper(Type target) =>
         (Boxed ? typeof(BoxedDepsSerWrapper<,,>) : typeof(DepsSerWrapper<,,>))

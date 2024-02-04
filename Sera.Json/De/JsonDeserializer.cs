@@ -1695,6 +1695,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
             token = reader.CurrentToken;
             if (token.Kind is not (JsonTokenKind.Number or JsonTokenKind.String))
                 reader.ThrowExpected(JsonTokenKind.Number, JsonTokenKind.String);
+            reader.MoveNext();
             reader.ReadComma();
             var tag = token.AsString();
             var variant = new Variant(tag);
@@ -1712,6 +1713,7 @@ public readonly struct JsonDeserializer<T>(JsonDeserializer impl) : ISeraColctor
                 case UnionFormat.External:
                 {
                     reader.MoveNext();
+                    token = reader.CurrentToken;
                     if (token.Kind is JsonTokenKind.EndOfFile) reader.ThrowExpected(JsonTokenKind.ObjectEnd);
                     if (token.Kind is JsonTokenKind.ObjectEnd)
                     {

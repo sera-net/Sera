@@ -52,4 +52,8 @@ public readonly record struct SeraFieldInfos
             return true;
         }
     }
+
+    public bool Equals(SeraFieldInfos other) => Infos.SequenceEqual(other.Infos);
+
+    public override int GetHashCode() => Infos.SeqHash();
 }

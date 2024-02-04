@@ -188,11 +188,11 @@ public readonly struct AnyStructImpl(AnyImpl impl)
     }
 }
 
-public readonly struct AnyUnionImpl(AnyImpl impl) : ISeraColion<Any>, ISelectUnionSeraColion<Any>
+public readonly struct AnyUnionImpl(AnyImpl impl, UnionStyle? style = null) : ISeraColion<Any>, ISelectUnionSeraColion<Any>
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public R Collect<R, C>(ref C colctor, InType<Any>? t = null) where C : ISeraColctor<Any, R>
-        => colctor.CSelectUnion(this, new IdentityMapper<Any>(), new Type<Any>());
+        => colctor.CSelectUnion(this, new IdentityMapper<Any>(), new Type<Any>(), style);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Any SelectUnionEmpty(string? UnionName)
