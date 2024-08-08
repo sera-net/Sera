@@ -4,6 +4,8 @@ Format-agnostic (de)serialization abstraction layer
 
 Inspired by [serde-rs](https://github.com/serde-rs/serde)
 
+**Current status: Waiting for new features of C#, current C# abstraction capability is insufficient**
+
 ## In progress
 
 - [ ] Core
